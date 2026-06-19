@@ -56,7 +56,12 @@ const PackData = {
     'eoep': 'Edge of the Earth',
     'tskp': 'The Scarlet Keys',
     'fhvp': 'The Feast of Hemlock Vale',
-    'tdcp': 'The Drowned City'
-}
+    'tdcp': 'The Drowned City',
+    'core_2026': 'Core Set (2026)',
+    'mar': 'Marie Lambeau',
+    'tom': 'Tommy Muldoon',
+    'mig': 'Miguel de la Cruz',
+    'and': 'André Patel',
+    'car': 'Carolyn Fern'}
 
 export default PackData

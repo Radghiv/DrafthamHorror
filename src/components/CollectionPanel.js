@@ -85,13 +85,25 @@ function CollectionSettings(props) {
                         columnValue='col2'
                     />
                 </div>
+                <div className="card-container">
+                    <CollectionCycle 
+                        includedSets={['mar', 'tom', 'mig', 'and', 'car']}
+                        header='Starter Decks 2026'
+                        columnValue='col1'
+                    />
+                    <CollectionCycle 
+                        includedSets={['core_2026']}
+                        header='Core 2026'
+                        columnValue='col2'
+                    />
+                </div>
 
                 <button className="button-rect button-green" onClick={handleExpand}>Collapse</button>
             </div>
         )
     }
     else {
-        var coreCount = collectionSets['core'] + collectionSets['core2']
+        var coreCount = collectionSets['core'] + collectionSets['core2'] + collectionSets['core_2026']
         var packCount = 0
         for (var code in collectionSets) {
             if (collectionSets[code] === 1) packCount++

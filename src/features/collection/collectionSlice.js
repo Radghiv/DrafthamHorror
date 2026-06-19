@@ -9,8 +9,8 @@ const initialState = {
     'tfa': 1, 'tof': 1, 'tbb': 1, 'hote': 1, 'tcoa': 1, 'tdoy': 1, 'sha': 1,
     'tcu': 1, 'tsn': 1, 'wos': 1, 'fgg': 1, 'uad': 1, 'icc': 1, 'bbt': 1,
     'tde': 1, 'sfk': 1, 'tsh': 1, 'dsm': 1, 'pnr': 1, 'wgd': 1, 'woc': 1,
-    'tic': 1, 'itd': 1, 'def': 1, 'hhg': 1, 'lif': 1, 'lod': 1, 'itm': 1,
-    'eoep': 1, 'tskp': 1, 'fhvp': 1, 'tdcp': 1,
+    'tic': 1, 'itd': 1, 'def': 1, 'hhg': 1, 'lif': 1, 'lod': 1, 'itm': 1,'mar': 1, 'tom': 1, 'mig': 1, 'and': 1, 'car': 1,
+    'eoep': 1, 'tskp': 1, 'fhvp': 1, 'tdcp': 1, 'core_2026': 1,
     'rtnotz': 1, 'rtdwl': 1, 'rtptc': 1, 'rttfa': 1, 'rttcu': 1,
     'nat': 1, 'har': 1, 'win': 1, 'jac': 1, 'ste': 1,
     'books' : 0

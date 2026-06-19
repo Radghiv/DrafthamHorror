@@ -213,6 +213,9 @@ const investigatorRequirements = {
     'Zoey Samaras': {
         deluxe: {},
         advanced1: {}
+    },
+    'Isabelle Barnes': {
+        deluxe: {}
     }
 }
 

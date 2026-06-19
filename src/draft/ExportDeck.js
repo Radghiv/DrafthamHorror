@@ -76,7 +76,7 @@ function ExportO8D(props) {
         '<deck game="a6d114c7-2e2a-4896-ad8c-0330605c90bf" sleeveid="0">\r\n',
         '  <section name="Investigator" shared="False">\r\n'
     ]
-
+    console.log("Investigator:", props.investigator);
     const o8dids = props.investigator.octgn_id.split(':')
 
     o8dids.forEach( item => {

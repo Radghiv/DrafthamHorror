@@ -21,12 +21,12 @@ const initialState = {
     draftType: "draft",
     draftWeighting: 'medium',
     draftXP: 1,
-    draftCount: [3, 3, 3, 3, 3, 3, 3, 3],
+    draftCount: [5, 5, 5, 5, 5, 5, 5, 5],
     draftCards: [10, 10, 10, 10, 10, 10, 10, 1],
     draftUseLimited: [true, true, true],
-    myriadCount: 1,
+    myriadCount: 3,
     deckID: '',
-    confirmDraft: false,
+    confirmDraft: true,
     excludeNormalVersatile: true,
 
     burnCards: [ '', '' ],
@@ -241,30 +241,55 @@ const settingsSlice = createSlice({
 function changeInvestigatorList(entry) {
     return function changeInvestigatorThunk(dispatch, getState) {
         let re = /(.*)(\s\(Parallel\))/
+        let re2 = /^(.*?)\s*\((.*)\)$/
 
         const match = entry.match(re)
         let name = entry
         let parallel = false
 
+        const match2 = entry.match(re2)
+        console.log('match2', match2, entry)
+        let newVersion = false
+        let set=null
+
+
         if (match) {
             name = match[1]
             parallel = true
         }
+        else if (match2) {
+            name=match2[1]
+            newVersion = true
+            set = match2[2]
+
+        }    
 
         const cardData = getState().data.cardData
         const settings = getState().settings
 
         // Agatha has two investigator cards, we need to choose the correct one
         const investigatorID = (name === 'Agatha Crane') ?
-            Object.keys(cardData)
-                .filter(key => {
-                    return cardData[key].name === name && (parallel ? typeof cardData[key].alternate_of_name !== 'undefined' && cardData[key].duplicate_of_name === undefined : true) && (cardData[key].faction_code === settings.primaryClass)
-                })[0] :
-            Object.keys(cardData)
-                .filter(key => {
-                    return cardData[key].name === name && (parallel ? typeof cardData[key].alternate_of_name !== 'undefined' && cardData[key].duplicate_of_name === undefined : true)
-                })[0]
-
+    Object.keys(cardData)
+        .filter(key => {
+            return cardData[key].name === name
+                && (parallel
+                    ? typeof cardData[key].alternate_of_name !== 'undefined' &&
+                      cardData[key].duplicate_of_name === undefined
+                    : true)
+                && (cardData[key].faction_code === settings.primaryClass)
+                && (newVersion ? cardData[key].pack_name === set : true)
+        })[0]
+    :
+    Object.keys(cardData)
+        .filter(key => {
+            return cardData[key].name === name
+                && (parallel
+                    ? typeof cardData[key].alternate_of_name !== 'undefined' &&
+                      cardData[key].duplicate_of_name === undefined
+                    : true)
+                && (newVersion ? cardData[key].pack_name === set : true)
+        })[0]
+        console.log('investigatorID', investigatorID, name, parallel)
         dispatch(changeInvestigator({ data: cardData[investigatorID], parallel: parallel }))
     }
 }
