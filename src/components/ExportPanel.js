@@ -3,8 +3,12 @@ import { useSelector } from 'react-redux'
 
 import ExportDeck from '../draft/ExportDeck'
 import useCardOverlay from './OverlayImage'
+import useCardName from './useCardName'
+import { requiredQuantity, signatureGroups } from '../data/RequiredCards'
+import { useT } from '../i18n'
 
 function SettingsExport(props) {
+    const t = useT()
     const [useSignatures, changeUseSignatures] = useState([ true, false, false, false])
     const [basicWeakness, changeBasicWeakness] = useState(['Random basic weakness', '01000'])
     const [deckTitle, changeDeckTitle] = useState('')
@@ -34,6 +38,7 @@ function SettingsExport(props) {
     }
 
     const doCardOverlay = useCardOverlay()
+    const { cardName: localName, cardSubname } = useCardName()
 
     function onEnterCard(event) {
         // basic weakness
@@ -41,13 +46,13 @@ function SettingsExport(props) {
 
         const cardArray = cardData.filter(item => item.code === event.target.id)
 
-        if (cardArray && cardArray.length > 0 && cardArray[0].imagesrc !== undefined) {
-            doCardOverlay(cardArray[0].imagesrc, event.clientX)
+        if (cardArray && cardArray.length > 0) {
+            doCardOverlay(cardArray[0], event)
         }
     }
 
     function onLeaveCard(event) {
-        doCardOverlay(null, 0)
+        doCardOverlay(null)
     }
 
     function handleWeaknessClick() {
@@ -82,13 +87,7 @@ function SettingsExport(props) {
                     })[0]
                 
                     const card = cardData[cardID]
-                    let sigQuantity = card.quantity
-
-                    if (card.name === 'Occult Evidence') {
-                        if (deckSize === '50') sigQuantity = 3
-                        else if (deckSize === '40') sigQuantity = 2
-                        else sigQuantity = 1
-                    }
+                    let sigQuantity = requiredQuantity(card, deckSize)
 
                     if (card.name === 'Burden of Destiny') {
                         sigQuantity = 0
@@ -128,52 +127,14 @@ function SettingsExport(props) {
         })
     }
 
-    var signatureCards = [ [], [], [], [] ]
-    var useCheckbox = false
-
-    if (investigator === 'Lily Chen') {
-        signatureCards[0].push('08011a')
-        signatureCards[0].push('08015')
-        signatureCards[1].push('08012a')
-        signatureCards[1].push('08015')
-        signatureCards[2].push('08013a')
-        signatureCards[2].push('08015')
-        signatureCards[3].push('08014a')
-        signatureCards[3].push('08015')
-
-        useCheckbox = true
-    }
-    else {
-        const cardRequirements = investigatorData.deck_requirements.card
-
-        for (let crkey = 0; crkey < Object.keys(cardRequirements).length; crkey++) {
-            const requirement = cardRequirements[Object.keys(cardRequirements)[crkey]]
-
-            if (Object.keys(requirement).length > 1) useCheckbox = true
-
-            for (let rkey = 0; rkey < Object.keys(requirement).length; rkey++) {
-                signatureCards[rkey].push(requirement[Object.keys(requirement)[rkey]])
-            }
-        }
-    
-        signatureCards.sort( (a1, a2) => {
-            if (a1.length > 0) {
-                if (a2.length > 0) {
-                    return parseInt(a1[0]) - parseInt(a2[0])
-                }
-                else return -1
-            }
-
-            return 1
-        })
-    }
+    const { groups: signatureCards, hasChoice: useCheckbox } = signatureGroups(investigatorData)
 
     // make sure it's selected in the collection too
     var weaknessCards = cardData.filter( card => {
         return card.subtype_code === 'basicweakness' && card.code !== '01000' && collection[card.pack_code]
     })
 
-    var signatureOptions = <div>
+    var signatureOptions = <div className="export-options">
         {
             signatureCards.map( (item, index) => {
                 if (item.length > 0) {
@@ -183,46 +144,30 @@ function SettingsExport(props) {
                             return cardData[key].code === code
                         })[0]
 
-                        let sigQuantity = cardData[signatureID].quantity
-
-                        if (cardData[signatureID].name === 'Occult Evidence') {
-                            if (deckSize === '50') sigQuantity = 3
-                            else if (deckSize === '40') sigQuantity = 2
-                            else sigQuantity = 1
-                        }
-
-                        if (cardData[signatureID].name === 'Burden of Destiny') {
-                            sigQuantity = 1
-                        }
+                        const sigQuantity = requiredQuantity(cardData[signatureID], deckSize)
 
                         const quantityText = (sigQuantity > 1) ? ' x' + sigQuantity : ''
 
-                        let cardName = cardData[signatureID].name
+                        let cardName = localName(cardData[signatureID])
                         if (investigator === 'Lily Chen') {
-                            if (cardData[signatureID].subname) cardName = cardName + ': ' + cardData[signatureID].subname
+                            if (cardSubname(cardData[signatureID])) cardName = cardName + ': ' + cardSubname(cardData[signatureID])
                         }
                         else if (useCheckbox) {
                             cardName = cardName + ' (' + cardData[signatureID].pack_name + ')'
                         }
                         
                     return (
-                        <p id={cardData[signatureID].code} key={cardData[signatureID].code} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard}>{cardName + quantityText}</p>)
+                        <p className="export-card" id={cardData[signatureID].code} key={cardData[signatureID].code} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard}>{cardName + quantityText}</p>)
                     })
 
                     return (useCheckbox ?
-                        <div key={index} className="signatureDiv">
-                            <span className="signatureLeft">
-                                <input type="checkbox" checked={useSignatures[index]} name={"CB" + index} className="signature-checkbox" onChange={handleCheckbox}/>
-                            </span>
-                            <span className="signatureRight">
-                                {cardList}
-                            </span>
-                        </div>
+                        <label key={index} className="export-option">
+                            <input type="checkbox" checked={useSignatures[index]} name={"CB" + index} className="big-checkbox" onChange={handleCheckbox}/>
+                            <span>{cardList}</span>
+                        </label>
                         :
-                        <div key={index} className="signatureDiv">
-                            <span className="signatureCenter">
-                                {cardList}
-                            </span>
+                        <div key={index} className="export-option">
+                            <span>{cardList}</span>
                         </div>
                     )
                 }
@@ -232,28 +177,31 @@ function SettingsExport(props) {
         </div>
 
     return (
-        <div className="settingsDiv">
-            <h3>Export options</h3>
-            <div className="fbsetting">
-                <label className="fbtitleleft">Deck title:</label>
-                <span className="fbtitleright">
-                    <input name="deckName" type='text' value={deckTitle} onChange={handleInput}></input>
-                </span>
+        <div className="settingsDiv export-panel">
+            <h3>{t('Export options')}</h3>
+
+            <div className="field">
+                <label htmlFor="deck-title">{t('Deck title')}</label>
+                <input id="deck-title" name="deckName" type="text" value={deckTitle} onChange={handleInput} placeholder={t('Name of the exported deck')} autoComplete="off" />
             </div>
-            <div>
-                <h4 className="section-header">Signature cards</h4>
+
+            <div className="options-section">
+                <h4>{t('Signature cards')}</h4>
                 {signatureOptions}
             </div>
-            <div>
-                <h4 className="section-header">Weaknesses</h4>
-                <p id={basicWeakness[1]} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard}>{basicWeakness[0]}</p>
-                <button className='button-rect button-green button-drawweakness' onClick={ () => handleWeaknessClick()}>Draw weakness</button>
-                <div className="description">
-                    Export as an OCTGN deck file.  To import a downloaded .o8d deck into ArkhamDB, go to My Decks and click Import Deck, then File.
+
+            <div className="options-section">
+                <h4>{t('Weaknesses')}</h4>
+                <div className="export-weakness">
+                    <p className="export-card" id={basicWeakness[1]} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard}>{basicWeakness[1] === '01000' ? t('Random basic weakness') : basicWeakness[0]}</p>
+                    <button type="button" className="btn btn-secondary" onClick={() => handleWeaknessClick()}>{t('Draw weakness')}</button>
                 </div>
             </div>
-            <div>
-                <button className='button-rect button-green button-export' onClick={ () => handleExportClick('OCTGN')}>Export as .o8d</button>
+
+            <div className="options-section">
+                <button type="button" className="btn btn-primary btn-block" onClick={() => handleExportClick('OCTGN')}>{t('Export as .o8d')}</button>
+                <button type="button" className="btn btn-secondary btn-block" onClick={() => handleExportClick('TXT')}>{t('Export as plain text (.txt)')}</button>
+                <p className="field-hint">{t('Exports an OCTGN deck file. To import a downloaded .o8d deck into ArkhamDB, go to My Decks and click Import Deck, then File.')}</p>
             </div>
         </div>
     )

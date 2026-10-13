@@ -64,4 +64,16 @@ const PackData = {
     'and': 'André Patel',
     'car': 'Carolyn Fern'}
 
+// Pack names come from ArkhamDB too: this adds the ones the list above doesn't have (the list stays as the names used when ArkhamDB
+// can't be reached). Investigator expansions are shown without that suffix, as their packs always were.
+export function displayPackName(name) {
+    return name.replace(/ Investigator Expansion$/, '')
+}
+
+export function registerPackNames(packs) {
+    packs.forEach(pack => {
+        if (!(pack.code in PackData)) PackData[pack.code] = displayPackName(pack.name)
+    })
+}
+
 export default PackData

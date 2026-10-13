@@ -1,6 +1,8 @@
 import { changeSetting } from '../features/settings/settingsSlice'
+import { rememberUndoPoint } from '../features/draftHistory'
+import { random } from '../random'
 import { addToBuildXPList, changePhase, addLevel0, draftVersatile, draftLevel0, advanceDraft, addDeckModifier,
-    addToCardList, changeProgress, addToDraftPool, clearDraftPool, setInsufficientOptions, addToRemovedList, 
+    addToCardList, changeProgress, addToDraftPool, clearDraftPool, replaceDraftPoolCard, selectDraftCard, setInsufficientOptions, addToRemovedList, 
     calculateNeededExileCheckboxes, updateDeckRequirements } from '../features/draft/draftSlice'
 
 import FilterCards from '../data/CardFilter'
@@ -87,6 +89,7 @@ export function draftCard() {
             deckSize: state.settings.deckSize,
             phase: state.draft.phase,
             collection: state.collection,
+        bannedCards: state.settings.bannedCards,
             deckModifiers: state.draft.deckModifiers,
             level0Swaps: state.draft.level0Swaps,
             level0Adds: state.draft.level0Adds,
@@ -94,6 +97,8 @@ export function draftCard() {
             })
 //console.log('Filtered count: ' + filteredData.length)
         if (draftIndex >= 0) {
+            dispatch(rememberUndoPoint)
+
             const draftTarget = calculateDraftTarget({
                 draftType: state.settings.draftType,
                 draftXP: state.settings.draftXP,
@@ -148,6 +153,7 @@ function StandardChaosDraft(dispatch, getState) {
         deckSize: state.settings.deckSize,
         phase: state.draft.phase,
         collection: state.collection,
+        bannedCards: state.settings.bannedCards,
         deckModifiers: state.draft.deckModifiers,
         level0Swaps: state.draft.level0Swaps,
         level0Adds: state.draft.level0Adds,
@@ -189,10 +195,8 @@ function StandardChaosDraft(dispatch, getState) {
     dispatch(changeProgress(draftProgress))
 }
 
-function SimpleDraft(dispatch, getState) {
-    let state = getState()
-
-// generates draft cards
+// Everything needed to draw cards for the current phase: the legal cards, how much is left to draft and how much is drafted
+function draftContext(state) {
     const filteredData = FilterCards({ 
         cardData: state.data.cardData,
         investigatorData: state.settings.investigatorData,
@@ -212,6 +216,7 @@ function SimpleDraft(dispatch, getState) {
         deckSize: state.settings.deckSize,
         phase: state.draft.phase,
         collection: state.collection,
+        bannedCards: state.settings.bannedCards,
         deckModifiers: state.draft.deckModifiers,
         level0Swaps: state.draft.level0Swaps,
         level0Adds: state.draft.level0Adds,
@@ -236,15 +241,23 @@ function SimpleDraft(dispatch, getState) {
         level0Adds: state.draft.level0Adds
     })
 
+    return { filteredData: filteredData, draftTarget: draftTarget, draftProgress: draftProgress }
+}
+
+function SimpleDraft(dispatch, getState) {
+    let state = getState()
+
+// generates draft cards
+    const { filteredData, draftTarget, draftProgress } = draftContext(state)
+
     dispatch(clearDraftPool())
 
     var numToDraw = filteredData.length >= state.settings.draftCount[state.draft.phase-1] ? 
         state.settings.draftCount[state.draft.phase-1] : 
         filteredData.length
 
-    if (numToDraw < 1) {
-        dispatch(setInsufficientOptions(true))
-    }
+    // recomputed for every new pool, so an empty pool in one phase doesn't leak into the next
+    dispatch(setInsufficientOptions(numToDraw < 1))
 
     for (let i = 0; i < numToDraw; i++) {
         state = getState()
@@ -255,6 +268,30 @@ function SimpleDraft(dispatch, getState) {
         card.expandedModifiers = 0
 
         dispatch(addToDraftPool(card))
+    }
+}
+
+// Redraws one card of the pool: another legal card, not already in the pool, takes its place
+export function redrawDraftCard(index) {
+    return function redrawDraftCardThunk(dispatch, getState) {
+        const state = getState()
+        const pool = state.draft.draftPool
+
+        if (!pool[index]) return
+
+        const { filteredData, draftTarget, draftProgress } = draftContext(state)
+
+        const card = DrawCard(filteredData, state.draft.phase, state.draft.mergedList, state.draft.deckModifiers, pool, draftProgress, draftTarget, state.settings.investigator, state.settings.parallel)
+
+        // nothing else to offer: the card stays
+        if (!card || pool.some(item => item.key === card.key)) return
+
+        card.imageLoaded = false
+        card.expandedModifiers = 0
+
+        dispatch(replaceDraftPoolCard({ index: index, card: card }))
+
+        if (state.draft.selectedDraftCard === index) dispatch(selectDraftCard(null))
     }
 }
 
@@ -369,12 +406,21 @@ function DraftCard(dispatch, getState, card, filteredData, draftTarget) {
 
     if (addCount > card.deck_limit) addCount = card.deck_limit
 
+    // a level 0 card replacing removed ones can't bring more copies than there are cards left to replace (a myriad card would
+    // otherwise add its copies, and only afterwards be counted as fewer)
+    if (phase === DraftPhases.UpgradeLevel0AddPhase || phase === DraftPhases.UpgradeLevel0SwapPhase) {
+        const level0List = phase === DraftPhases.UpgradeLevel0SwapPhase ? level0Swaps : level0Adds
+        const undraftedCount = level0List.reduce((acc, item) => acc + item.count - item.drafted, 0)
+
+        if (undraftedCount > 0 && addCount > undraftedCount) addCount = undraftedCount
+    }
+
     var removeCount = 1
     if (card.shrewdAnalysis) {
         const upgradeList = filteredData.filter(item => item.name === card.name && item.subname !== 'Unidentified' && item.subname !== 'Untranslated')
 
         for (let i = 0; i < 2; i++) {
-            const index = Math.floor(Math.random() * upgradeList.length)
+            const index = Math.floor(random() * upgradeList.length)
 
             var newCard = listCardFromDBData(upgradeList[index], 1)
             newCard.cardModifiers = card.cardModifiers
@@ -438,7 +484,7 @@ function DraftCard(dispatch, getState, card, filteredData, draftTarget) {
 
 function weightedCardDraw(cardData) {
     const maxWeight = cardData[cardData.length-1].weightValue
-    const randomValue = Math.floor(Math.random() * maxWeight)
+    const randomValue = Math.floor(random() * maxWeight)
     const weightedIndex = searchWeights(cardData, randomValue)
 
     return cardData[weightedIndex]
@@ -508,6 +554,7 @@ export function draftCardFromDBData(card, count) {
         tabooxp: card.tabooxp,
         tabooexceptional: card.tabooexceptional,
         xp: card.xp, 
+        cost: card.cost,
         xpbase: baseXP, 
         xptaboo: tabooXP, 
         xpcost: costXP, 
@@ -544,6 +591,7 @@ export function listCardFromDraftData(card, count) {
         tabooxp: card.tabooxp,
         tabooexceptional: card.tabooexceptional,
         xp: card.xp, 
+        cost: card.cost,
         xpbase: baseXP, 
         xptaboo: tabooXP, 
         xpcost: costXP, 
@@ -580,6 +628,7 @@ export function listCardFromDBData(card, count) {
         tabooxp: card.tabooxp,
         tabooexceptional: card.tabooexceptional,
         xp: card.xp, 
+        cost: card.cost,
         xpbase: baseXP, 
         xptaboo: tabooXP, 
         xpcost: costXP, 

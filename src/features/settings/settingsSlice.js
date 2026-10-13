@@ -1,7 +1,22 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice, current } from '@reduxjs/toolkit'
 
 import FilterCards, { filteredCount, filterResearch } from '../../data/CardFilter'
 import DraftPhases from '../../data/DraftPhases'
+import { loadJSON } from '../../storage'
+import { isLanguage } from '../../data/Languages'
+import { DEFAULT_ANIMATION_SPEED } from '../../data/AnimationSpeed'
+import { restoreDraftState, restoreSettings } from '../draftState'
+import { newSeed } from '../../random'
+
+export const COLLECTION_CONFIRMED_KEY = 'draftham.collectionConfirmed'
+export const CARDS_PER_ROW_KEY = 'draftham.cardsPerRow'
+export const ANIMATION_SPEED_KEY = 'draftham.animationSpeed'
+export const ANIMATE_TOGETHER_KEY = 'draftham.animateTogether'
+export const BANNED_CARDS_KEY = 'draftham.bannedCards'
+export const LANGUAGE_KEY = 'draftham.language'
+
+// the collection is the first setup step; once it has been confirmed, redrafting starts after it
+const collectionConfirmed = loadJSON(COLLECTION_CONFIRMED_KEY, false)
 
 const initialState = {
     investigatorData: null,
@@ -35,10 +50,51 @@ const initialState = {
     otherUpgradeSettings: { GMM: '1', Pelt: [false, false] },
     removedCards: 0,
 
+    // how the investigator is chosen: 'list' (from the list), 'arkhamdb' (taken from an ArkhamDB deck) or 'draft' (drafted
+    // from a few random ones). While drafting, investigatorPool holds the entries to choose from.
+    investigatorMode: 'list',
+    investigatorDraftOptions: { count: 4, parallel: true, classes: ['guardian', 'seeker', 'rogue', 'mystic', 'survivor', 'neutral'], excluded: [] },
+    investigatorPool: [],
+    investigatorDrafting: false,
+
+    // column of the cost curve being hovered (0 = skills, 1 to 6 = cost 0 to 5+): its cards are highlighted in the lists
+    highlightCost: null,
+
+    // speed of the draft animations: a position of ANIMATION_SPEEDS (0 = off)
+    animationSpeed: loadJSON(ANIMATION_SPEED_KEY, DEFAULT_ANIMATION_SPEED),
+
+    // names of cards that never show up in the drafts (all their levels)
+    bannedCards: loadJSON(BANNED_CARDS_KEY, []),
+
+    // new cards of the draft turn over all at once instead of one after the other
+    animateTogether: loadJSON(ANIMATE_TOGETHER_KEY, false),
+
+    // cards shown per row while drafting; 0 = decided by the available width
+    cardsPerRow: loadJSON(CARDS_PER_ROW_KEY, 0),
+
+    // upgrade with a loaded deck: 'upgrade' drafts the upgrades first, 'level0' the level 0 replacement cards first
+    draftOrder: 'upgrade',
+    upgradeAfterLevel0: false,
+
+    setupStep: collectionConfirmed ? 'investigator' : 'collection',
+    collectionConfirmed: collectionConfirmed,
+
+    // language of the card names (the card images stay English); 'en' is the language of the card data itself
+    language: isLanguage(loadJSON(LANGUAGE_KEY, 'en')) ? loadJSON(LANGUAGE_KEY, 'en') : 'en',
+
+    // how many picks can be undone
+    undoDepth: 0,
+
+    // the same seed (with the same setup) deals the same cards
+    seed: newSeed(),
+
     drafting: false,
     complete: false,   
     imagesrc: null,
-    imagepos: 0
+    imageanchor: null,
+    imagecode: null,
+    // the preview was opened with a long press on a touch screen and stays until it is tapped away
+    imagepinned: false
 }
 
 const settingsSlice = createSlice({
@@ -183,6 +239,9 @@ const settingsSlice = createSlice({
                     case 'ConfirmDraft':
                         state.confirmDraft = action.payload.value
                         break
+                    case 'DraftOrder':
+                        state.draftOrder = action.payload.value
+                        break
                     default:
                         break
                 }
@@ -229,12 +288,82 @@ const settingsSlice = createSlice({
             state.drafting = false
             state.complete = false
             state.imagesrc = null
-            state.imagepos = 0
+            state.imageanchor = null
+            state.imagecode = null
+            state.imagepinned = false
+            state.setupStep = state.collectionConfirmed ? 'investigator' : 'collection'
+            state.draftOrder = 'upgrade'
+            state.upgradeAfterLevel0 = false
+            state.investigatorPool = []
+            state.investigatorDrafting = false
+            state.undoDepth = 0
+        },
+        setInvestigatorMode(state, action) {
+            state.investigatorMode = action.payload
+        },
+        setInvestigatorDraftOption(state, action) {
+            state.investigatorDraftOptions[action.payload.name] = action.payload.value
+        },
+        beginInvestigatorDraft(state, action) {
+            state.investigatorPool = action.payload
+            state.investigatorDrafting = true
+        },
+        replaceInvestigatorInPool(state, action) {
+            state.investigatorPool[action.payload.index] = action.payload.entry
+        },
+        endInvestigatorDraft(state) {
+            state.investigatorPool = []
+            state.investigatorDrafting = false
+        },
+        setUpgradeAfterLevel0(state, action) {
+            state.upgradeAfterLevel0 = action.payload
+        },
+        setCardsPerRow(state, action) {
+            state.cardsPerRow = action.payload
+        },
+        addBannedCard(state, action) {
+            if (!state.bannedCards.includes(action.payload)) state.bannedCards.push(action.payload)
+        },
+        removeBannedCard(state, action) {
+            state.bannedCards = state.bannedCards.filter(name => name !== action.payload)
+        },
+        clearBannedCards(state) {
+            state.bannedCards = []
+        },
+        setAnimateTogether(state, action) {
+            state.animateTogether = action.payload
+        },
+        setAnimationSpeed(state, action) {
+            state.animationSpeed = action.payload
+        },
+        setHighlightCost(state, action) {
+            state.highlightCost = action.payload
+        },
+        setLanguage(state, action) {
+            state.language = action.payload
+        },
+        changeSeed(state, action) {
+            state.seed = action.payload
+        },
+        setUndoDepth(state, action) {
+            state.undoDepth = action.payload
+        },
+        setSetupStep(state, action) {
+            state.setupStep = action.payload
+        },
+        confirmCollection(state) {
+            state.collectionConfirmed = true
         },
         updateImageOverlay(state, action) {
             state.imagesrc = action.payload.imagesrc
-            state.imagepos = action.payload.position
+            state.imageanchor = action.payload.anchor || null
+            state.imagecode = action.payload.code || null
+            state.imagepinned = !!action.payload.pinned
         }
+    },
+    extraReducers: (builder) => {
+        // back to a moment of the draft (undo, or a draft saved earlier); the preferences stay as they are
+        builder.addCase(restoreDraftState, (state, action) => restoreSettings(current(state), action.payload.settings))
     }
 })
 
@@ -283,10 +412,12 @@ function changeInvestigatorList(entry) {
     Object.keys(cardData)
         .filter(key => {
             return cardData[key].name === name
+                && !cardData[key].hidden
+                && !cardData[key].duplicate_of_code
                 && (parallel
                     ? typeof cardData[key].alternate_of_name !== 'undefined' &&
                       cardData[key].duplicate_of_name === undefined
-                    : true)
+                    : typeof cardData[key].alternate_of_name === 'undefined' || newVersion)
                 && (newVersion ? cardData[key].pack_name === set : true)
         })[0]
         console.log('investigatorID', investigatorID, name, parallel)
@@ -322,6 +453,7 @@ function calculateFilteredCount(dispatch, getState) {
         deckSize: state.settings.deckSize,
         phase: state.draft.phase,
         collection: state.collection,
+        bannedCards: state.settings.bannedCards,
         deckModifiers: state.draft.deckModifiers,
         level0Swaps: state.draft.level0Swaps,
         level0Adds: state.draft.level0Adds,
@@ -369,7 +501,8 @@ function calculateFilteredCount(dispatch, getState) {
     dispatch(changeSetting('FilteredResearch', research))
 }
 
-export const { changeInvestigator, changeSetting, beginDraft, endDraft, reset, updateImageOverlay } = settingsSlice.actions
+export const { changeInvestigator, changeSetting, beginDraft, endDraft, reset, updateImageOverlay, setSetupStep, confirmCollection, setUpgradeAfterLevel0, setCardsPerRow, setAnimationSpeed, setAnimateTogether, addBannedCard, removeBannedCard, clearBannedCards, setHighlightCost, setUndoDepth, changeSeed, setLanguage,
+    setInvestigatorMode, setInvestigatorDraftOption, beginInvestigatorDraft, endInvestigatorDraft, replaceInvestigatorInPool } = settingsSlice.actions
 export { changeInvestigatorList, changeInvestigatorDeck, calculateFilteredCount }
 
 export default settingsSlice.reducer

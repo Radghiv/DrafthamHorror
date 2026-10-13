@@ -2,11 +2,18 @@ import React from 'react'
 import { useSelector } from 'react-redux'
 
 import ColorForClass from '../data/ClassColors'
+import useCardOverlay from './OverlayImage'
+import CardImage from './CardImage'
+import RequiredThumbs from './RequiredThumbs'
+import { useT } from '../i18n'
 
 function InvestigatorPanel(props) {
+    const t = useT()
     const cardData = useSelector(state => state.data.cardData)
     const investigatorData = useSelector(state => state.settings.investigatorData)
     const investigator = useSelector(state => state.settings.investigator)
+
+    const doCardOverlay = useCardOverlay()
 
     let investigatorCardImage = null
     let investigatorCardImageBack = null
@@ -26,30 +33,31 @@ function InvestigatorPanel(props) {
         const factionCode = investigatorData.faction_code;
         const classColor = ColorForClass(factionCode)
 
-        if (investigatorData.imagesrc === undefined) {
-            investigatorCardImage = <div className="investigator-div-loading" style={{backgroundColor: classColor}}><h3>{investigator}</h3><p>Image not available</p><p><a href={investigatorData.url} target="_blank" rel="noreferrer noopener">View on ArkhamDB</a></p></div>
-        }
-        else {
-            const imagesrc = "https://www.arkhamdb.com" + investigatorData.imagesrc
-            investigatorCardImage = <div className="investigator-div" style={{backgroundColor: classColor}}><img className="investigator-image" src={imagesrc} alt={props.investigator} onLoad={event => imageDidLoad({index: 0, event: event})}/></div>
-        }
+        // ArkhamDB's image first, then arkham.build's; the placeholder is for when neither has it
+        const placeholder = label => <div className="investigator-div-loading" style={{backgroundColor: classColor}}><h3>{label}</h3><p>{t('Image not available')}</p><p><a href={investigatorData.url} target="_blank" rel="noreferrer noopener">{t('View on ArkhamDB')}</a></p></div>
 
-        if (investigatorData.backimagesrc === undefined) {
-            investigatorCardImageBack = <div className="investigator-div-loading" style={{backgroundColor: classColor}}><h3>{investigator + ' (Back)'}</h3><p>Image not available</p><p><a href={investigatorData.url} target="_blank" rel="noreferrer noopener">View on ArkhamDB</a></p></div>
-        }
-        else {
-            const backimagesrc = "https://www.arkhamdb.com" + investigatorData.backimagesrc
-            investigatorCardImageBack = <div className="investigator-div" style={{backgroundColor: classColor}}><img className="investigator-image" src={backimagesrc} alt={investigator + ' (back)'} onLoad={event => imageDidLoad({index: 1, event: event})}/></div>
-        }
+        investigatorCardImage =
+            <div className="investigator-div" style={{backgroundColor: classColor}} onPointerEnter={event => doCardOverlay(investigatorData, event, 'front')} onPointerLeave={() => doCardOverlay(null)}>
+                <CardImage card={investigatorData} side="front" className="investigator-image" alt={investigator}
+                    onLoad={event => imageDidLoad({index: 0, event: event})} fallback={placeholder(investigator)} />
+            </div>
+
+        investigatorCardImageBack =
+            <div className="investigator-div" style={{backgroundColor: classColor}} onPointerEnter={event => doCardOverlay(investigatorData, event, 'back')} onPointerLeave={() => doCardOverlay(null)}>
+                <CardImage card={investigatorData} side="back" className="investigator-image" alt={t('{name} (back)', { name: investigator })}
+                    onLoad={event => imageDidLoad({index: 1, event: event})} fallback={placeholder(t('{name} (Back)', { name: investigator }))} />
+            </div>
     }
 
     return (
         <div className="settingsDiv">
-            <h2>{investigator}</h2>
+            <h2>{props.title || investigator}</h2>
+            {props.subtitle ? <p className="investigator-subtitle">{props.subtitle}</p> : null}
             <div className="investigator-grid">
                 {investigatorCardImage}
                 {investigatorCardImageBack}
             </div>
+            <RequiredThumbs investigator={investigatorData} />
         </div>
     )
 }

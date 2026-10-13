@@ -3,6 +3,7 @@ import { setDeckModifiers, changeLimit } from '../features/draft/draftSlice'
 import { costWithModifiers, draftCardFromDBData, costBase, canKeepOriginal } from './DrawDraft'
 import DraftPhases, { isUpgrade, isLevel0Upgrade } from '../data/DraftPhases'
 import ResearchLogs from '../data/ResearchLogs'
+import { msg } from '../i18n'
 
 export function initDeckModifiers() {
     return function initDeckModifiersThunk(dispatch, getState) {
@@ -348,19 +349,19 @@ export function availableUpgrades(card, mergedList, deckModifiers, maxCost, forc
             defaultLevel = item.xp
         }
 
-        return { text: 'Upgrade Level ' + item.xp, level: item.xp, modifier: modifier }
+        return { text: 'Upgrade Level ' + item.xp, label: msg('Upgrade Level {level}'), labelVars: { level: item.xp }, level: item.xp, modifier: modifier }
     }).filter(item => item !== null)
     
     const keepOriginal = canKeepOriginal(card, investigator, parallel)
 
     if (existingCards.length > 0 && keepOriginal) {
-        upgradeOptions.unshift( { text: 'Keep original at full cost', modifier: 0, keep: true })
+        upgradeOptions.unshift( { text: 'Keep original at full cost', label: msg('Keep original at full cost'), modifier: 0, keep: true })
     }
 
     const count = existingCards.reduce((acc, a) => acc + a.count, 0)
 
     if (count < card.deck_limit && card.xp <= maxCost && !forceUpgrade && !underworldSupport) {
-        upgradeOptions.unshift( { text: 'None', modifier: 0 })
+        upgradeOptions.unshift( { text: 'None', label: msg('None'), modifier: 0 })
 
         if (defaultLevel <= 0) {
             let cost = costBase(card)

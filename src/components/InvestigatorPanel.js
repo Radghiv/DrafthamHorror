@@ -1,151 +1,98 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { changeInvestigatorList, changeSetting, calculateFilteredCount } from '../features/settings/settingsSlice'
+import { changeSetting, calculateFilteredCount, setInvestigatorMode } from '../features/settings/settingsSlice'
+import { selectInvestigatorEntry } from '../features/settings/investigatorActions'
+import { unloadDeck } from '../features/data/dataSlice'
+import { OfficialColorForClass, darkenColor, readableTextColor } from '../data/ClassColors'
+import DeckImport from './wizard/DeckImport'
+import InvestigatorDraftSettings from './wizard/InvestigatorDraftSettings'
+import { findInvestigatorCard } from '../data/InvestigatorList'
+import useInvestigatorEntries from './useInvestigatorEntries'
+import { useT, msg } from '../i18n'
+
+const CLASS_NAMES = {
+    guardian: msg('Guardian'),
+    seeker: msg('Seeker'),
+    rogue: msg('Rogue'),
+    mystic: msg('Mystic'),
+    survivor: msg('Survivor'),
+    neutral: msg('Neutral')
+}
 
 function InvestigatorPanel(props) {
-    const investigatorData = [
-        'Agatha Crane',
-        'Agnes Baker',
-        'Agnes Baker (Parallel)',
-        'Akachi Onyele',
-        'Alessandra Zorzi',
-        'Amanda Sharpe',
-        'Amina Zidane',
-        'André Patel',
-        '"Ashcan" Pete',
-        '"Ashcan" Pete (Parallel)',
-        'Bob Jenkins',
-        'Calvin Wright',
-        'Carolyn Fern',
-        'Carolyn Fern (Carolyn Fern)',
-        'Carson Sinclair',
-        'Charlie Kane',
-        'Daisy Walker',
-        'Daisy Walker (Parallel)',
-        'Daniela Reyes',
-        'Daniela Reyes (Core Set (2026))',
-        'Darrell Simmons',
-        'Dexter Drake',
-        'Dexter Drake (Core Set (2026))',
-        'Diana Stanley',
-        'Father Mateo',
-        'Father Mateo (Parallel)',
-        'Finn Edwards',
-        'George Barnaby',
-        'Gloria Goldberg',
-        'Hank Samson',
-        'Harvey Walters',
-        'Isabelle Barnes',
-        'Jacqueline Fine',
-        'Jenny Barnes',
-        'Jim Culver',
-        'Jim Culver (Parallel)',
-        'Joe Diamond',
-        'Joe Diamond (Core Set (2026))',
-        'Kate Winthrop',
-        'K\u014dhaku Narukami',
-        'Kymani Jones',
-        'Leo Anderson',
-        'Lily Chen',
-        'Lola Hayes',
-        'Lucius Galloway',
-        'Luke Robinson',
-        'Mandy Thompson',
-        'Marie Lambeau',
-        'Marie Lambeau (Marie Lambeau)',
-        'Marion Tavares',
-        'Mark Harrigan',
-        'Michael McGlen',
-        'Miguel de la Cruz',
-        'Minh Thi Phan',
-        'Monterey Jack',
-        'Monterey Jack (Parallel)',
-        'Nathaniel Cho',
-        'Norman Withers',
-        'Patrice Hathaway',
-        'Preston Fairmont',
-        'Rex Murphy',
-        'Rex Murphy (Parallel)',
-        'Rita Young',
-        'Roland Banks',
-        'Roland Banks (Parallel)',
-        'Sefina Rousseau',
-        'Silas Marsh',
-        'Sister Mary',
-        '"Skids" O\'Toole',
-        '"Skids" O\'Toole (Parallel)',
-        'Stella Clark',
-//        'Subject 5U-21',
-        'Tommy Muldoon',
-        'Tommy Muldoon (Tommy Muldoon)',
-        'Tony Morgan',
-        'Trish Scarborough',
-        'Trish Scarborough (Core Set (2026))',
-        'Ursula Downs',
-        'Vincent Lee',
-        'Wendy Adams',
-        'Wendy Adams (Parallel)',
-        'William Yorick',
-        'Wilson Richards',
-        'Winifred Habbamock',
-        'Zoey Samaras',
-        'Zoey Samaras (Parallel)'
-    ]
-
+    const t = useT()
     const settings = useSelector(state => state.settings)
-    const tabooData = useSelector(state => state.data.tabooData)
+    const cardData = useSelector(state => state.data.cardData)
+    const investigatorData = useInvestigatorEntries()
+
+    const investigatorColors = useMemo(() => {
+        const colors = {}
+
+        if (cardData) {
+            const cards = Object.values(cardData)
+
+            investigatorData.forEach(name => {
+                // the class colors of the game, 50% darker
+                const investigatorCard = findInvestigatorCard(name, cards)
+                const classColor = OfficialColorForClass(investigatorCard ? investigatorCard.faction_code : undefined)
+
+                colors[name] = classColor ? darkenColor(classColor, 0.5) : undefined
+            })
+        }
+
+        return colors
+    }, [cardData, investigatorData])
 
     const dispatch = useDispatch()
 
-    const investigatorFull = settings.parallel ? settings.investigator + ' (Parallel)' : settings.investigator
+    // the name of a class, from its code
+    const className = code => CLASS_NAMES[code] ? t(CLASS_NAMES[code]) : code[0].toUpperCase() + code.slice(1)
+
+    const agathaClass = settings.primaryClass[0].toUpperCase() + settings.primaryClass.slice(1)
+    // same-name versions of an investigator are listed as "Name (Pack)"
+    const packVariant = settings.investigatorData ? settings.investigator + ' (' + settings.investigatorData.pack_name + ')' : null
+    const investigatorFull = settings.investigator === 'Agatha Crane' ? 'Agatha Crane (' + agathaClass + ')'
+        : settings.parallel ? settings.investigator + ' (Parallel)'
+        : investigatorData.includes(packVariant) ? packVariant : settings.investigator
 
     function handleChange(event) {
         dispatch(changeSetting(event.target.name, event.target.value))
-    }
-
-    function handleChangeInvestigator(event) {
-        if (event.target.value === 'Agatha Crane') {
-            dispatch(changeSetting( 'PrimaryClass', 'seeker' ))
-        }
-        dispatch(changeInvestigatorList(event.target.value))
         dispatch(calculateFilteredCount)
     }
 
-    // requires an investigator change
-    function handleChangePrimary(event) {
-        dispatch(changeSetting(event.target.name, event.target.value))
-        dispatch(changeInvestigatorList(settings.investigator))
+    function handleChangeInvestigator(event) {
+        dispatch(selectInvestigatorEntry(event.target.value))
     }
 
     function handleRandom(event) {
-        dispatch(changeInvestigatorList(investigatorData[Math.floor(Math.random() * investigatorData.length)]))
+        dispatch(selectInvestigatorEntry(investigatorData[Math.floor(Math.random() * investigatorData.length)]))
     }
 
-    let primaryFactionList = null
+    // three ways to choose the investigator; leaving ArkhamDB drops the deck that was taken from it
+    const MODES = [
+        { key: 'list', label: msg('From the list') },
+        { key: 'arkhamdb', label: msg('From ArkhamDB') },
+        { key: 'draft', label: msg('Draft it') }
+    ]
+
+    function handleMode(key) {
+        if (key === settings.investigatorMode) return
+
+        if (deckValidation.status === 'valid') dispatch(unloadDeck)
+        dispatch(setInvestigatorMode(key))
+    }
+
     let secondaryFactionList = null
     let classChoiceList = []
     let deckSizeList = null
     let traitChoiceList = null
-    let tabooList = null
-    let primaryClassValue = settings.primaryClass
-    let secondaryClassValue = settings.secondaryClass
     let classChoice1Value = settings.classChoices['faction_1']
     let classChoice2Value = settings.classChoices['faction_2']
     let traitChoiceValue = settings.traitChoice
     let deckSizeValue = settings.selectedDeckSize ? settings.selectedDeckSize : settings.deckSize
 
     if (settings.investigatorData) {
-        // Agatha Crane has two separate cards, deckOptions does not distinguish, so we'll do this manually
-        if (settings.investigator === 'Agatha Crane') {
-            primaryFactionList = [ 'seeker', 'mystic' ].map((item, index) => {
-                return <option value={item} key={index}>
-                    {item[0].toUpperCase() + item.slice(1)}
-                    </option>
-            })
-
-        }
-
         const deckOptions = settings.investigatorData.deck_options
 
         for (let i = 0; i < deckOptions.length; i++) {
@@ -155,7 +102,7 @@ function InvestigatorPanel(props) {
 
                 secondaryFactionList = list.map((item, index) => {
                     return <option value={item} key={index}>
-                        {item[0].toUpperCase() + item.slice(1)}
+                        {className(item)}
                         </option>
                 })
             }
@@ -165,7 +112,7 @@ function InvestigatorPanel(props) {
 
                 classChoiceList[deckOptions[i].id] = list.map((item, index) => {
                     return <option value={item} key={index}>
-                        {item[0].toUpperCase() + item.slice(1)}
+                        {className(item)}
                         </option>
                 })
             }
@@ -192,129 +139,78 @@ function InvestigatorPanel(props) {
         }
     }
 
-    if (tabooData) {
-        tabooList = tabooData.map((item, index) => {
-            return <option value={item.id} key={index}>
-                {item.date_start}
-                </option>
-        })
-
-        tabooList.unshift(<option value="None" key="100">
-            {"None"}
-            </option>)
+    function renderSelect(id, label, name, value, options, style) {
+        return (
+            <div className="field">
+                <label htmlFor={id}>{label}</label>
+                <select id={id} name={name} value={value} onChange={handleChange} style={style}>
+                    {options}
+                </select>
+            </div>
+        )
     }
 
-    const tabooDiv = <div className="fbsetting">
-        <label className="fbinvestigatorleft">Taboo list:</label>
-        <span className="fbinvestigatorcenter">
-            <select className="fbinvestigatorselect" name="SelectedTaboo" value={settings.selectedTaboo} onChange={handleChange}>
-                {tabooList}
-            </select>
-        </span>
-        <span className="fbinvestigatorbutton"></span>
-    </div>
+    // a validated ArkhamDB deck decides the investigator, class, deck size and taboo list
+    const deckValidation = useSelector(state => state.data.deckValidation)
+    const deckLocked = settings.investigatorMode === 'arkhamdb' && deckValidation.status === 'valid' && deckValidation.id === settings.deckID.trim()
 
-    const primaryClassDiv = primaryFactionList ?
-        <div className="fbsetting">
-            <label className="fbinvestigatorleft" value={primaryClassValue}>Class:</label>
-            <span className="fbinvestigatorcenter">
-                <select className="fbinvestigatorselect" name="PrimaryClass" value={settings.primaryClass} onChange={handleChangePrimary}>
-                    {primaryFactionList}
-                </select>
-            </span>
-            <span className="fbinvestigatorbutton"></span>
-        </div>
-        :
-        null
+    const investigatorColor = investigatorColors[investigatorFull]
 
-    const secondaryClassDiv = secondaryFactionList ?
-        <div className="fbsetting">
-            <label className="fbinvestigatorleft" value={secondaryClassValue}>Secondary class:</label>
-            <span className="fbinvestigatorcenter">
-                <select className="fbinvestigatorselect" name="SecondaryClass" value={settings.secondaryClass} onChange={handleChange}>
-                    {secondaryFactionList}
-                </select>
-            </span>
-            <span className="fbinvestigatorbutton"></span>
-        </div>
-        :
-        null
+    // entries use the class colors of the game, with whichever text color reads better on them
+    const classStyle = color => color ? { backgroundColor: color, color: readableTextColor(color) } : undefined
+    const investigatorStyle = classStyle(investigatorColor)
 
-    const classChoice1Div = classChoiceList['faction_1'] ?
-        <div className="fbsetting">
-            <label className="fbinvestigatorleft" value={classChoice1Value}>Class choice 1:</label>
-            <span className="fbinvestigatorcenter">
-                <select className="fbinvestigatorselect" name="ClassChoice1" value={classChoice1Value} onChange={handleChange}>
-                    {classChoiceList['faction_1']}
-                </select>
-            </span>
-            <span className="fbinvestigatorbutton"></span>
-        </div>
-        :
-        null
+    const mode = settings.investigatorMode
 
-    const classChoice2Div = classChoiceList['faction_2'] ?
-        <div className="fbsetting">
-            <label className="fbinvestigatorleft" value={classChoice2Value}>Class choice 2:</label>
-            <span className="fbinvestigatorcenter">
-                <select className="fbinvestigatorselect" name="ClassChoice2" value={classChoice2Value} onChange={handleChange}>
-                    {classChoiceList['faction_2']}
-                </select>
-            </span>
-            <span className="fbinvestigatorbutton"></span>
-        </div>
-        :
-        null
-
-    const deckSizeDiv = deckSizeList ?
-        <div className="fbsetting">
-            <label className="fbinvestigatorleft" value={deckSizeValue}>Deck size:</label>
-            <span className="fbinvestigatorcenter">
-                <select className="fbinvestigatorselect" name="SelectedDeckSize" value={deckSizeValue} onChange={handleChange}>
-                    {deckSizeList}
-                </select>
-            </span>
-            <span className="fbinvestigatorbutton"></span>
-        </div>
-        :
-        null
-
-    const traitChoiceDiv = traitChoiceList ?
-        <div className="fbsetting">
-            <label className="fbinvestigatorleft" value={traitChoiceValue}>Trait choice:</label>
-            <span className="fbinvestigatorcenter">
-                <select className="fbinvestigatorselect" name="TraitChoice" value={settings.traitChoice} onChange={handleChange}>
-                    {traitChoiceList}
-                </select>
-            </span>
-            <span className="fbinvestigatorbutton"></span>
-        </div>
-        :
-        null
+    const listFields =
+        <fieldset className="plain-fieldset" disabled={deckLocked}>
+            {mode === 'list' ?
+                <div className="field">
+                    <label htmlFor="investigator-select">{t('Investigator')}</label>
+                    <div style={{display: 'flex', flexWrap: 'wrap', gap: '12px'}}>
+                        <select id="investigator-select" name="investigator" value={investigatorFull} onChange={handleChangeInvestigator}
+                            style={{flex: '1 1 260px', ...investigatorStyle}}>
+                            {investigatorData.map(name => (
+                                <option value={name} key={name} style={classStyle(investigatorColors[name])}>{name}</option>
+                            ))}
+                        </select>
+                        <button type="button" className="btn btn-secondary" onClick={handleRandom}>{t('Random')}</button>
+                    </div>
+                </div>
+                : null}
+            <div className="field-grid">
+                {secondaryFactionList ? renderSelect('secondary-class', t('Secondary class'), 'SecondaryClass', settings.secondaryClass, secondaryFactionList) : null}
+                {classChoiceList['faction_1'] ? renderSelect('class-choice-1', t('Class choice 1'), 'ClassChoice1', classChoice1Value, classChoiceList['faction_1']) : null}
+                {classChoiceList['faction_2'] ? renderSelect('class-choice-2', t('Class choice 2'), 'ClassChoice2', classChoice2Value, classChoiceList['faction_2']) : null}
+                {deckSizeList ? renderSelect('deck-size', t('Deck size'), 'SelectedDeckSize', deckSizeValue, deckSizeList) : null}
+                {traitChoiceList ? renderSelect('trait-choice', t('Trait choice'), 'TraitChoice', traitChoiceValue, traitChoiceList) : null}
+            </div>
+        </fieldset>
 
     return (
-        <div className="settingsDiv">
-            <h3>Investigator Options</h3>
-            <div className="fbsetting">
-                <label className="fbinvestigatorleft">Investigator:</label>
-                <span className="fbinvestigatorcenter">
-                    <select className="fbinvestigatorselect" name="investigator" value={investigatorFull} onChange={handleChangeInvestigator}>
-                        {investigatorData.map( (name, index) => (
-                            <option value={name} key={name}>{name}</option>
-                        ))}
-                    </select>
-                </span>
-                <span className="fbinvestigatorbutton"><button id="fbbutton-random" onClick={handleRandom}>Random</button></span>
+        <div className="stack">
+            <div className="segmented" role="group" aria-label={t('How do you want to choose the investigator?')}>
+                {MODES.map(item => (
+                    <button type="button" key={item.key} aria-pressed={mode === item.key} onClick={() => handleMode(item.key)}>{t(item.label)}</button>
+                ))}
             </div>
-            {primaryClassDiv}
-            {secondaryClassDiv}
-            {classChoice1Div}
-            {classChoice2Div}
-            {deckSizeDiv}
-            {traitChoiceDiv}
-            {tabooDiv}
+
+            {mode === 'list' ? listFields : null}
+
+            {mode === 'arkhamdb' ?
+                <>
+                    <DeckImport />
+                    {deckLocked ? listFields : null}
+                </>
+                : null}
+
+            {mode === 'draft' ?
+                <>
+                    <InvestigatorDraftSettings />
+                </>
+                : null}
         </div>
-        )
+    )
 }
 
 export default InvestigatorPanel

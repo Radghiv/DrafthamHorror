@@ -6,8 +6,11 @@ import { startDraft } from '../features/draft/draftSlice'
 import BuildChaosSettings from './BuildChaosSettings'
 import BuildDraftSettings from './BuildDraftSettings'
 import DraftPhases from '../data/DraftPhases'
+import { useT } from '../i18n'
 
 function VersatilePanel(props) {
+    const t = useT()
+
     const level0Adds = useSelector(state => state.draft.level0Adds)
     const draftType = useSelector(state => state.settings.draftType)
     const deckLoaded = useSelector(state => state.data.deckLoaded)
@@ -30,7 +33,7 @@ function VersatilePanel(props) {
 
     if (draftTotal < 1) return null
 
-    let headerText = 'Cards:'
+    let headerText = t('Cards:')
     const level0List = level0Adds.map( (item, index) => {
         let row = null
         if (item.count - item.drafted > 0 && item.versatileCount) {
@@ -62,18 +65,17 @@ function VersatilePanel(props) {
         />
     }
 
-    const button = <button className="button-rect button-green" onClick={handleStartDraft}>Draft</button>
+    const button = <button className="button-rect button-green" onClick={handleStartDraft}>{t('Draft')}</button>
 
     return (
         <div className='settingsDiv'>
-            <h3>Level 0 Draft Options</h3>
-            <h5>Versatile</h5>
-            <h2 className="draft-quantity">{draftTotal} card{draftTotal > 1 ? 's' : ''}</h2>
+            <h3>{t('Level 0 Draft Options')}</h3>
+            <h5>{t('Versatile')}</h5>
+            <h2 className="draft-quantity">{t('{count} card|{count} cards', { count: draftTotal })}</h2>
             {draftSettings}
             {level0List}
             <div className="description">
-                Versatile allows you to draft 1 card from any class.  Select "Exclude cards in 
-                investigator pool" to force this draft to only include cards not normally available to this investigator.  
+                {t('Versatile allows you to draft 1 card from any class.')}  {t('Select "Exclude cards in investigator pool" to force this draft to only include cards not normally available to this investigator.')}
             </div>
             {button}
         </div>

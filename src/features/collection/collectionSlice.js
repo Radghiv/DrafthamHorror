@@ -1,8 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 import { calculateFilteredCount } from '../settings/settingsSlice'
+import { loadJSON } from '../../storage'
 
-const initialState = {
+export const COLLECTION_STORAGE_KEY = 'draftham.collection'
+
+const defaultCollection = {
     'core': 1, 'core2': 1,
     'dwl': 1, 'tmm': 1, 'tece': 1, 'bota': 1, 'uau': 1, 'wda': 1, 'litas': 1,
     'ptc': 1, 'eotp': 1, 'tuo': 1, 'apot': 1, 'tpm': 1, 'bsr': 1, 'dca': 1,
@@ -16,6 +19,17 @@ const initialState = {
     'books' : 0
 }
 
+// restore the saved collection
+const savedCollection = loadJSON(COLLECTION_STORAGE_KEY, {})
+const initialState = { ...defaultCollection }
+
+// packs added later (known from ArkhamDB) are saved too
+Object.keys(savedCollection).forEach(code => {
+    const value = savedCollection[code]
+
+    if (typeof value === 'boolean' || value === 0 || value === 1) initialState[code] = value
+})
+
 const collectionSlice = createSlice({
     name: 'collection',
     initialState,
@@ -23,6 +37,12 @@ const collectionSlice = createSlice({
         setOff(state, action) { 
             action.payload.forEach(element => {
                 state[element] = false
+            })
+        },
+        // packs not seen before (new on ArkhamDB) start selected
+        registerPacks(state, action) {
+            action.payload.forEach(code => {
+                if (!(code in state)) state[code] = 1
             })
         },
         setOn(state, action) {
@@ -42,7 +62,7 @@ function changeCollection(name, sets) {
     }
 }
 
-export const { setOff, setOn } = collectionSlice.actions
+export const { setOff, setOn, registerPacks } = collectionSlice.actions
 export { changeCollection }
 
 export default collectionSlice.reducer

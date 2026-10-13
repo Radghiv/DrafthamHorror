@@ -1,14 +1,36 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { advanceDraft, updateUpgradeOption, changeIndex, expandModifiers, minimizeModifiers, holdModifiers, selectDraftCard, changeDraftPoolProperty } from '../features/draft/draftSlice'
+import { advanceDraft, updateUpgradeOption, changeIndex, revealDraftPoolCard, revealDraftPoolCards, expandModifiers, minimizeModifiers, holdModifiers, selectDraftCard, changeDraftPoolProperty } from '../features/draft/draftSlice'
 
-import { draftCard, calculateDraftTarget } from '../draft/DrawDraft'
-import DraftPhases, { isUpgrade, isLevel0Build } from '../data/DraftPhases'
+import { draftCard, calculateDraftTarget, redrawDraftCard } from '../draft/DrawDraft'
+import { rememberUndoPoint } from '../features/draftHistory'
+import startCardFlight from '../draft/flyCard'
+import { isUpgrade, isLevel0Build } from '../data/DraftPhases'
 import ColorForClass from '../data/ClassColors'
+import useCardOverlay from './OverlayImage'
+import useCardName from './useCardName'
+import { cardImageUrls } from '../data/CardImages'
+import { RedrawIcon } from './wizard/Icons'
+import { PLAYER_CARD_BACK } from '../data/CardImages'
+import { ANIMATION_SPEEDS } from '../data/AnimationSpeed'
+import { useT } from '../i18n'
+
+// pause between the start of one card turning and the start of the next (the turns overlap: a card doesn't wait for the previous
+// one to finish), how long a card waits for its image before turning anyway, and how long it is shown face down before it may turn
+const CARD_FLIP_STAGGER = 150
+const IMAGE_WAIT_LIMIT = 4000
+const FIRST_CARD_DELAY = 450
 
 function DraftPanel(props) {
+    const t = useT()
+
+    // per card of the pool: whether its image loaded (true) or none could be loaded ('failed'), and which source is being tried
     const [imageLoaded, setImageLoaded] = useState([])
+    const [imageSource, setImageSource] = useState([])
+
+    // what screen readers are told: the cards to choose from once they are all face up, and what was drafted
+    const [announcement, setAnnouncement] = useState('')
 
     const phase = useSelector(state => state.draft.phase)
     const draftPool = useSelector(state => state.draft.draftPool)
@@ -25,34 +47,42 @@ function DraftPanel(props) {
     const insufficientOptions = useSelector(state => state.draft.insufficientDraftOptions)
     const requireConfirmation = useSelector(state => state.settings.confirmDraft)
     const selectedDraftCard = useSelector(state => state.draft.selectedDraftCard)
-    const currentLevel0Name = useSelector(state => state.draft.currentLevel0Name)
     const deckLoaded = useSelector(state => state.data.deckLoaded)
+    const cardsPerRow = useSelector(state => state.settings.cardsPerRow)
+    const animationSpeed = useSelector(state => state.settings.animationSpeed)
+    const animateTogether = useSelector(state => state.settings.animateTogether)
+
+    // multiplier of the draft animations; 0 skips them (the system's reduced motion setting does too)
+    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const speed = reducedMotion ? 0 : ANIMATION_SPEEDS[animationSpeed]
 
     const dispatch = useDispatch()
 
+    // big preview of the card under the pointer (on touch screens: of the card that is pressed and held)
+    const doCardOverlay = useCardOverlay()
+    const { cardName } = useCardName()
+
+    // the name of a card with its level when it has one, for screen readers
+    function cardLabel(card) {
+        return cardName(card) + (card.xp ? ' ' + t('(level {level})', { level: card.xp }) : '')
+    }
+
     var displayedBox = false
 
-    // image click
-    function handleClick(event) {
-        const index = draftPool.findIndex(item => {
-            return event.target.src.includes(item.imagesrc)
-        })
-    
-        if (requireConfirmation) {
-            dispatch(selectDraftCard(index))
-        }
-        else {
+    // With confirmation required the first click selects a card and a second click on the same card drafts it, so the
+    // pointer never has to move. Enter does the same from the keyboard (see the effect below).
+    function handleCardClick(index) {
+        if (!requireConfirmation || selectedDraftCard === index) {
             draftCardWithIndex({index: index})
         }
+        else {
+            dispatch(selectDraftCard(index))
+        }
+    }
+    function confirmSelected() {
+        if (selectedDraftCard !== null && selectedDraftCard !== undefined) draftCardWithIndex({index: selectedDraftCard})
     }
 
-    // button click
-    function handleDraft(index) {
-        draftCardWithIndex({index: index})
-    }
-    function handleSelect(index) {
-        dispatch(selectDraftCard(index))
-    }
     function handleUpgradeChange(event) {
         var index = event.target.name.substring(15)
 
@@ -60,6 +90,7 @@ function DraftPanel(props) {
     }
 
     function doneClick(event) {
+        dispatch(rememberUndoPoint)
         if (requireConfirmation) dispatch(selectDraftCard(null))
         dispatch(advanceDraft(true))
     }
@@ -67,11 +98,105 @@ function DraftPanel(props) {
     function draftCardWithIndex(props) {
         const { index } = props
 
+        // the card turns into its row of the Draft List: the copy is made before the pool is replaced, and lands on the
+        // row once the list has re-rendered
+        doCardOverlay(null)
+
+        if (draftPool[index]) setAnnouncement(t('Drafted {name}', { name: cardName(draftPool[index]) }))
+
+        const flight = startCardFlight(document.querySelectorAll('.draft-container .draft-card-wrap')[index], speed)
+        const cardKey = draftPool[index] ? draftPool[index].key : null
+
         dispatch(changeIndex(index))
         dispatch(draftCard())
         setImageLoaded([])
+        setImageSource([])
         if (requireConfirmation) dispatch(selectDraftCard(null))
+
+        if (flight) requestAnimationFrame(() => flight.land(cardKey))
     }
+
+    // New cards arrive face down and are turned one after the other, each starting shortly after the previous one started (not when it is
+    // done): a card waits for its image (a few seconds at most). Without motion they simply appear.
+    const lastReveal = useRef(0)
+    const shownAt = useRef({})
+
+    useEffect(() => {
+        const pending = []
+
+        draftPool.forEach((card, index) => {
+            if (!card.revealed) pending.push(index)
+        })
+
+        if (pending.length === 0) return undefined
+
+        // when each pending card was first seen face down: a card is shown that way for a moment before it turns, otherwise a cached
+        // image would turn it before the back was ever painted
+        const now = Date.now()
+        const seenKey = index => index + ':' + draftPool[index].key
+
+        pending.forEach(index => {
+            if (!(seenKey(index) in shownAt.current)) shownAt.current[seenKey(index)] = now
+        })
+
+        const isReady = index => imageLoaded[index] === true || imageLoaded[index] === 'failed' || cardImageUrls(draftPool[index]).length === 0
+
+        // all together: once every image is in (or the wait limit is up) all the pending cards turn over at the same moment
+        if (animateTogether && speed !== 0) {
+            const timer = setTimeout(() => dispatch(revealDraftPoolCards(pending)), pending.every(isReady) ? FIRST_CARD_DELAY / speed : IMAGE_WAIT_LIMIT)
+
+            return () => clearTimeout(timer)
+        }
+
+        const index = pending[0]
+
+        const wait = speed === 0 ? 0
+            : !isReady(index) ? IMAGE_WAIT_LIMIT
+            : Math.max(0,
+                lastReveal.current + CARD_FLIP_STAGGER / speed - now,
+                shownAt.current[seenKey(index)] + FIRST_CARD_DELAY / speed - now)
+
+        const timer = setTimeout(() => {
+            lastReveal.current = Date.now()
+            delete shownAt.current[seenKey(index)]
+            dispatch(revealDraftPoolCard(index))
+        }, wait)
+
+        return () => clearTimeout(timer)
+    }, [draftPool, imageLoaded, speed, animateTogether, dispatch])
+
+    const allRevealed = draftPool.length > 0 && draftPool.every(card => card.revealed)
+    const poolSignature = draftPool.map(card => card.key).join('|')
+
+    useEffect(() => {
+        if (!allRevealed) return
+
+        setAnnouncement(t('{count} card to choose from: {names}|{count} cards to choose from: {names}', { count: draftPool.length, names: draftPool.map(card => cardLabel(card)).join(', ') }))
+        // only when the cards change, not each time the pool object does
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [allRevealed, poolSignature])
+
+    // Enter drafts the selected card, Escape clears the selection. Focused buttons already handle Enter natively.
+    useEffect(() => {
+        function handleKeyDown(event) {
+            const tag = event.target.tagName
+            const hasSelection = selectedDraftCard !== null && selectedDraftCard !== undefined
+
+            if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+
+            if (event.key === 'Escape' && hasSelection) {
+                dispatch(selectDraftCard(null))
+            }
+            else if (event.key === 'Enter' && hasSelection && requireConfirmation && !insufficientOptions && tag !== 'BUTTON' && tag !== 'A') {
+                event.preventDefault()
+                draftCardWithIndex({index: selectedDraftCard})
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    })
 
     function expandPanelHover(event) {
         const panelIndex = parseInt(event.currentTarget.id.substring(13))
@@ -107,6 +232,40 @@ function DraftPanel(props) {
         dispatch(changeDraftPoolProperty('shrewdAnalysis', panelIndex, event.target.checked))
     }
 
+    // redraws one card of the pool; its image state starts over
+    function handleRedraw(index) {
+        const reset = previous => {
+            const copy = [...previous]
+            delete copy[index]
+            return copy
+        }
+
+        doCardOverlay(null)
+        setImageLoaded(reset)
+        setImageSource(reset)
+        dispatch(redrawDraftCard(index))
+    }
+
+    // this address failed: try the next source, or give up when there is none left
+    function imageDidFail(index, sourceCount) {
+        const next = (imageSource[index] || 0) + 1
+
+        if (next < sourceCount) {
+            setImageSource(previous => {
+                const copy = [...previous]
+                copy[index] = next
+                return copy
+            })
+        }
+        else {
+            setImageLoaded(previous => {
+                const copy = [...previous]
+                copy[index] = 'failed'
+                return copy
+            })
+        }
+    }
+
     function imageDidLoad(props)
     {
         const { index } = props;
@@ -119,8 +278,6 @@ function DraftPanel(props) {
     }
 
     let images = []
-    let modifierPanels = []
-    let draftDivs = []
 
     let factionCode = ''
 
@@ -147,8 +304,8 @@ function DraftPanel(props) {
                         if (m !== 0) {
                             modifierList.push(
                                 <div key={j}>
-                                    <label className="modifierleft">Upgrade:</label>
-                                    <span className="modifierright"><b>{valueText} XP</b></span>
+                                    <label className="modifierleft">{t('Upgrade:')}</label>
+                                    <span className="modifierright"><b>{t('{xp} XP', { xp: valueText })}</b></span>
                                 </div>
                             )
                         }
@@ -158,12 +315,12 @@ function DraftPanel(props) {
                     if (item.options.length > 1) {
                         var upgradeList = item.options.map((option, index) => {
                             return <option value={index.toString()} key={index.toString()}>     
-                                {option.text}
+                                {option.label ? t(option.label, option.labelVars) : option.text}
                                 </option>
                         })
 
                         upgradeSelector = <div className="full-width">
-                            <p className="upgrade-header"><b>Upgrade Options</b></p>
+                            <p className="upgrade-header"><b>{t('Upgrade Options')}</b></p>
                             <select className="upgradeselect" name={"SelectedUpgrade" + i} value={draftPool[i].selectedUpgrade} onChange={handleUpgradeChange}>
                                 {upgradeList}
                             </select>
@@ -175,14 +332,14 @@ function DraftPanel(props) {
                     modifierList.push(
                         <div key={j}>
                             <label className="modifierleft">{item.name}:</label>
-                            <span className="modifierright"><b>{valueText} XP</b></span>
+                            <span className="modifierright"><b>{t('{xp} XP', { xp: valueText })}</b></span>
                         </div>
                     )
                 }
                 else if (item.research && item.shrewd) {
                     researchSelector = <div className="full-width">
-                        <p className="upgrade-header"><b>Upgrade Options</b></p>
-                        <label className="modifierleft">Shrewd Analysis:</label>
+                        <p className="upgrade-header"><b>{t('Upgrade Options')}</b></p>
+                        <label className="modifierleft">{t('Shrewd Analysis:')}</label>
                         <span className="modifierright">
                             <input type="checkbox" className="modifiercheckbox" checked={draftPool[i].shrewdAnalysis ? true : false} name={"shrewdAnalysis" + i} onChange={handleCheckbox}/>
                         </span>
@@ -194,7 +351,7 @@ function DraftPanel(props) {
                 modifierPanel = <div className="draft-modifiers-expanded" id={"ModifierPanel"+(i+1)} key={i+1000} style={{ backgroundColor: classColor }} onClick={expandPanelClick} onMouseEnter={expandPanelHover} onMouseLeave={minimizePanelHover}>
                     <div className="modifier-panel-div">
                         {modifierList.length > 0 ?
-                            <p className="upgrade-header"><b>Cost Modifiers</b></p>
+                            <p className="upgrade-header"><b>{t('Cost Modifiers')}</b></p>
                             : null}
                         {modifierList}
                         {upgradeSelector}
@@ -234,7 +391,7 @@ function DraftPanel(props) {
                 modifierPanel = <div className="draft-modifiers-minimized" id={"ModifierPanel"+(i+1)} style={{ backgroundColor: classColor }} key={i+1000} onClick={expandPanelClick} onMouseEnter={expandPanelHover} onMouseLeave={minimizePanelHover}>
                     <div className="modifier-panel-div">
                         <p className="minimized-modifier-cost" style={{padding: '0px'}}><b>{draftPool[i].xpcost}</b></p>
-                        <p className="minimized-modifier-xp"><b>XP</b></p>
+                        <p className="minimized-modifier-xp"><b>{t('XP')}</b></p>
                     </div>
                 </div>
 
@@ -242,76 +399,53 @@ function DraftPanel(props) {
             }
         }
 
-        var draftButton;
+        const isSelected = requireConfirmation && selectedDraftCard === i
+        // ArkhamDB's image first, then arkham.build's
+        const sources = cardImageUrls(draftPool[i])
+        const hasImage = sources.length > 0 && imageLoaded[i] !== 'failed'
+        const isLoaded = imageLoaded[i] === true
+        const imageSrc = sources[imageSource[i] || 0]
+        const levelStr = draftPool[i].xp && draftPool[i].xp > 0 ? <span className='xpDots'>{' ' + '●'.repeat(draftPool[i].xp)}</span> : null
 
-        if (requireConfirmation) {
-            draftButton = (selectedDraftCard !== i) ?
-                <button className='button-rect button-green draft-card-button' onClick={() => { handleSelect(i) }}>Select</button> :
-                <button className='button-rect button-green draft-card-selected-button' onClick={() => { handleDraft(i) }}>Draft</button>
-        }
-        else {
-            draftButton = <button className='button-rect button-green draft-card-button' onClick={() => { handleDraft(i) }}>Draft</button>
-        }
-        
-        var borderColor = (requireConfirmation && selectedDraftCard === i) ? 'black' : 'transparent'
+        const cardFace = isLoaded ?
+            <img className="draft-image" src={imageSrc} alt="" /> :
+            <span className="draft-card-loading" style={{backgroundColor: classColor, display: 'block'}}>
+                <span className="cardName" style={{display: 'block', fontSize: '1.17em', fontWeight: 'bold', padding: '10px 10px 0 10px'}}>{cardName(draftPool[i])}</span>
+                <span className="cardXP" style={{display: 'block'}}>{levelStr}</span>
+                <span className="imageStatus">{hasImage ? t('Image loading...') : t('Image not available')}</span>
+                {hasImage ? <img style={{visibility: "hidden", position: "absolute"}} src={imageSrc} alt="" onLoad={() => imageDidLoad({index: i})} onError={() => imageDidFail(i, sources.length)} /> : null}
+            </span>
 
-        if (draftPool[i].imagesrc === undefined) {
-            const levelStr = draftPool[i].xp && draftPool[i].xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(draftPool[i].xp)}</span> : null
-            images.push(
-                <div className="draft-card-loading" key={i} style={{backgroundColor: classColor, border: '1px solid ' + borderColor}}>
-                    <h3 className="cardName">{draftPool[i].name}</h3>
-                    <span className="cardXP">{levelStr}</span>
-                    <span className="imageStatus">Image not available</span>
-                    <p className="ADBlink"><a href={draftPool[i].url} target="_blank" rel="noreferrer noopener">View on ArkhamDB</a></p>
-                    {draftButton}
-                    {modifierPanel}
+        const faceUp = !!draftPool[i].revealed
+
+        images.push(
+            <div className={'draft-card-wrap' + (isSelected ? ' selected' : '') + (faceUp ? '' : ' facedown')} key={i}
+                onPointerEnter={event => { if (faceUp && hasImage) doCardOverlay(draftPool[i], event) }}
+                onPointerLeave={() => doCardOverlay(null)}>
+                <div className="flip">
+                    <div className="flip-face flip-back" aria-hidden="true">
+                        <img src={PLAYER_CARD_BACK} alt="" onError={event => { event.target.style.display = 'none' }} />
+                    </div>
+                    <div className="flip-face flip-front">
+                <button type="button" className="draft-card-hit" disabled={!faceUp} aria-label={cardLabel(draftPool[i])}
+                    aria-pressed={requireConfirmation ? isSelected : undefined} onClick={() => handleCardClick(i)}
+                    onFocus={event => { if (hasImage && event.target.matches && event.target.matches(':focus-visible')) doCardOverlay(draftPool[i], event) }}
+                    onBlur={() => doCardOverlay(null)}
+                    onKeyDown={event => { if (event.key === 'Enter' && event.repeat) event.preventDefault() }}>
+                    {cardFace}
+                </button>
+                    </div>
                 </div>
-            )
-        }
-        else {
-            let imageSrc = "https://www.arkhamdb.com" + draftPool[i].imagesrc
-            if (imageLoaded[i]) {
-                    images.push(selectedDraftCard === i ?
-                    <div className="draft-card-selected" style={{ backgroundColor: classColor }} key={i}>
-                        <img className="draft-image-selected" src={imageSrc} alt={draftPool[i].name} onClick={handleClick} />
-                        {draftButton}
-                        {modifierPanel}
-                    </div> :
-                    <div className="draft-card" key={i} style={{zIndex: '1', border: '1px solid ' + borderColor}}>
-                        <img className="draft-image" src={imageSrc} alt={draftPool[i].name} onClick={handleClick} />
-                        {modifierPanel}
-                    </div>
-                )            
-            }
-            else {
-                const levelStr = draftPool[i].xp && draftPool[i].xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(draftPool[i].xp)}</span> : null
-                images.push(
-                    <div className="draft-card-loading" key={i} style={{backgroundColor: classColor}}>
-                        <h3 className="cardName">{draftPool[i].name}</h3>
-                        <p className="cardXP">{levelStr}</p>
-                        <p className="imageStatus">Image loading...</p>
-                        <p className="ADBlink"><a href={draftPool[i].url} target="_blank" rel="noreferrer noopener">View on ArkhamDB</a></p>
-                        {draftButton}
-                        <img className="draft-image" style={{visibility: "hidden", position: "absolute"}} src={imageSrc} alt={draftPool[i].name} onLoad={event => imageDidLoad({index: i, event: event})} />
-                        {modifierPanel}
-                    </div>
-                )
-            }
-        }
+                {draftType === 'draft' ?
+                    <button type="button" className="btn btn-secondary draft-card-redraw" aria-label={t('Redraw {name}', { name: cardName(draftPool[i]) })} title={t('Redraw')} onClick={() => handleRedraw(i)}><RedrawIcon /></button>
+                    : null}
+                {!isLoaded ? <p className="draft-card-link"><a href={draftPool[i].url} target="_blank" rel="noreferrer noopener">{t('View on ArkhamDB')}</a></p> : null}
+                {modifierPanel}
+            </div>
+        )
 
-        modifierPanels.push(modifierPanel)
     }
 
-    let index = 0
-    while(index < images.length) {
-        for (let i = 0; i < 3; i++) {
-            if (images.length > index+i) draftDivs.push(images[index+i])
-            else draftDivs.push(<div key={i+100}></div>)
-        }
-
-        index += 3
-    }
-    
     const draftTarget = calculateDraftTarget({
         draftTab: draftTab,
         draftType: draftType,
@@ -324,63 +458,66 @@ function DraftPanel(props) {
         level0Requirements: level0Requirements
     })
 
-    const progress = isUpgrade(phase) ? 
-        <p className="draft-progress"><b>XP: </b>{draftProgress - upgradeProgress}/{draftTarget - upgradeProgress}</p> :
-        <p className="draft-progress"><b>Cards: </b>{draftProgress}/{draftTarget}</p>
+    const progressUnit = isUpgrade(phase) ? t('XP') : t('cards')
+    const progressValue = isUpgrade(phase) ? draftProgress - upgradeProgress : draftProgress
+    const progressTarget = isUpgrade(phase) ? draftTarget - upgradeProgress : draftTarget
 
-    var phaseText = null
-    var phaseSubtext = null
-
-    switch (phase) {
-        case DraftPhases.BuildPhase1:
-        case DraftPhases.BuildPhase2:
-        case DraftPhases.BuildPhase3:
-            phaseText = 'Deck creation'
-            if (draftType === 'phaseDraft') phaseSubtext = ' - Stage ' + phase
-            break
-        case DraftPhases.BuildUpgradePhase:
-            phaseText = 'Deck creation upgrades'
-            break
-        case DraftPhases.UpgradeLevel0SwapPhase:
-            phaseText = 'Level 0 Swaps/Replacements'
-            break
-        case DraftPhases.UpgradeLevel0AddPhase:
-            phaseText = 'Level 0 Additions - ' + currentLevel0Name
-            break
-        case DraftPhases.UpgradePhase:
-            phaseText = 'Deck upgrades'
-            break
-        case DraftPhases.VersatilePhase:
-            phaseText = 'Versatile, any class'
-            break
-        default:
-            phaseText = ''
-            break
+    // one segment per card (or per XP), capped so very large targets still read as a bar
+    const segmentCount = progressTarget > 0 ? Math.min(progressTarget, 60) : 0
+    const filledSegments = progressTarget > 0 ? Math.round(Math.min(Math.max(progressValue, 0), progressTarget) / progressTarget * segmentCount) : 0
+    const segments = []
+    for (let i = 0; i < segmentCount; i++) {
+        segments.push(<span className={'segment' + (i < filledSegments ? ' filled' : '')} key={i}></span>)
     }
 
-    const button = (!isLevel0Build(phase) && !(isUpgrade(phase) && !deckLoaded)) || insufficientOptions ? 
-        <button className='button-rect button-green' onClick={doneClick}>Done</button> : null
+    const showDone = (!isLevel0Build(phase) && !(isUpgrade(phase) && !deckLoaded)) || insufficientOptions
 
-    const optionsWarning = insufficientOptions ? <h3 style={{marginTop: '-10px'}}>There are no remaining legal draft options</h3> : null
+    const optionsWarning = insufficientOptions ? <p className="notice notice-error" role="alert">{t('There are no remaining legal draft options')}</p> : null
 
-    const instructions = insufficientOptions ? null : 
-        <p style={{marginTop: '8px'}}>Click image to draft card</p>
-    const instructionsBox = insufficientOptions || !displayedBox ? null : 
-        <p>Hover over experience modifier box to display details, click to hold open</p>
+    const instructionsBox = insufficientOptions || !displayedBox ? null :
+        <p className="notice">{t('Hover over the experience modifier box to display details, click to hold it open')}</p>
+
+    const hasSelection = requireConfirmation && selectedDraftCard !== null && selectedDraftCard !== undefined && draftPool[selectedDraftCard]
+
+    let confirmText = requireConfirmation ? t('Select a card to draft it') : t('Click a card to draft it')
+    if (hasSelection) confirmText = t('Draft {name}?', { name: cardName(draftPool[selectedDraftCard]) })
+    if (insufficientOptions) confirmText = t('No more cards can be drafted here')
+
+    const confirmBar =
+        <div className="confirm-bar">
+            <div className="bar-progress">
+                <div className="segments" role="progressbar" aria-valuemin="0" aria-valuemax={progressTarget} aria-valuenow={progressValue}
+                    aria-label={isUpgrade(phase) ? t('Drafted XP') : t('Drafted cards')}>
+                    {segments}
+                </div>
+                <div className="bar-count"><strong>{progressValue}</strong> / {progressTarget} {progressUnit}</div>
+            </div>
+            <div className="bar-row">
+                <div className="confirm-bar-text" aria-live="polite">
+                    {confirmText}
+                    {!insufficientOptions ?
+                        <span className="confirm-bar-hint">{requireConfirmation ? t('Click the selected card again or press Enter. Esc clears the selection.') : t('Picks are added right away.')}</span>
+                        : null}
+                </div>
+                <div className="confirm-bar-actions">
+                    {requireConfirmation && !insufficientOptions ?
+                        <button type="button" className="btn btn-primary" onClick={() => { if (hasSelection) confirmSelected() }} aria-disabled={!hasSelection}>{t('Draft this card')}</button>
+                        : null}
+                    {showDone ? <button type="button" className="btn btn-secondary" onClick={doneClick}>{t('Done')}</button> : null}
+                </div>
+            </div>
+        </div>
 
     return (
-        <div className="settingsDiv">
-            <h3 style={{marginBottom: '-12px'}}>Draft</h3>
-            <h5 style={{marginBottom: '10px'}}>{phaseText}{phaseSubtext}</h5>
-            {progress}
-            <div className='draft-container'>
-                {draftDivs}
-            </div>
+        <>
             {optionsWarning}
-            {instructions}
             {instructionsBox}
-            {button}
-        </div>
+            <div className='draft-container' style={{ '--flip-duration': speed === 0 ? '0s' : (0.6 / speed) + 's', ...(cardsPerRow > 0 ? { gridTemplateColumns: 'repeat(' + cardsPerRow + ', minmax(0, 1fr))' } : {}) }}>
+                {images}
+            </div>
+            {confirmBar}
+            <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
+        </>
     )
 }
 

@@ -73,7 +73,7 @@ import DraftPhases, { isLevel0Build, isLevel0Upgrade, isUpgrade } from './DraftP
 // block cards that say only when building deck
 function FilterCards(props) {
     const { cardData, investigatorData, parallel, secondaryClass, classChoices, traitChoice, mergedList, phase, filteredResearch, researchSelection, excludeNormalVersatile, deckSize, 
-        draftUseLimited, draftProgress, draftXP, draftWeighting, deckModifiers, level0Swaps, level0Adds, collection } = props
+        draftUseLimited, draftProgress, draftXP, draftWeighting, deckModifiers, level0Swaps, level0Adds, collection, bannedCards } = props
 
 //console.log('FILTER')
 //console.log(draftUseLimited)
@@ -183,6 +183,9 @@ function FilterCards(props) {
         }
 
         if (!collection[card.pack_code]) return false
+
+        // the ban list: these cards never show up, whatever their level
+        if (bannedCards && bannedCards.includes(card.name)) return false
 
 //        if (deckList && filteredResearch[card.name]) {
         if (phase !== DraftPhases.AllCards && filteredResearch[card.name]) {
@@ -412,6 +415,7 @@ function FilterCards(props) {
             text: card.text,
             tags: card.tags,
             xp: card.xp,
+            cost: card.cost,
             permanent: card.permanent,
             exceptional: card.exceptional,
             myriad: card.myriad,

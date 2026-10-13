@@ -6,8 +6,11 @@ import { startDraft } from '../features/draft/draftSlice'
 import BuildChaosSettings from './BuildChaosSettings'
 import BuildDraftSettings from './BuildDraftSettings'
 import DraftPhases from '../data/DraftPhases'
+import { useT } from '../i18n'
 
 function Level0UpgradePanel(props) {
+    const t = useT()
+
     const level0Swaps = useSelector(state => state.draft.level0Swaps)
     const level0Adds = useSelector(state => state.draft.level0Adds)
     const level0Requirements = useSelector(state => state.draft.level0Requirements)
@@ -29,7 +32,7 @@ function Level0UpgradePanel(props) {
 
     if (draftTotal < 1) return null
 
-    let headerText = 'Cards:'
+    let headerText = t('Cards:')
     level0List = level0List.map( (item, index) => {
         let row = null
         if (item.count - item.drafted > 0) {
@@ -76,24 +79,22 @@ function Level0UpgradePanel(props) {
         />
     }
 
-    const button = <button className="button-rect button-green" onClick={handleStartDraft}>Draft</button>
+    const button = <button className="button-rect button-green" onClick={handleStartDraft}>{t('Draft')}</button>
 
     return (
         <div className='settingsDiv'>
-            <h3>Level 0 Draft Options</h3>
-            <h5>Adaptable, Exile replacements, etc.</h5>
-            <h2 className="draft-quantity">{draftTotal} card{draftTotal > 1 ? 's' : ''}</h2>
+            <h3>{t('Level 0 Draft Options')}</h3>
+            <h5>{t('Adaptable, Exile replacements, etc.')}</h5>
+            <h2 className="draft-quantity">{t('{count} card|{count} cards', { count: draftTotal })}</h2>
             {draftSettings}
             {level0List}
             { requirementsList.length > 0 ?
                 <div>
-                    <h3 style={{marginTop: '5px', marginBottom: '-5px' }}>Missing Requirements</h3>
+                    <h3 style={{marginTop: '5px', marginBottom: '-5px' }}>{t('Missing Requirements')}</h3>
                         {requirementsList}
                 </div> : null }
             <div className="description">
-                You may draft any allowed level 0 cards (for example Adaptable or Exiled card replacements, 
-                or those required by adding Versatile or Ancestral Knowledge) both before and after the main
-                upgrade draft.  
+                {t('You may draft any allowed level 0 cards (for example Adaptable or Exiled card replacements, or those required by adding Versatile or Ancestral Knowledge) both before and after the main upgrade draft.')}
             </div>
             {button}
         </div>

@@ -1,7 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit'
 
-import { reset, beginDraft, endDraft, changeSetting, calculateFilteredCount } from '../settings/settingsSlice'
+import { reset, beginDraft, endDraft, changeSetting, calculateFilteredCount, setUpgradeAfterLevel0 } from '../settings/settingsSlice'
 import { mergeTaboo } from '../data/dataSlice'
+import { restoreDraftState } from '../draftState'
 
 import { extraDeckRequirements } from '../../data/CardFilter'
 import { costWithModifiers, fillDraft, isCardLegalBurnOption } from '../../draft/DrawDraft'
@@ -55,6 +56,18 @@ const draftSlice = createSlice({
         },
         clearDraftPool(state, action) {
             state.draftPool = []
+        },
+        // a card of the pool has been turned face up (new cards of the pool start face down)
+        revealDraftPoolCard(state, action) {
+            if (state.draftPool[action.payload]) state.draftPool[action.payload].revealed = true
+        },
+        revealDraftPoolCards(state, action) {
+            action.payload.forEach(index => {
+                if (state.draftPool[index]) state.draftPool[index].revealed = true
+            })
+        },
+        replaceDraftPoolCard(state, action) {
+            state.draftPool[action.payload.index] = action.payload.card
         },
         addToCardList(state, action) {
             let card = action.payload.card
@@ -301,6 +314,8 @@ const draftSlice = createSlice({
         builder.addCase(reset, (state, action) => {
             return { ...initialState }
         })
+        // back to a moment of the draft (undo, or a draft saved earlier)
+        .addCase(restoreDraftState, (state, action) => action.payload.draft)
         .addCase(changeSetting, (state, action) => {
             if (action.payload.setting === 'ExileCheckbox') {
                 let inc = 1
@@ -571,6 +586,12 @@ function advanceDraft(doneClicked) {
             }
 */
         }
+
+        // level 0 cards were drafted first by choice: the upgrade draft follows
+        if (state.draft.phase === DraftPhases.UpgradeLevel0AddPhase && state.settings.upgradeAfterLevel0) {
+            dispatch(setUpgradeAfterLevel0(false))
+            dispatch(startDraft(DraftPhases.UpgradePhase))
+        }
     }
 }
 
@@ -775,7 +796,7 @@ function updateUpgradeOption(index, value) {
     }
 }
 
-export const { changePhase, addToDraftPool, clearDraftPool, addToCardList, clearCardList, addToRemovedList,
+export const { changePhase, addToDraftPool, clearDraftPool, replaceDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, addToCardList, clearCardList, addToRemovedList,
     removeFromRemovedList, setDeckList, changeDeckName, setInsufficientOptions, changeShowDeckOptions,
     changeProgress, changeUpgradeProgress, changeIndex, addToBuildXPList, clearBuildXPList, changeLevel0, addLevel0,
     draftVersatile, draftLevel0, setLevel0Requirements, updateCurrentLevel0Name, setDeckModifiers, changeUpgradeOption, selectDraftCard, changeLimit, expandModifiers, minimizeModifiers, holdModifiers, changeDraftPoolProperty } = draftSlice.actions

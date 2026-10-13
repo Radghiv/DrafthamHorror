@@ -1,0 +1,44 @@
+import React from 'react'
+import { useSelector } from 'react-redux'
+
+import useCardOverlay from './OverlayImage'
+import useCardName from './useCardName'
+import CardImage from './CardImage'
+import { requiredCards } from '../data/RequiredCards'
+import { useT } from '../i18n'
+
+// The cards the deckbuilding instructions of an investigator put in the deck, as small pictures. Hovering one shows the big preview.
+// The deck size is only known for the investigator being drafted, so the quantity of a few cards is the default one for the others.
+function RequiredThumbs(props) {
+    const { investigator } = props
+
+    const t = useT()
+
+    const cardData = useSelector(state => state.data.cardData)
+    const selectedInvestigator = useSelector(state => state.settings.investigatorData)
+    const selectedDeckSize = useSelector(state => state.settings.deckSize)
+
+    const doCardOverlay = useCardOverlay()
+    const { cardName } = useCardName()
+
+    if (!cardData || !investigator) return null
+
+    const deckSize = selectedInvestigator && selectedInvestigator.code === investigator.code ? selectedDeckSize : null
+    const required = requiredCards(investigator, cardData, deckSize)
+
+    if (required.cards.length === 0) return null
+
+    return (
+        <span className="required-thumbs" aria-label={t('Cards that always come with this investigator')}>
+            {required.cards.map(({ card, count }) => (
+                <span className="required-thumb" key={card.code} onPointerEnter={event => doCardOverlay(card, event)} onPointerLeave={() => doCardOverlay(null)}>
+                    <CardImage card={card} className="required-thumb-image" alt={cardName(card)} fallback={<span className="required-thumb-missing">{cardName(card)}</span>} />
+                    {count > 1 ? <span className="required-thumb-count">×{count}</span> : null}
+                </span>
+            ))}
+            {required.note ? <span className="required-thumbs-note">{required.note}</span> : null}
+        </span>
+    )
+}
+
+export default RequiredThumbs

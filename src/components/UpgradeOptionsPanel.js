@@ -3,12 +3,13 @@ import { useSelector, useDispatch } from 'react-redux'
 
 import { startDraft } from '../features/draft/draftSlice'
 
-import UpgradeChaosSettings from './UpgradeChaosSettings'
-import UpgradeDraftSettings from './UpgradeDraftSettings'
 import DraftPhases from '../data/DraftPhases'
+import { useT } from '../i18n'
 
+// Shown when the upgrade draft was stopped early with Done: the draft settings were chosen in the setup, so only the
+// remaining experience and a way back into the draft are needed here.
 function UpgradeOptionsPanel(props) {
-    const draftType = useSelector(state => state.settings.draftType)
+    const t = useT()
 
     const draftXP = useSelector(state => state.settings.draftXP)
     const upgradeProgress = useSelector(state => state.draft.upgradeProgress)
@@ -19,36 +20,14 @@ function UpgradeOptionsPanel(props) {
         dispatch(startDraft(DraftPhases.UpgradePhase))
     }
 
-    let draftSettings = null
-    let draftDescription = null
-
-    if (draftType === 'chaos') {
-        draftSettings = <UpgradeChaosSettings
-            phase={DraftPhases.UpgradePhase}
-        />
-        draftDescription = <div className="description">
-            Cards will be randomly chosen one by one from all upgraded cards available to the 
-            chosen investigator until the entered number of experience points have been spent.
-        </div>
-    }
-    else if (draftType === 'draft') {
-        draftSettings = <UpgradeDraftSettings
-            phase={DraftPhases.UpgradePhase}
-        />
-        draftDescription = <div className="description">
-            Select cards one by one from a random display of upgrade cards available to the 
-            chosen investigator.  Each card will be selected from a number of cards 
-            determined by the "Cards to select from" option.
-        </div>
-    }
-
     return (
         <div className="settingsDiv">
-            <h3>Upgrade Draft Options</h3>
-            <h2 className="draft-quantity">{draftXP - upgradeProgress} XP</h2>
-            {draftSettings}
-            {draftDescription}
-            <button className='button-rect button-green' onClick={draftClick}>Draft</button>
+            <h3>{t('Upgrade draft paused')}</h3>
+            <h2 className="draft-quantity">{t('{xp} XP left', { xp: draftXP - upgradeProgress })}</h2>
+            <div className="description">
+                {t('You may draft level 0 cards below before going on, then resume the upgrade draft with the settings you chose in the setup.')}
+            </div>
+            <button className='button-rect button-green' onClick={draftClick}>{t('Resume draft')}</button>
         </div>
         )
 }

@@ -2,8 +2,10 @@ import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { changeSetting } from '../features/settings/settingsSlice'
+import { useT } from '../i18n'
 
 function PhaseSettings(props) {
+    const t = useT()
     const settings = useSelector(state => state.settings)
     const dispatch = useDispatch()
 
@@ -15,23 +17,23 @@ function PhaseSettings(props) {
 
     return (
          <div className="draft-phase">
-            <h4 style={{marginBottom: '5px'}}>Stage {props.phase}</h4>
+            <h4 style={{marginBottom: '5px'}}>{t('Stage {number}', { number: props.phase })}</h4>
             <div className="fblist">
-                <label className="fbphasesettingleft">Cards to select from:</label>
+                <label className="fbphasesettingleft">{t('Cards to select from:')}</label>
                 <span className="fbphasesettingslider">
                     <input type="range" min="1" max="15" value={settings.draftCount[phase-1]} name='DraftCount' onChange={handleChange}/>
                 </span>
                 <span className="fbphasesettingslidervalue">{settings.draftCount[phase-1]}</span>
             </div>
             <div className="fblist">
-                <label className="fbphasesettingleft">Cards selected in this stage: </label>
+                <label className="fbphasesettingleft">{t('Cards selected in this stage:')}{' '}</label>
                 <span className='fbphasesettingslider'>
                     <input type="range" min="0" max={settings.deckSize} value={settings.draftCards[phase-1]} name='DraftCards' onChange={handleChange}/>
                 </span>
                 <span className="fbphasesettingslidervalue">{settings.draftCards[phase-1]}</span>
             </div>
             <div className="fblist">
-                <label className="fbphasesettingleft">Include cards with limited deck slots:</label>
+                <label className="fbphasesettingleft">{t('Include cards with limited deck slots:')}</label>
                 <span className='fbphasesettingcenter'>
                     <input type="checkbox" checked={settings.draftUseLimited[phase-1]} name='DraftUseLimited' onChange={handleChange}/>
                 </span>

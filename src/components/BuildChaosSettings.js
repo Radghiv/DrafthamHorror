@@ -2,8 +2,11 @@ import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { changeSetting } from '../features/settings/settingsSlice'
+import { isDraftTypeEnabled } from '../data/DraftModes'
+import { useT } from '../i18n'
 
 function BuildChaosSettings(props) {
+    const t = useT()
     const { allowPhased } = props
 
     const draftType = useSelector(state => state.settings.draftType)
@@ -15,23 +18,21 @@ function BuildChaosSettings(props) {
         dispatch(changeSetting(event.target.name, event.target.value))
     }
 
-    const myriadText = myriadCount === 1 ? 'card' : 'cards'
-
     return (
         <div>
             <div className="fbsetting">
-                <label className="fbdraftsettingleft">Type:</label>
+                <label className="fbdraftsettingleft">{t('Type:')}</label>
                 <span className="fbdraftsettingcenter">
                     <select className="fbdraftsettingselect" name="DraftType" value={draftType} onChange={handleChange}>
-                        <option value="chaos">Standard chaos</option>
-                        <option value="draft">Simple draft</option>
-                        {allowPhased === 'true' ? <option value="phaseDraft">Draft in stages</option> : null}
+                        {isDraftTypeEnabled('chaos') ? <option value="chaos">{t('Standard chaos')}</option> : null}
+                        {isDraftTypeEnabled('draft') ? <option value="draft">{t('Simple draft')}</option> : null}
+                        {allowPhased === 'true' && isDraftTypeEnabled('phaseDraft') ? <option value="phaseDraft">{t('Draft in stages')}</option> : null}
                     </select>
                 </span>
                 <span className="fbdraftsettingright"></span>
             </div>
             <div className="fbsetting">
-                <label className="fbdraftsettingleft">Drafting myriad adds:</label>
+                <label className="fbdraftsettingleft">{t('Drafting myriad adds:')}</label>
                 <span className="fbdraftsettingcenter">
                     <select className="fbdraftsettingselect" name="MyriadCount" value={myriadCount} onChange={handleChange}>
                         <option value="1">1</option>
@@ -39,7 +40,7 @@ function BuildChaosSettings(props) {
                         <option value="3">3</option>
                     </select>
                 </span>
-                <span className="fbdraftsettingright"> {myriadText}</span>
+                <span className="fbdraftsettingright">{' '}{t('card|cards', { count: myriadCount })}</span>
             </div>
         </div>
     )

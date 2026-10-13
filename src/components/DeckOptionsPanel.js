@@ -5,9 +5,24 @@ import { changeSetting } from '../features/settings/settingsSlice'
 import { updateExileRemoval, calculateNeededExileCheckboxes } from '../features/draft/draftSlice'
 
 import { costWithTaboo, isCardLegalBurnOption } from '../draft/DrawDraft'
+import { pendingLevel0Count } from '../draft/Level0'
+import DraftPhases from '../data/DraftPhases'
 import ResearchLogs from '../data/ResearchLogs'
+import useCardName from './useCardName'
+import { useT, msg } from '../i18n'
 
+// the names of the classes that can be chosen, by their code
+const factionNames = {
+    guardian: msg('Guardian'),
+    seeker: msg('Seeker'),
+    rogue: msg('Rogue'),
+    mystic: msg('Mystic'),
+    survivor: msg('Survivor')
+}
+
+// Options that depend on the cards of the deck being upgraded; shown in the Draft Rules step once a deck is loaded
 function DeckOptionsPanel(props) {
+    const t = useT()
 
     const deckList = useSelector(state => state.draft.deckList)
     const burnCards = useSelector(state => state.settings.burnCards)
@@ -17,11 +32,15 @@ function DeckOptionsPanel(props) {
     const filteredResearch = useSelector(state => state.settings.filteredResearch)
     const removedCards = useSelector(state => state.settings.removedCards)
     const showDeckOptions = useSelector(state => state.draft.showDeckOptions)
-    const draftXP = useSelector(state => state.settings.draftXP)
     const classChoice1Value = useSelector(state => state.settings.classChoices['faction_1'])
     const investigatorData = useSelector(state => state.settings.investigatorData)
+    const draftOrder = useSelector(state => state.settings.draftOrder)
+    const draftCount = useSelector(state => state.settings.draftCount)
+    const level0Swaps = useSelector(state => state.draft.level0Swaps)
+    const level0Adds = useSelector(state => state.draft.level0Adds)
 
     const dispatch = useDispatch()
+    const { cardName } = useCardName()
 
     function handleChange(event) {
         dispatch(changeSetting(event.target.name, event.target.value))
@@ -50,7 +69,7 @@ function DeckOptionsPanel(props) {
 
         dispatch(changeSetting(event.target.name, event.target.value))
 
-        if (burnChecked) {        
+        if (burnChecked) {
             dispatch(updateExileRemoval(null, false, burnCards[exileIndex-1]))
             dispatch(updateExileRemoval(null, true, event.target.value))
         }
@@ -59,7 +78,7 @@ function DeckOptionsPanel(props) {
     var exileArray = []
     var greenman = 0
     var peltshipment = 0
-    
+
     for (let i = 0; i < deckList.length; i++) {
         if (deckList[i].name === 'Green Man Medallion') greenman += deckList[i].count
         if (deckList[i].name === 'Pelt Shipment') peltshipment += deckList[i].count
@@ -84,194 +103,176 @@ function DeckOptionsPanel(props) {
     const disallowBurn1 = (exileSelection['08076_2'] && burnCards[1] === '08076')
     const disallowBurn2 = (exileSelection['08076_1'] && burnCards[0] === '08076')
 
+    function burnSelect(index, cardIndex) {
+        const options = deckList.map( card => {
+            const legal = isCardLegalBurnOption(card, exileSelection, deckList, burnCards, index)
+
+            return legal ? <option value={card.key} key={card.key}>{card.xp > 0 ? cardName(card) + ' (' + card.xp + ')' : cardName(card)}</option> : null
+        }).filter( item => item !== null).sort( (a, b) => {
+            return (a.props.children > b.props.children ? 1 : a.props.chidren === b.props.children ? 0 : -1)
+        })
+
+        return (
+            <div className="field burn-select">
+                <select name={'BurnCard' + index} value={burnCards[cardIndex]} onChange={handleBurnChange} aria-label={t('Card to burn with copy {index} of Burn After Reading', { index })}>
+                    {options}
+                </select>
+            </div>
+        )
+    }
+
     // and disallow multiple burns if burned a burn
     const exileCheckboxes = exileArray.map( item => {
-        let selectBox1 = null
-        let selectBox2 = null
-
         const checkboxesNeeded = calculateNeededExileCheckboxes(item.key, exileSelection, deckList, burnCards)
+        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots xpExileDots'>{' ' + '●'.repeat(costWithTaboo(item))}</span> : null
 
         if (item.name === 'Burn After Reading') {
-            selectBox1 = checkboxesNeeded > 0 && !disallowBurn1 ? <select className="fbburnselect" name="BurnCard1" value={burnCards[0]} onChange={handleBurnChange}>
-                {deckList.map( card => {
-                    const legal = isCardLegalBurnOption(card, exileSelection, deckList, burnCards, 1)
-
-                    return legal ? <option value={card.key} key={card.key}>{card.xp > 0 ? card.name + ' (' + card.xp + ')' : card.name}</option> : null
-                }).filter( item => item !== null).sort( (a, b) => {
-                    return (a.props.children > b.props.children ? 1 : a.props.chidren === b.props.children ? 0 : -1)
-                })}
-            </select> : null
-
-            selectBox2 = item.count > 1 && !disallowBurn2 && checkboxesNeeded > 1 ? <select className="fbburnselect" name="BurnCard2" value={burnCards[1]} onChange={handleBurnChange}>
-                {deckList.map( card => {
-                    const legal = isCardLegalBurnOption(card, exileSelection, deckList, burnCards, 2)
-
-                    return legal ? <option value={card.key} key={card.key}>{card.xp > 0 ? card.name + ' (' + card.xp + ')' : card.name}</option> : null
-                }).filter( item => item !== null).sort( (a, b) => {
-                    return (a.props.children > b.props.children ? 1 : a.props.chidren === b.props.children ? 0 : -1)
-                })
-            }
-            </select> : null
-        }  
-
-        if (item.name === 'Burn After Reading') {
-            const levelStr = item.xp && item.xp > 0 ? <span className='xpDots xpExileDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-            const bar2 = item.count > 1 && !disallowBurn2 && checkboxesNeeded > 1 ?
-                <div key={item.key + '2'}>
-                    <div className="fbexilesetting">
-                        <span className="fbexileleft">
-                            <input type="checkbox" className="fbexilecheckbox" checked={exileSelection[item.key + '_2'] || false} name={'ExileCheckbox' + item.key + '_2'} onChange={handleCheckbox}/>
-                        </span>
-                        <label className="fbexileright">{item.name}{levelStr}</label>
-                    </div>
-                    <div className="fbburnsetting">
-                        <span className="fbburnleft"></span>
-                        <span className="fbburnright">
-                            {selectBox2}
-                        </span>
-                    </div>
-                </div> :
-                null
+            const showSecond = item.count > 1 && !disallowBurn2 && checkboxesNeeded > 1
 
             return (
-                <div key={item.key + '1'}>
-                    <div className="fbexilesetting">
-                        <span className="fbexileleft">
-                            <input type="checkbox" className="fbexilecheckbox" checked={exileSelection[item.key + '_1'] || false} name={'ExileCheckbox' + item.key + '_1'} onChange={handleCheckbox}/>
-                        </span>
-                        <span className="fbexileright">{item.name}{levelStr}</span>
-                    </div>
-                    <div className="fbburnsetting">
-                        <span className="fbburnleft"></span>
-                        <span className="fbburnright">
-                            {selectBox1}
-                        </span>
-                    </div>
-                    {bar2}
+                <div className="exile-item" key={item.key}>
+                    <label className="check-row">
+                        <input type="checkbox" checked={exileSelection[item.key + '_1'] || false} name={'ExileCheckbox' + item.key + '_1'} onChange={handleCheckbox}/>
+                        <span>{cardName(item)}{levelStr}</span>
+                    </label>
+                    {checkboxesNeeded > 0 && !disallowBurn1 ? burnSelect(1, 0) : null}
+                    {showSecond ?
+                        <>
+                            <label className="check-row">
+                                <input type="checkbox" checked={exileSelection[item.key + '_2'] || false} name={'ExileCheckbox' + item.key + '_2'} onChange={handleCheckbox}/>
+                                <span>{cardName(item)}{levelStr}</span>
+                            </label>
+                            {burnSelect(2, 1)}
+                        </>
+                        : null}
                 </div>
-            )       
+            )
         }
 
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots xpExileDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
+        if (checkboxesNeeded === 0) return null
 
-        return (checkboxesNeeded === 0 ? null :
-            <div className="fbexilesetting" key={item.key}>
-                <span className="fbexileleft">
-                    {item.count > 3 && checkboxesNeeded > 3 ? <input type="checkbox" className="fbexilecheckbox" checked={exileSelection[item.key + '_4'] || false} name={'ExileCheckbox' + item.key + '_4'} onChange={handleCheckbox}/> : null}
-                    {item.count > 2 && checkboxesNeeded > 2 ? <input type="checkbox" className="fbexilecheckbox" checked={exileSelection[item.key + '_3'] || false} name={'ExileCheckbox' + item.key + '_3'} onChange={handleCheckbox}/> : null}
-                    {item.count > 1 && checkboxesNeeded > 1 ? <input type="checkbox" className="fbexilecheckbox" checked={exileSelection[item.key + '_2'] || false} name={'ExileCheckbox' + item.key + '_2'} onChange={handleCheckbox}/> : null}
-                    {checkboxesNeeded > 0 ? <input type="checkbox" className="fbexilecheckbox" checked={exileSelection[item.key + '_1'] || false} name={'ExileCheckbox' + item.key + '_1'} onChange={handleCheckbox}/> : null}
-                </span>
-                <span className="fbexileright">{item.name}{levelStr}</span>
+        const copies = []
+        for (let copy = 1; copy <= Math.min(4, checkboxesNeeded, item.count); copy++) {
+            copies.push(
+                <input type="checkbox" key={copy} checked={exileSelection[item.key + '_' + copy] || false} name={'ExileCheckbox' + item.key + '_' + copy}
+                    aria-label={t('Exile copy {copy} of {name}', { copy, name: cardName(item) })} onChange={handleCheckbox}/>
+            )
+        }
+
+        return (
+            <div className="check-row" key={item.key}>
+                <span className="check-group">{copies}</span>
+                <span>{cardName(item)}{levelStr}</span>
             </div>
-        )  
-    })
+        )
+    }).filter(item => item !== null)
 
     const factionList = ['guardian', 'seeker', 'rogue', 'mystic', 'survivor']
 
     const classChoiceList = factionList.map((item, index) => {
         return <option value={item} key={index}>
-            {item[0].toUpperCase() + item.slice(1)}
+            {t(factionNames[item])}
             </option>
     })
 
-    const suziDiv = investigatorData.name === 'Subject 5U-21' ? <div>
-        <h4 className="section-header">Subject 5U-21 Options</h4>
-        <div className="fbsetting" style={{marginBottom: '15px'}}>
-            <label className="fbdraftsettingleft">Upgrade class:</label>
-            <span className="fbdraftsettingcenter">
-            <select className="fbinvestigatorselect" name="ClassChoice1" value={classChoice1Value} onChange={handleChange}>
-                {classChoiceList}
-            </select>
-            </span>
-            <label className="fbdraftsettingright"></label>
-        </div>
-    </div> : null
-    
-    const researchCheckboxes = researchArray.length > 0 ? researchArray.map( item => {
-        return (
-            <div className="fblist" key={item}>
-                <span className="fbresearchleft">
-                    <input type="checkbox" className="fbresearchcheckbox" checked={researchSelection[filteredResearch[item].baseCode] || false} name={'ResearchCheckbox' + filteredResearch[item].baseCode} onChange={handleChange}/>
-                </span>
-                <span className="fbresearchright">{item} <i>({ResearchLogs[item]})</i></span>
+    const suziDiv = investigatorData.name === 'Subject 5U-21' ?
+        <div className="options-section">
+            <h4>Subject 5U-21</h4>
+            <div className="field">
+                <label htmlFor="upgrade-class">{t('Upgrade class')}</label>
+                <select id="upgrade-class" name="ClassChoice1" value={classChoice1Value} onChange={handleChange}>
+                    {classChoiceList}
+                </select>
             </div>
-        )   
-    }) : null
+        </div> : null
 
-    const exileDiv = exileCheckboxes.length > 0 ? <div>
-        <h4 className="section-header">Exile Options</h4>
-        {exileCheckboxes}
-        <div className="description" style={{marginBottom: '15px'}}>
-            Cards selected here will be added to the removed list and increase the number of level 0 drafts allowed.
-        </div>
-    </div> : null
+    const researchDiv = researchArray.length > 0 ?
+        <div className="options-section">
+            <h4>{t('Researched')}</h4>
+            {researchArray.map( item => (
+                <label className="check-row" key={item}>
+                    <input type="checkbox" checked={researchSelection[filteredResearch[item].baseCode] || false} name={'ResearchCheckbox' + filteredResearch[item].baseCode} onChange={handleChange}/>
+                    <span>{item} <i>({ResearchLogs[item]})</i></span>
+                </label>
+            ))}
+            <p className="field-hint">{t('Upgraded versions of Unidentified or Untranslated assets will only appear in the upgrade draft if the corresponding campaign log entry is selected here.')}</p>
+        </div> : null
 
-    const researchDiv = researchArray.length > 0 ? <div>
-        <h4 className="section-header">Researched</h4>
-        {researchCheckboxes}
-        <div className="description" style={{marginBottom: '15px'}}>
-            Upgraded versions of Unidentified or Untranslated assets will only appear in the upgrade draft 
-            if the corresponding campaign log entry is selected here.
-        </div>
-    </div> : null
-
-    const greenmanDiv = greenman > 0 ? 
-        <div className="fbsetting">
-            <label className="fbdraftsettingleft">Green Man Medallion: </label>
-            <span className="fbdraftsettingcenter">
-                <input className="fbdraftsettingnumber" name="OtherUpgradeGMM" type="number" value={otherSettings['GMM']} min="1" onChange={handleChange}></input>
-            </span>
-            <span className="fbdraftsettingright"> XP discount</span>
+    const exileDiv = exileCheckboxes.length > 0 ?
+        <div className="options-section">
+            <h4>{t('Exile')}</h4>
+            {exileCheckboxes}
+            <p className="field-hint">{t('Cards selected here will be added to the removed list and increase the number of level 0 drafts allowed.')}</p>
         </div> : null
 
     var peltdiscount = (otherSettings['Pelt'][0] ? 1 : 0) + (otherSettings['Pelt'][1] ? 1 : 0)
-    const peltDiv = peltshipment > 0 ? 
-        <div className="fbsetting">
-            <label className="fbdraftsettingleft">Pelt Shipment: </label>
-            <span className="fbdraftsettingcenter">
-                <input type="checkbox" className="fbexilecheckbox" checked={otherSettings['Pelt'][0]} name="OtherUpgradePelt1" onChange={handleCheckbox} />
-                {peltshipment > 1 ? <input type="checkbox" className="fbexilecheckbox" checked={otherSettings['Pelt'][1]} name="OtherUpgradePelt2" onChange={handleCheckbox} /> : null}
-                <span> {peltdiscount} XP discount</span>
-            </span>
-            <span className="fbdraftsettingright"></span>
+
+    const otherDiv = greenman > 0 || peltshipment > 0 ?
+        <div className="options-section">
+            <h4>{t('Other cards')}</h4>
+            {greenman > 0 ?
+                <div className="setting-row">
+                    <label className="setting-label" htmlFor="gmm-discount"><strong>Green Man Medallion</strong><span>{t('XP discount')}</span></label>
+                    <div className="setting-control field">
+                        <input id="gmm-discount" name="OtherUpgradeGMM" type="number" value={otherSettings['GMM']} min="1" onChange={handleChange}></input>
+                    </div>
+                </div> : null}
+            {peltshipment > 0 ?
+                <div className="setting-row">
+                    <span className="setting-label"><strong>Pelt Shipment</strong><span>{t('{discount} XP discount', { discount: peltdiscount })}</span></span>
+                    <div className="setting-control">
+                        <input type="checkbox" className="big-checkbox" checked={otherSettings['Pelt'][0]} name="OtherUpgradePelt1" aria-label={t('Pelt Shipment discount {number}', { number: 1 })} onChange={handleCheckbox} />
+                        {peltshipment > 1 ? <input type="checkbox" className="big-checkbox" checked={otherSettings['Pelt'][1]} name="OtherUpgradePelt2" aria-label={t('Pelt Shipment discount {number}', { number: 2 })} onChange={handleCheckbox} /> : null}
+                    </div>
+                </div> : null}
         </div> : null
 
-    const otherDiv = greenmanDiv || peltDiv ? <div>
-        <h4 className="section-header">Other Cards</h4>
-        {greenmanDiv}
-        {peltDiv}
-    </div> : null
+    // level 0 drafts waiting to happen: replacements for removed or exiled cards, Adaptable, deck requirements...
+    const pendingLevel0 = pendingLevel0Count(level0Swaps, level0Adds)
 
-    const deckMods = <div>
-        <h4 className="section-header">Deck Modifications</h4>
-        <div className="fbsetting">
-            <label className="fbdraftsettingleft">Removed by other game effects: </label>
-            <span className="fbdraftsettingcenter">
-                <input className="fbdraftsettingnumber" name="RemovedCards" type="number" value={removedCards} min="0" onChange={handleChange}></input>
-            </span>
-            <span className="fbdraftsettingright"> cards</span>
-        </div>
-        <div className="description" style={{marginBottom: '10px'}}>
-            Use this setting if cards have been removed from your deck by a scenario or other card effect and need to be replaced.
-        </div>
-    </div>
+    const level0Phase = DraftPhases.UpgradeLevel0AddPhase
+
+    const orderDiv = pendingLevel0 > 0 ?
+        <div className="stack" style={{gap: '16px'}}>
+            <div className="setting-row">
+                <span className="setting-label" id="draft-order-label"><strong>{t('Draft order')}</strong><span>{t('{count} level 0 card to draft besides the upgrades|{count} level 0 cards to draft besides the upgrades', { count: pendingLevel0 })}</span></span>
+                <div className="setting-control">
+                    <div className="segmented" role="group" aria-labelledby="draft-order-label">
+                        <button type="button" aria-pressed={draftOrder !== 'level0'} onClick={() => dispatch(changeSetting('DraftOrder', 'upgrade'))}>{t('Upgrades first')}</button>
+                        <button type="button" aria-pressed={draftOrder === 'level0'} onClick={() => dispatch(changeSetting('DraftOrder', 'level0'))}>{t('Level 0 cards first')}</button>
+                    </div>
+                </div>
+            </div>
+            <div className="setting-row">
+                <label className="setting-label" htmlFor="level0-count"><strong>{t('Cards to select from')}</strong><span>{t('For the level 0 drafts')}</span></label>
+                <div className="setting-control">
+                    <input id="level0-count" className="range" type="range" min="2" max="15" step="1" value={draftCount[level0Phase - 1]}
+                        onChange={event => dispatch(changeSetting('DraftCount', { phase: level0Phase, value: event.target.value }))} />
+                    <span className="value-badge">{draftCount[level0Phase - 1]}</span>
+                </div>
+            </div>
+        </div> : null
 
     return (
-        <div className='settingsDiv'>
-            <h3>Draft Options</h3>
-            <div className="fbsetting" style={{marginBottom: '15px'}}>
-                <label className="fbdraftsettingleft">XP:</label>
-                <span className="fbdraftsettingcenter">
-                    <input className="fbdraftsettingnumber" name="DraftXP" type="number" value={draftXP} min="1" onChange={handleChange}></input>
-                </span>
-                <label className="fbdraftsettingright"></label>
-            </div>
+        <div className="deck-options">
+            <h3>{t('Deck options')}</h3>
             {suziDiv}
             {exileDiv}
             {researchDiv}
             {otherDiv}
-            {deckMods}
+            <div className="options-section">
+                <div className="setting-row">
+                    <label className="setting-label" htmlFor="removed-cards"><strong>{t('Removed by other game effects')}</strong>
+                        <span>{t('Cards removed from your deck by a scenario or another card effect, which need to be replaced')}</span></label>
+                    <div className="setting-control">
+                        <div className="field" style={{width: '120px'}}>
+                            <input id="removed-cards" name="RemovedCards" type="number" value={removedCards} min="0" onChange={handleChange}></input>
+                        </div>
+                        <span>{t('cards')}</span>
+                    </div>
+                </div>
+            </div>
+            {orderDiv}
         </div>
     )
 }

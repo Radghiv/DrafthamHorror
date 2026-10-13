@@ -3,7 +3,12 @@ import { configureStore } from '@reduxjs/toolkit'
 import settingsReducer from './features/settings/settingsSlice'
 import draftReducer from './features/draft/draftSlice'
 import dataReducer from './features/data/dataSlice'
-import collectionReducer from './features/collection/collectionSlice'
+import collectionReducer, { COLLECTION_STORAGE_KEY } from './features/collection/collectionSlice'
+import { COLLECTION_CONFIRMED_KEY, BANNED_CARDS_KEY } from './features/settings/settingsSlice'
+import { saveJSON } from './storage'
+import { saveDraft, draftSettings } from './features/draftState'
+import phaseLabel from './data/PhaseLabel'
+import { t } from './i18n'
 
 const store = configureStore({
     reducer: {
@@ -16,6 +21,67 @@ const store = configureStore({
         immutableCheck: { warnAfter: 128 },
         serializableCheck: { warnAfter: 128 }
     })
+})
+
+// persist the collection choices, so redrafting (or coming back later) doesn't mean redoing them
+let savedCollection = store.getState().collection
+let savedConfirmed = store.getState().settings.collectionConfirmed
+let savedBans = store.getState().settings.bannedCards
+
+// The draft in progress is saved too (a moment after the last change), so closing the page doesn't lose it. Setup screens never overwrite
+// it: only Restart clears it, and starting another draft replaces it.
+let savedDraft = null
+let savedSettings = null
+let saveTimer = null
+
+function sameSettings(a, b) {
+    if (!a || !b) return false
+
+    const keysA = Object.keys(a)
+
+    return keysA.length === Object.keys(b).length && keysA.every(key => a[key] === b[key])
+}
+
+function describeDraft(state) {
+    const { settings, draft } = state
+    const where = settings.complete ? t('Draft complete') : phaseLabel(draft.phase, settings.draftType, draft.currentLevel0Name)
+
+    return settings.investigator + (settings.parallel ? ' (Parallel)' : '') + ' · ' + (settings.draftTab === 'Upgrade' ? t('Upgrade') : t('Build Deck')) + ' · ' + where
+}
+
+function autosaveDraft(state) {
+    const inProgress = (state.settings.drafting || state.settings.complete || state.data.deckLoaded) && !state.settings.investigatorDrafting
+
+    if (!inProgress || !state.settings.investigatorData) return
+
+    const settings = draftSettings(state.settings)
+
+    if (state.draft === savedDraft && sameSettings(settings, savedSettings)) return
+
+    savedDraft = state.draft
+    savedSettings = settings
+
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => saveDraft(store.getState(), describeDraft(store.getState())), 400)
+}
+
+store.subscribe(() => {
+    const state = store.getState()
+
+    autosaveDraft(state)
+
+    if (state.collection !== savedCollection) {
+        savedCollection = state.collection
+        saveJSON(COLLECTION_STORAGE_KEY, savedCollection)
+    }
+    if (state.settings.bannedCards !== savedBans) {
+        savedBans = state.settings.bannedCards
+        saveJSON(BANNED_CARDS_KEY, savedBans)
+    }
+    if (state.settings.collectionConfirmed !== savedConfirmed) {
+        savedConfirmed = state.settings.collectionConfirmed
+        saveJSON(COLLECTION_CONFIRMED_KEY, savedConfirmed)
+    }
 })
 
 export default store
