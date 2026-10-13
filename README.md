@@ -1,70 +1,60 @@
-# Getting Started with Create React App
+# DraftHam Horror
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A drafting tool for [*Arkham Horror: The Card Game*](https://www.fantasyflightgames.com/en/products/arkham-horror-the-card-game/).
+Pick your collection, an investigator and the draft rules, and the app drafts a deck for you one card at a time: either a new deck
+(build) or the upgrades for an existing one (spend XP).
 
-## Available Scripts
+**Live site: https://radghiv.github.io/DrafthamHorror/**
 
-In the project directory, you can run:
+This is a fork of [Skeezix55/ArkhamDraft](https://github.com/Skeezix55/ArkhamDraft).
 
-### `npm start`
+## Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Setup wizard: collection, investigator (pick one, draw at random, or draft the investigator too), draft rules, review.
+- Build a deck from scratch, or upgrade one imported from ArkhamDB.
+- Card data, taboo lists and packs are fetched from the [ArkhamDB](https://arkhamdb.com) public API and kept in the browser, so the app
+  starts at once and works offline after the first visit.
+- Card names in several languages (card images are always in English).
+- Undo (Ctrl+Z), automatic resume of a draft in progress, and links that share a setup together with its random seed.
+- Export to ArkhamDB (`.o8d`) or plain text.
+- Light, dark and Arkham themes; installable as an app (PWA).
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+It runs entirely in the browser: there is no backend, and everything is saved in the browser's own storage.
 
-### `npm test`
+## Development
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Plain JavaScript, [Vite](https://vitejs.dev), React 18 and Redux Toolkit.
 
-### `npm run build`
+```
+npm install
+npm start          # dev server on http://localhost:3000
+npm run lint       # ESLint (not part of the dev server or the build)
+npm test           # Vitest
+npm run build      # production build into build/
+npm run preview    # serves the production build (the service worker only runs there)
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+The app lives in `src/` and `public/` holds the static files. [CLAUDE.md](CLAUDE.md) describes the architecture (state slices, draft
+engine, card filtering) and the conventions of the code.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Deploying
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+The site is hosted on GitHub Pages, from the `gh-pages` branch:
 
-### `npm run eject`
+```
+npm run deploy     # builds and publishes build/ to gh-pages
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+In the repository settings, Pages must be set to *Deploy from a branch* → `gh-pages` / `(root)`. The build uses relative paths, so it
+works under `/DrafthamHorror/` as well as on a custom domain.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+When new content comes out (a pack, a taboo list, errata), raise `CACHE_VERSION` in `src/features/data/dataSlice.js` before deploying, so
+returning users fetch the new card data.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Credits
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Based on [ArkhamDraft](https://github.com/Skeezix55/ArkhamDraft) by Skeezix55. Card data and images come from
+[ArkhamDB](https://arkhamdb.com).
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+*Arkham Horror: The Card Game* is a trademark of Fantasy Flight Games / Asmodee. This is an unofficial fan project, not affiliated with
+or endorsed by them.

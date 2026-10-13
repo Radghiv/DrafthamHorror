@@ -17,15 +17,15 @@ The app is built with Vite (`vite.config.js`); the app root is `src/` (its `inde
 - `npm start` — dev server on http://localhost:3000
 - `npm run build` — production build into `build/` (gitignored; the build empties that folder first). To check that it compiles without touching `build/`, pass another folder: `npm run build -- --outDir <dir> --emptyOutDir`.
 - `npm run preview` — serves the production build
-- `npm test` — Vitest (jsdom); there are currently no test files, only `src/setupTests.js`
+- `npm test` — Vitest (jsdom); the only tests are the interface-text checks in `src/i18n/locales.test.js`
 - `npm run lint` — ESLint with the `react-app` config (unused variables and imports, hooks rules); run it before finishing a change, there is no lint step in the dev server or the build
-- `npm run deploy` — `predeploy` builds, then `gh-pages -d build`
+- `npm run deploy` — `predeploy` builds, then `gh-pages -d build` publishes it to the `gh-pages` branch, which GitHub Pages serves at https://radghiv.github.io/DrafthamHorror/
 
 The sources use JSX in `.js` files, so `vite.config.js` tells esbuild and the React plugin to read `.js` as JSX.
 
-## Repo layout gotcha
+## Hosting
 
-The repo root also contains a **committed production build** (`index.html`, `static/`, `asset-manifest.json`, `service-worker.js`, `precache-manifest.*.js`, `manifest.json`, `robots.txt`, favicon/logos). These are generated artifacts served from the branch for the hosted site. The real app source is `src/` plus `public/`. Don't hand-edit the root build files; edit `src/` and regenerate if a rebuild is needed. Because of them the Vite entry is `src/index.html`, not a root `index.html`. `package.json` `homepage` controls the base path baked into builds.
+The site is served by GitHub Pages from the `gh-pages` branch (Settings → Pages → *Deploy from a branch*); `main` holds only the sources. The build uses relative paths (`base: './'`), so it works under `/DrafthamHorror/` and on a custom domain. `package.json` `homepage` is informational.
 
 ## Architecture
 
@@ -37,7 +37,7 @@ The repo root also contains a **committed production build** (`index.html`, `sta
 - `draft` — the in-progress draft: `deckList`, `cardList`, `removedList`, draft pool (cards are revealed one by one), per-phase progress, deck modifiers, exile/burn state. Also holds the draft-lifecycle thunks `startDraft`, `advanceDraft`, `updateDeckRequirements`, `updateExileRemoval`, etc. (exported next to the reducer at the bottom of `draftSlice.js`).
 - `collection` — which packs the user owns; saved in localStorage, and packs never seen before (new on ArkhamDB) start selected.
 
-Slices import each other's actions and thunks directly (e.g. `dataSlice` imports from `settingsSlice`/`draftSlice`/`collectionSlice`), so watch for circular-import hazards when adding cross-slice code. `src/reducer.js` is an unused duplicate of the root reducer — `store.js` is the one in use.
+Slices import each other's actions and thunks directly (e.g. `dataSlice` imports from `settingsSlice`/`draftSlice`/`collectionSlice`), so watch for circular-import hazards when adding cross-slice code.
 
 **Persistence (`src/storage.js`)** — guarded `loadJSON`/`saveJSON` over localStorage (it can be unavailable, so every call is wrapped). Keys: `draftham.theme`, `.collection`, `.collectionConfirmed`, `.cardsPerRow`, `.animationSpeed`, `.animateTogether`, `.bannedCards`, `.savedDraft`. The pages must render fine when storage is empty or blocked.
 
@@ -48,6 +48,8 @@ Slices import each other's actions and thunks directly (e.g. `dataSlice` imports
 **Data cache (`cache.js`)** — the card, pack and taboo lists from ArkhamDB are kept in IndexedDB and never expire: a saved copy is always used (so the app starts at once and works offline), and the Collection step has a "Refresh card data" button that clears the cache and reloads. **When new content comes out (a pack, a taboo list, errata), raise `CACHE_VERSION` in `dataSlice.js`**: users then fetch the new data the next time the page loads, and the copies of older versions are deleted.
 
 **Card languages (`data/Languages.js`, `components/useCardName.js`)** — the card data (and all the logic keyed on card names) stays English. A language chosen in the header (`settings.language`, saved in localStorage) makes `fetchTranslations` fetch that language's card list from ArkhamDB's translated site (`<code>.arkhamdb.com`), keep only `{ name, subname, customization text }` per card code and cache it like the other lists (`names-<code>` keys). What the user reads goes through `useCardName()` (`cardName`, `cardSubname`, `compareNames`, `customizationText`), which falls back to the English text; names stored or sent elsewhere (ban list, `.o8d` export) stay English. The card images are always English: ArkhamDB's translated sites serve the same pictures. A new place that shows a card name should use `useCardName` too.
+
+**Interface language (`src/i18n/`)** — the interface texts are English string literals passed to `t()`/`msg()` (hook `useT`); the English text is its own key, and a language is a dictionary `src/i18n/locales/<code>.json` loaded on demand. `scripts/i18n-scan.mjs` finds the keys and `scripts/i18n-catalog.mjs` writes `src/i18n/catalog.json` (every text, for translators); `locales.test.js` checks the dictionaries. Keys must be string literals, or the scan misses them. Don't confuse it with the card languages above.
 
 **Installable app (`vite-plugin-pwa`, `components/UpdateNotice.js`)** — `vite.config.js` generates the web manifest and a Workbox service worker (app shell precached, Google Fonts runtime-cached; card images and ArkhamDB data are not, the data lives in the IndexedDB cache). `registerType` is `prompt`: a new version waits until the user clicks Reload in `UpdateNotice`, so a draft is never interrupted. The service worker is only active in production builds (`npm run build` + `npm run preview`).
 

@@ -2,8 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// The app lives in src/ (its index.html is the entry), which keeps the root of the repo, where the published build is committed, out of
-// the way. The sources use JSX in .js files, so both esbuild and the plugin are told to read them as JSX.
+// The app lives in src/ (its index.html is the entry). The sources use JSX in .js files, so both esbuild and the plugin are told to read
+// them as JSX.
 export default defineConfig({
     root: 'src',
     publicDir: '../public',
@@ -47,5 +47,5 @@ export default defineConfig({
     optimizeDeps: { esbuildOptions: { loader: { '.js': 'jsx' } } },
     server: { port: 3000 },
     build: { outDir: '../build', emptyOutDir: true },
-    test: { environment: 'jsdom', globals: true, setupFiles: ['./setupTests.js'] }
+    test: { environment: 'jsdom', globals: true }
 })
