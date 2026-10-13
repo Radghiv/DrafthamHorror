@@ -5,7 +5,6 @@ import { setSetupStep, changeSeed } from '../../features/settings/settingsSlice'
 import { newSeed } from '../../random'
 import { buildShareLink, canShare } from '../../share'
 import describeSetup from './describeSetup'
-import useStartDraft from './useStartDraft'
 import StartStatus from './StartStatus'
 import { useT } from '../../i18n'
 
@@ -17,8 +16,6 @@ function ReviewStep() {
 
     const dispatch = useDispatch()
     const store = useStore()
-    const { start, canStart, deckFetchError } = useStartDraft()
-
     const [linkCopied, setLinkCopied] = useState(false)
 
     // the link of this setup and seed, for somebody else to start the same draft
@@ -80,14 +77,6 @@ function ReviewStep() {
             </div>
 
             <StartStatus extra={true} />
-
-            {deckFetchError ?
-                <p className="notice notice-error" role="alert">{t('Deck not found. Check the ArkhamDB deck ID in the Investigator step. Only public decks can be loaded.')}</p>
-                : null}
-
-            <button type="button" className="btn btn-primary btn-block" onClick={start} disabled={!canStart}>
-                {t('Start draft')}
-            </button>
         </div>
     )
 }

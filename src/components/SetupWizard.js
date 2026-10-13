@@ -114,7 +114,7 @@ function SetupWizard() {
                 </div>
             </section>
 
-            <SetupSummary hideStart={isLast} />
+            <SetupSummary />
         </div>
     )
 }
