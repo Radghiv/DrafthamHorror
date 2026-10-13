@@ -1678,6 +1678,23 @@ a {
 
 /* collection step */
 
+/* where the card data comes from and the button that fetches it again, at the top of the Collection step */
+.data-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 20px;
+}
+.data-card p {
+    margin: 0;
+    flex: 1 1 260px;
+}
+.data-card .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
 .collection-toolbar {
     display: flex;
     flex-wrap: wrap;

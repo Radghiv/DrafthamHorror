@@ -8,7 +8,7 @@ import useCardName from '../useCardName'
 
 import CollectionGroups, { CORE_CODES } from '../../data/CollectionGroups'
 import { buildCollectionGroups } from '../../data/PackCatalog'
-import { CheckIcon } from './Icons'
+import { CheckIcon, RedrawIcon } from './Icons'
 import TabooField from './TabooField'
 import BanList from './BanList'
 
@@ -93,6 +93,15 @@ function CollectionStep() {
 
     return (
         <div className="stack">
+            <div className="notice data-card">
+                <p>
+                    {dataDate ? t('Card data from ArkhamDB, fetched on {date}.', { date: formatDate(dataDate, LONG_DATE) }) : t('Card data from ArkhamDB.')}{' '}
+                    {t('It is kept in this browser until you refresh it.')}
+                </p>
+                <button type="button" className="btn btn-secondary" onClick={refreshData}>
+                    <RedrawIcon /> {t('Refresh card data')}
+                </button>
+            </div>
             <div className="field-grid">
                 <TabooField />
             </div>
@@ -109,11 +118,6 @@ function CollectionStep() {
             <div className="cycle-grid">
                 {cycles}
             </div>
-            <p className="field-hint data-refresh">
-                {dataDate ? t('Card data from ArkhamDB, fetched on {date}.', { date: formatDate(dataDate, LONG_DATE) }) : t('Card data from ArkhamDB.')}{' '}
-                {t('It is kept in this browser until you refresh it.')}{' '}
-                <button type="button" className="link-btn" onClick={refreshData}>{t('Refresh card data')}</button>
-            </p>
         </div>
     )
 }
