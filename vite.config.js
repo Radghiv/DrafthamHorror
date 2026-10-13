@@ -14,7 +14,7 @@ export default defineConfig({
         // offered with a notice and only takes over when the user reloads, so a draft is never interrupted.
         VitePWA({
             registerType: 'prompt',
-            includeAssets: ['favicon.ico', 'logo192.png', 'logo512.png'],
+            includeAssets: ['favicon.ico', 'logo192.png', 'logo512.png', 'logo512-maskable.png'],
             manifest: {
                 name: 'Draftham Horror',
                 short_name: 'Draftham',
@@ -27,7 +27,7 @@ export default defineConfig({
                 icons: [
                     { src: 'logo192.png', sizes: '192x192', type: 'image/png' },
                     { src: 'logo512.png', sizes: '512x512', type: 'image/png' },
-                    { src: 'logo512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+                    { src: 'logo512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
                 ]
             },
             workbox: {
