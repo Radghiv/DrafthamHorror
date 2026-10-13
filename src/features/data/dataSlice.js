@@ -4,7 +4,7 @@ import { reset, changeSetting, changeInvestigatorList, changeInvestigatorDeck, c
 import { setDeckList, changeDeckName, changeLevel0, updateDeckRequirements, changePhase } from '../draft/draftSlice'
 
 import DraftPhases from '../../data/DraftPhases'
-import { registerPackNames } from '../../data/PackData'
+import { registerPackNames, displayPackName } from '../../data/PackData'
 import { buildCollectionGroups } from '../../data/PackCatalog'
 import { registerPacks } from '../collection/collectionSlice'
 import { restoreDraftState } from '../draftState'
@@ -175,6 +175,17 @@ function namesOnly(cards) {
     return names
 }
 
+// The same for the names of the packs, { code: name }
+function packNamesOnly(packs, language) {
+    const names = {}
+
+    packs.forEach(pack => {
+        if (pack.name) names[pack.code] = displayPackName(pack.name, language)
+    })
+
+    return names
+}
+
 export async function fetchTranslations(dispatch, getState) {
     const language = getState().settings.language
 
@@ -183,13 +194,16 @@ export async function fetchTranslations(dispatch, getState) {
         return
     }
 
-    fetchCached(dispatch, 'names-' + language, translationUrl(language), namesOnly)
-    .then(cards => {
+    // the cards and the packs are fetched apart: if one can't be had the other is still used
+    const cards = fetchCached(dispatch, 'names-' + language, translationUrl(language), namesOnly).catch(() => null)
+    const packs = fetchCached(dispatch, 'pack-names-' + language, translationUrl(language, 'packs'), list => packNamesOnly(list, language)).catch(() => null)
+
+    Promise.all([cards, packs]).then(([cardNames, packNames]) => {
+        // not essential when neither can be had: the names stay English
+        if (!cardNames && !packNames) return
+
         // the choice may have changed while this was being fetched
-        if (getState().settings.language === language) dispatch(updateTranslations({ language: language, cards: cards }))
-    })
-    .catch(() => {
-        // not essential: the names stay English
+        if (getState().settings.language === language) dispatch(updateTranslations({ language: language, cards: cardNames || {}, packs: packNames || {} }))
     })
 }
 

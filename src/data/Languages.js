@@ -18,6 +18,22 @@ export function isLanguage(code) {
     return LANGUAGES.some(language => language.code === code)
 }
 
-export function translationUrl(code) {
-    return 'https://' + code + '.arkhamdb.com/api/public/cards/'
+// what is 'cards' or 'packs'
+export function translationUrl(code, what = 'cards') {
+    return 'https://' + code + '.arkhamdb.com/api/public/' + what + '/'
+}
+
+// How the translated sites end the name of an investigator expansion (in English it is " Investigator Expansion"); the collection shows
+// the packs without it
+export const EXPANSION_SUFFIX = {
+    de: /\s*\(Ermittler-Erweiterung\)$/,
+    es: /\s+Expansión de investigadores$/,
+    fr: /\s+–\s+Extension Investigateurs$/,
+    it: /,\s*Espansione Investigatori$/,
+    pl: /\s+-\s+Rozszerzenie badaczy$/,
+    pt: /\s+Expansão de Investigador$/,
+    ko: /\s*조사자 확장$/,
+    ru: /\.\s*Сыщики$/,
+    uk: /\s+Дослідницьке доповнення$/,
+    zh: /調查員擴充$/
 }

@@ -27,14 +27,18 @@ export function pluralForms(language) {
     return PLURAL_ORDER.filter(category => categories.includes(category) && !(withoutMany && category === 'many'))
 }
 
+// The dictionaries, each loaded (as a chunk of its own) when its language is chosen. import.meta.glob is what Vite can bundle: a plain
+// import('./locales/' + language + '.json') would be left as it is and fail in the production build.
+const localeLoaders = import.meta.glob('./locales/*.json', { import: 'default' })
+
 // Loads the dictionary of a language (English has none: its texts are the keys)
 export async function loadLocale(language) {
     if (language === 'en' || dictionaries[language]) return
 
     try {
-        const module = await import('./locales/' + language + '.json')
+        const load = localeLoaders['./locales/' + language + '.json']
 
-        dictionaries[language] = module.default
+        dictionaries[language] = load ? await load() : {}
     }
     catch (error) {
         dictionaries[language] = {}
@@ -87,6 +91,27 @@ export function useT() {
     const language = useSelector(state => state.settings.language)
 
     return useCallback((text, vars) => translateTo(language, text, vars), [language])
+}
+
+// A date or time in the language chosen. A date without a time ("2023-10-10", as ArkhamDB gives the dates of the taboo lists) is the same day
+// everywhere: it is written in UTC, so that a time zone can't move it.
+export const LONG_DATE = { day: 'numeric', month: 'long', year: 'numeric' }
+
+export function formatDate(language, value, options) {
+    const date = new Date(value)
+
+    if (isNaN(date)) return String(value)
+
+    const dateOnly = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+
+    return new Intl.DateTimeFormat(language, dateOnly ? { ...options, timeZone: 'UTC' } : options).format(date)
+}
+
+// For components: formatDate in the language chosen
+export function useFormatDate() {
+    const language = useSelector(state => state.settings.language)
+
+    return useCallback((value, options) => formatDate(language, value, options), [language])
 }
 
 // The texts that have a translation, for the tests

@@ -1,13 +1,14 @@
 import { displayPackName } from './PackData'
+import { msg } from '../i18n'
 
 // Titles of cycles that gather several unrelated packs; any other cycle takes the name of its first pack
 const CYCLE_TITLES = {
-    1: 'Core',
-    50: 'Return to Boxes',
-    60: 'Starter Decks',
-    61: 'Starter Decks 2026',
-    80: 'Promos',
-    90: 'Standalone scenarios'
+    1: msg('Core'),
+    50: msg('Return to Boxes'),
+    60: msg('Starter Decks'),
+    61: msg('Starter Decks 2026'),
+    80: msg('Promos'),
+    90: msg('Standalone scenarios')
 }
 
 const PLAYER_CARD_TYPES = ['asset', 'event', 'skill']
@@ -28,8 +29,9 @@ function packsWithPlayerCards(cardData) {
 }
 
 // The groups the collection is chosen from, built from the pack list of ArkhamDB and its cards: the packs of a cycle together, in
-// release order, and only the packs that have something to draft. New packs show up here as soon as ArkhamDB has them.
-export function buildCollectionGroups(packs, cardData) {
+// release order, and only the packs that have something to draft. New packs show up here as soon as ArkhamDB has them. The titles are the
+// name of the first pack of the cycle (packName gives the name of a pack to show) or one of the fixed ones above (translate shows them).
+export function buildCollectionGroups(packs, cardData, packName = pack => displayPackName(pack.name), translate = text => text) {
     const relevant = packsWithPlayerCards(cardData)
     const byCycle = new Map()
 
@@ -45,6 +47,6 @@ export function buildCollectionGroups(packs, cardData) {
         // the second copy of the core set only matters for its quantities: it travels with the core set
         if (codes.includes('core')) codes.splice(codes.indexOf('core') + 1, 0, 'core2')
 
-        return { title: CYCLE_TITLES[cycle] || displayPackName(cyclePacks[0].name), codes: codes }
+        return { title: CYCLE_TITLES[cycle] ? translate(CYCLE_TITLES[cycle]) : packName(cyclePacks[0]), codes: codes }
     })
 }

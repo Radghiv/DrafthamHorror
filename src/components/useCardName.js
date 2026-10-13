@@ -1,10 +1,14 @@
 import { useCallback } from 'react'
 import { useSelector } from 'react-redux'
 
+import PackData from '../data/PackData'
+import { useT } from '../i18n'
+
 // Returns a function giving the name of a card to show, in the language chosen (the card's own, English, name when there is no
 // translation). The name the logic works with stays English: this is for what the user reads. A card is an ArkhamDB card (code) or
 // one of the app's (key). The same goes for the subtitle and the customization text.
 function useCardName() {
+    const t = useT()
     const language = useSelector(state => state.settings.language)
     const translations = useSelector(state => state.data.translations)
 
@@ -35,7 +39,16 @@ function useCardName() {
         return found && found.custom ? found.custom : card.customization_text
     }, [translation])
 
-    return { cardName, cardSubname, compareNames, customizationText, translated: translations !== null && translations.language === language }
+    // the name of a pack (by its code) to show; the second core set is not a pack of ArkhamDB
+    const packName = useCallback(code => {
+        if (code === 'core2') return t('Second core set')
+
+        const names = translations && translations.language === language ? translations.packs : null
+
+        return (names && names[code]) || PackData[code]
+    }, [translations, language, t])
+
+    return { cardName, cardSubname, compareNames, customizationText, packName, translated: translations !== null && translations.language === language }
 }
 
 export default useCardName

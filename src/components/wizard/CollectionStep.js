@@ -3,9 +3,9 @@ import { useSelector, useDispatch } from 'react-redux'
 
 import { changeCollection } from '../../features/collection/collectionSlice'
 import { clearCache } from '../../cache'
-import { useT } from '../../i18n'
+import { useT, useFormatDate, LONG_DATE } from '../../i18n'
+import useCardName from '../useCardName'
 
-import PackData from '../../data/PackData'
 import CollectionGroups, { CORE_CODES } from '../../data/CollectionGroups'
 import { buildCollectionGroups } from '../../data/PackCatalog'
 import { CheckIcon } from './Icons'
@@ -25,13 +25,15 @@ export function countSelectedPacks(collection) {
 
 function CollectionStep() {
     const t = useT()
+    const formatDate = useFormatDate()
+    const { packName } = useCardName()
     const collection = useSelector(state => state.collection)
     const packs = useSelector(state => state.data.packs)
     const cardData = useSelector(state => state.data.cardData)
     const dataDate = useSelector(state => state.data.dataDate)
 
     // the groups come from the pack list of ArkhamDB (so new packs appear by themselves), or the built-in layout without it
-    const groups = useMemo(() => packs && cardData ? buildCollectionGroups(packs, cardData) : CollectionGroups, [packs, cardData])
+    const groups = useMemo(() => packs && cardData ? buildCollectionGroups(packs, cardData, pack => packName(pack.code), t) : CollectionGroups, [packs, cardData, packName, t])
     const dispatch = useDispatch()
 
     const allCodes = groups.flatMap(group => group.codes)
@@ -72,7 +74,7 @@ function CollectionStep() {
                         return (
                             <button type="button" className="chip" key={code} aria-pressed={isOn} onClick={() => handleToggle(group, code)}>
                                 <span className="chip-check" style={{visibility: isOn ? 'visible' : 'hidden'}}><CheckIcon size={14} /></span>
-                                <span className="chip-label" data-text={PackData[code]}>{PackData[code]}</span>
+                                <span className="chip-label" data-text={packName(code)}>{packName(code)}</span>
                             </button>
                         )
                     })}
@@ -108,7 +110,7 @@ function CollectionStep() {
                 {cycles}
             </div>
             <p className="field-hint data-refresh">
-                {dataDate ? t('Card data from ArkhamDB, fetched on {date}.', { date: new Date(dataDate).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) }) : t('Card data from ArkhamDB.')}{' '}
+                {dataDate ? t('Card data from ArkhamDB, fetched on {date}.', { date: formatDate(dataDate, LONG_DATE) }) : t('Card data from ArkhamDB.')}{' '}
                 {t('It is kept in this browser until you refresh it.')}{' '}
                 <button type="button" className="link-btn" onClick={refreshData}>{t('Refresh card data')}</button>
             </p>

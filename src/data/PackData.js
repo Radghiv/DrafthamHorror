@@ -1,3 +1,5 @@
+import { EXPANSION_SUFFIX } from './Languages'
+
 const PackData = {
     'core': 'Core set',
     'core2': 'Second core set',
@@ -66,8 +68,11 @@ const PackData = {
 
 // Pack names come from ArkhamDB too: this adds the ones the list above doesn't have (the list stays as the names used when ArkhamDB
 // can't be reached). Investigator expansions are shown without that suffix, as their packs always were.
-export function displayPackName(name) {
-    return name.replace(/ Investigator Expansion$/, '')
+// (language is the one the name is in, when it is a translated one; a pack the translated site hasn't translated keeps the English suffix)
+export function displayPackName(name, language) {
+    const withoutSuffix = name.replace(/ Investigator Expansion$/, '')
+
+    return EXPANSION_SUFFIX[language] ? withoutSuffix.replace(EXPANSION_SUFFIX[language], '') : withoutSuffix
 }
 
 export function registerPackNames(packs) {

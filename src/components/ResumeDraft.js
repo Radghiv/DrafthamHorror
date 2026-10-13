@@ -3,18 +3,19 @@ import { useDispatch } from 'react-redux'
 
 import { resumeSavedDraft } from '../features/draftHistory'
 import { loadSavedDraft, clearSavedDraft } from '../features/draftState'
-import { useT } from '../i18n'
+import { useT, useFormatDate } from '../i18n'
 
 // Offered on the setup screens when the browser holds a draft that wasn't finished with Restart: carry on where it was left, or drop it
 function ResumeDraft() {
     const t = useT()
+    const formatDate = useFormatDate()
     const dispatch = useDispatch()
 
     const [saved, setSaved] = useState(() => loadSavedDraft())
 
     if (!saved) return null
 
-    const when = new Date(saved.savedAt).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    const when = formatDate(saved.savedAt, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
     function discard() {
         clearSavedDraft()

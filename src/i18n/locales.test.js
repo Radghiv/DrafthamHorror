@@ -10,7 +10,8 @@ const srcDir = path.resolve(__dirname, '..')
 const localesDir = path.join(__dirname, 'locales')
 const keys = [...scanKeys(srcDir).keys()]
 
-const placeholders = text => (text.match(/\{\w+\}/g) || []).sort().join(',')
+// the placeholders a text uses, each once (a plural key repeats them in every form, and a language with one form has fewer copies)
+const placeholders = text => [...new Set(text.match(/\{\w+\}/g) || [])].sort().join(',')
 
 describe('interface texts', () => {
     test('every text is a usable key', () => {
@@ -59,9 +60,26 @@ describe('translateTo', () => {
         expect(translateTo('en', '{count} card|{count} cards', { count: 3 })).toBe('3 cards')
     })
 
+    test('loads a dictionary and uses it', async () => {
+        await loadLocale('it')
+
+        expect(translateTo('it', 'Start draft')).not.toBe('Start draft')
+        expect(translateTo('it', 'Start draft')).toBe(JSON.parse(fs.readFileSync(path.join(localesDir, 'it.json'), 'utf-8'))['Start draft'])
+    })
+
     test('uses the plural rules of the language', async () => {
         await loadLocale('ru')
-        // not translated yet (or translated): in both cases the right form for the language is chosen without throwing
-        expect(typeof translateTo('ru', '{count} card|{count} cards', { count: 5 })).toBe('string')
+
+        const forms = JSON.parse(fs.readFileSync(path.join(localesDir, 'ru.json'), 'utf-8'))['{count} pack|{count} packs'].split('|')
+
+        // Russian: one = 1, few = 2-4, many = 5-20
+        expect(translateTo('ru', '{count} pack|{count} packs', { count: 1 })).toBe(forms[0].replace('{count}', '1'))
+        expect(translateTo('ru', '{count} pack|{count} packs', { count: 3 })).toBe(forms[1].replace('{count}', '3'))
+        expect(translateTo('ru', '{count} pack|{count} packs', { count: 5 })).toBe(forms[2].replace('{count}', '5'))
+        expect(translateTo('ru', '{count} pack|{count} packs', { count: 21 })).toBe(forms[0].replace('{count}', '21'))
+    })
+
+    test('shows English for a text without translation', async () => {
+        expect(translateTo('it', 'A text that nobody translated')).toBe('A text that nobody translated')
     })
 })

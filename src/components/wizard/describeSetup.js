@@ -1,5 +1,5 @@
 import { countSelectedPacks } from './CollectionStep'
-import { t, msg } from '../../i18n'
+import { t, msg, formatDate, LONG_DATE } from '../../i18n'
 
 const CLASS_NAMES = {
     guardian: msg('Guardian'),
@@ -36,7 +36,7 @@ function describeSetup(settings, tabooData, collection) {
     if (tabooData && settings.selectedTaboo) {
         const index = tabooData.findIndex(item => item.id === settings.selectedTaboo)
 
-        if (index >= 0) tabooLabel = index === tabooData.length - 1 ? t('Latest list') : tabooData[index].date_start
+        if (index >= 0) tabooLabel = index === tabooData.length - 1 ? t('Latest list') : formatDate(settings.language, tabooData[index].date_start, LONG_DATE)
     }
 
     const { coreCount, packCount } = countSelectedPacks(collection)
