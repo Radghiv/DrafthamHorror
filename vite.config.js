@@ -16,8 +16,8 @@ export default defineConfig({
             registerType: 'prompt',
             includeAssets: ['favicon.ico', 'logo192.png', 'logo512.png'],
             manifest: {
-                name: 'DraftHam Horror',
-                short_name: 'DraftHam',
+                name: 'Draftham Horror',
+                short_name: 'Draftham',
                 description: 'Drafting tool for Arkham Horror: The Card Game',
                 start_url: './',
                 scope: './',

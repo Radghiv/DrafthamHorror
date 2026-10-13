@@ -14,7 +14,7 @@ function UpdateNotice() {
 
     return (
         <div className="update-notice" role="status">
-            <span>{t('A new version of DraftHam Horror is ready.')}</span>
+            <span>{t('A new version of Draftham Horror is ready.')}</span>
             <button type="button" className="btn btn-primary" onClick={() => updateServiceWorker(true)}>{t('Reload')}</button>
             <button type="button" className="btn btn-secondary" onClick={() => setNeedRefresh(false)}>{t('Later')}</button>
         </div>

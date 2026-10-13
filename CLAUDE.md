@@ -8,7 +8,7 @@ The maintainer may converse in Italian or English, but all code, comments, commi
 
 ## What this is
 
-"DraftHam Horror" — a client-side drafting tool for *Arkham Horror: The Card Game* (a fork of Skeezix55/ArkhamDraft). Users pick a collection, an investigator and draft rules, then the app randomly drafts a deck (build) and/or upgrades (spend XP) using card data fetched live from the ArkhamDB public API. Plain JavaScript (no TypeScript), Vite 5, React 18, Redux Toolkit. No backend.
+"Draftham Horror" — a client-side drafting tool for *Arkham Horror: The Card Game* (a fork of Skeezix55/ArkhamDraft). Users pick a collection, an investigator and draft rules, then the app randomly drafts a deck (build) and/or upgrades (spend XP) using card data fetched live from the ArkhamDB public API. Plain JavaScript (no TypeScript), Vite 5, React 18, Redux Toolkit. No backend.
 
 ## Commands
 

@@ -1,4 +1,4 @@
-# DraftHam Horror
+# Draftham Horror
 
 A drafting tool for [*Arkham Horror: The Card Game*](https://www.fantasyflightgames.com/en/products/arkham-horror-the-card-game/).
 Pick your collection, an investigator and the draft rules, and the app drafts a deck for you one card at a time: either a new deck
