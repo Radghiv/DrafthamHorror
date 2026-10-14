@@ -89,9 +89,10 @@ function InvestigatorPick() {
                             <button type="button" className="investigator-tile-main" aria-pressed={isSelected} onClick={() => handleClick(entry)}>
                                 <InvestigatorImage card={card} side="front" alt={t('{name} (front)', { name: entry })} />
                                 <InvestigatorImage card={card} side="back" alt={t('{name} (back)', { name: entry })} />
-                                <RequiredThumbs investigator={card} />
+                                {phone ? null : <RequiredThumbs investigator={card} />}
                                 <span className="investigator-tile-name">{entry}</span>
                             </button>
+                            {phone ? <RequiredThumbs investigator={card} tap caption /> : null}
                             {phone ?
                                 <div className="draft-tile-actions">
                                     <button type="button" className="tile-action" disabled={!canRedraw} aria-label={t('Redraw {name}', { name: entry })} onClick={() => dispatch(redrawInvestigator(index))}><RedrawIcon /><span>{t('Redraw')}</span></button>

@@ -7,6 +7,7 @@ import OverlayCardImage from './OverlayCardImage'
 import CardTextOverlay from './CardTextOverlay'
 import { formatMarkup, Paragraphs } from './cardMarkup'
 import useCardName from './useCardName'
+import useScrollLock from './useScrollLock'
 import { cardImageUrls } from '../data/CardImages'
 import { cardPageUrl } from '../data/ArkhamDbLinks'
 import { ExternalLinkIcon } from './wizard/Icons'
@@ -112,7 +113,7 @@ function CustomizationsPanel(props) {
             <h3>{t('Customizations')}</h3>
             {lines.map((line, index) => {
                 // the squares at the start of a line are the experience the option costs
-                const match = line.match(/^\s*([â–¡â– ]+)\s*(.*)$/)
+                const match = line.match(/^\s*([□■]+)\s*(.*)$/)
 
                 return match ?
                     <p key={index} className="customizationLine"><span className="customizationSquares">{match[1]}</span><span>{formatMarkup(match[2])}</span></p> :
@@ -142,7 +143,7 @@ function BondedCards(props) {
                 <div className="overlayBondedItem" key={card.code}>
                     <OverlayCardImage urls={cardImageUrls(card)} className="overlayBonded" style={{ width: layout.width + 'px' }} />
                     <CardTextOverlay card={card} />
-                    {count > 1 ? <span className="overlayBondedCount">Ã—{count}</span> : null}
+                    {count > 1 ? <span className="overlayBondedCount">×{count}</span> : null}
                 </div>
             ))}
         </div>
@@ -175,6 +176,41 @@ function fitHeight(room, fullHeight, mainRatio, bondedCount, withBonded, withCus
     return Math.floor(low)
 }
 
+// A preview opened by a tap or a long press (touch screens): the card as large as the screen allows, with its bonded cards and its
+// customizations under it (beside it when the screen is wide enough), in a layer that scrolls. Tapping anywhere closes it: the click
+// reaches the backdrop around it.
+function PinnedPreview(props) {
+    const { urls, card, bonded, customizations, texts, textInPanel, mainRatio, side } = props
+
+    const { cardName, cardSubname } = useCardName()
+
+    useScrollLock(true)
+
+    return (
+        <div className="pinnedPreview">
+            <div className="pinnedRow">
+                <div className="pinnedMain" style={{ '--card-ratio': mainRatio }}>
+                    <OverlayCardImage urls={urls} className="pinnedImage" />
+                    <CardTextOverlay card={card} side={side} />
+                </div>
+                {textInPanel ? <TextPanel name={cardName(card)} subname={cardSubname(card)} texts={texts} /> : null}
+                {bonded.length > 0 ?
+                    <div className="pinnedBonded">
+                        {bonded.map(({ card: bondedCard, count }) => (
+                            <div className="overlayBondedItem" key={bondedCard.code}>
+                                <OverlayCardImage urls={cardImageUrls(bondedCard)} className="overlayBonded" />
+                                <CardTextOverlay card={bondedCard} />
+                                {count > 1 ? <span className="overlayBondedCount">×{count}</span> : null}
+                            </div>
+                        ))}
+                    </div>
+                    : null}
+                {customizations ? <CustomizationsPanel text={customizations} /> : null}
+            </div>
+        </div>
+    )
+}
+
 // The big card preview, drawn above everything else: beside the hovered element, on whichever side has more room, so it never covers
 // it and stays inside the screen. The cards bonded to it and its list of customizations go along. When there isn't room for all of it:
 // the bonded cards move to the other side of the hovered element and, failing that, everything is scaled down to fit. Centered on the
@@ -183,6 +219,7 @@ function PreviewContents() {
     const urls = useSelector(state => state.settings.imagesrc)
     const anchor = useSelector(state => state.settings.imageanchor)
     const code = useSelector(state => state.settings.imagecode)
+    const pinned = useSelector(state => state.settings.imagepinned)
     const cardData = useSelector(state => state.data.cardData)
     const { customizationText, cardTexts, cardName, cardSubname } = useCardName()
 
@@ -206,6 +243,11 @@ function PreviewContents() {
     const textBox = texts ? textBoxFor(card, showingBack ? 'back' : 'front') : null
     const hasText = !!texts && !textBox
     const mainRatio = card && card.type_code === 'investigator' ? LANDSCAPE_RATIO : CARD_RATIO
+
+    if (pinned) {
+        return <PinnedPreview urls={urls} card={card} bonded={bonded} customizations={customizations} texts={texts} textInPanel={hasText}
+            mainRatio={mainRatio} side={showingBack ? 'back' : 'front'} />
+    }
 
     // pieces of the preview that are shown, how tall the card is, and where they go
     let height = fullHeight
@@ -323,6 +365,7 @@ function CardPreview() {
         <>
             {pinned && shown ?
                 <div className="preview-backdrop" role="presentation" onClick={() => dispatch(updateImageOverlay({ imagesrc: null }))}>
+                    <PreviewContents />
                     {isCard ?
                         <a className="previewLink" href={cardPageUrl(code, language)} target="_blank" rel="noopener noreferrer" aria-label="ArkhamDB" onClick={event => event.stopPropagation()}>
                             <ExternalLinkIcon />
@@ -330,8 +373,7 @@ function CardPreview() {
                         : null}
                     <span className="preview-hint">{t('Tap anywhere to close')}</span>
                 </div>
-                : null}
-            <PreviewContents />
+                : <PreviewContents />}
         </>
     )
 }

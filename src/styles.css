@@ -347,7 +347,7 @@ p {
     align-items: flex-end;
     justify-content: center;
     padding-bottom: 14px;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.82);
 }
 .preview-hint {
     padding: 6px 14px;
@@ -4031,10 +4031,9 @@ main:focus {
     }
 }
 
-/* a compact investigator on a phone: the name, the front of the card and the actions; the back (with the deckbuilding rules) and the cards that
-   always come with it are one tap away in the preview */
-.is-phone .investigator-tile-main > :nth-child(2),
-.is-phone .investigator-tile-main .required-thumbs {
+/* a compact investigator on a phone: the name, the front of the card, the cards that always come with it and the actions; the back (with the
+   deckbuilding rules) is one tap away in the preview */
+.is-phone .investigator-tile-main > :nth-child(2) {
     display: none;
 }
 .is-phone .investigator-tile-name {
@@ -4124,4 +4123,93 @@ main:focus {
     margin: 10px 0 4px;
     padding: 0 22px;
     font-size: 16px;
+}
+
+/* the preview opened by a tap or a long press: the card, then its bonded cards and customizations, in a layer that scrolls */
+.pinnedPreview {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    box-sizing: border-box;
+    display: flex;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) calc(72px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.pinnedRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 14px;
+    /* centered while it is shorter than the screen, from the top when it is taller */
+    margin: auto;
+    max-width: 100%;
+}
+.pinnedMain {
+    position: relative;
+    flex: none;
+    --card-height: 78vh;
+    width: min(92vw, calc(var(--card-height) * var(--card-ratio)));
+}
+@supports (height: 100dvh) {
+    .pinnedMain {
+        --card-height: 78dvh;
+    }
+}
+.pinnedImage {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 4%;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+}
+.pinnedBonded {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    --bonded-height: 52vh;
+}
+@supports (height: 100dvh) {
+    .pinnedBonded {
+        --bonded-height: 52dvh;
+    }
+}
+.pinnedBonded .overlayBonded {
+    width: min(44vw, 240px, calc(var(--bonded-height) * 0.72));
+}
+.pinnedBonded .overlayBondedCount {
+    right: 8px;
+    bottom: 8px;
+    padding: 2px 10px;
+    font-size: 18px;
+}
+.pinnedRow .overlayCustomizations {
+    width: min(92vw, 420px);
+    max-height: none;
+    overflow: visible;
+}
+.preview-hint {
+    position: relative;
+    z-index: 1001;
+}
+
+/* the cards an investigator always comes with, under its picture on the pick screen */
+.is-phone .investigator-tile > .required-thumbs {
+    margin-top: 0;
+    gap: 8px;
+}
+.is-phone .investigator-tile > .required-thumbs .required-thumb {
+    width: 64px;
+    min-width: 0;
+}
+.required-thumbs-caption {
+    flex-basis: 100%;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
 }

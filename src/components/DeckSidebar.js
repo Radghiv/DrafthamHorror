@@ -122,7 +122,7 @@ export function DeckRightColumn(props) {
 }
 
 // The phone's one sheet for both columns, from the bottom of the screen (from the right edge on a landscape phone), with a tab for each.
-// It closes with the X, a tap on the dimmed screen or a swipe down (right) on its top.
+// It closes with the X, a tap on the dimmed screen or a swipe down (right) from its top or, when the lists are scrolled to the top, from anywhere on it.
 export function DeckSheet(props) {
     const { drawer, onChange, alwaysShowDraftList } = props
 
@@ -157,21 +157,31 @@ export function DeckSheet(props) {
         return window.matchMedia(SIDE_SHEET_QUERY).matches
     }
 
-    function onDragStart(event) {
-        if (!drawer || event.target.closest('button')) return
+    function beginDrag(x, y) {
+        const isSideways = sideways()
 
-        drag.current = { start: sideways() ? event.clientX : event.clientY, distance: 0, sideways: sideways() }
-        event.currentTarget.setPointerCapture(event.pointerId)
+        drag.current = { start: isSideways ? x : y, distance: 0, sideways: isSideways }
         sheetRef.current.style.transition = 'none'
     }
 
-    function onDragMove(event) {
+    function moveDrag(x, y) {
         const current = drag.current
 
         if (!current) return
 
-        current.distance = Math.max(0, (current.sideways ? event.clientX : event.clientY) - current.start)
+        current.distance = Math.max(0, (current.sideways ? x : y) - current.start)
         sheetRef.current.style.transform = (current.sideways ? 'translateX(' : 'translateY(') + current.distance + 'px)'
+    }
+
+    function onDragStart(event) {
+        if (!drawer || event.target.closest('button')) return
+
+        beginDrag(event.clientX, event.clientY)
+        event.currentTarget.setPointerCapture(event.pointerId)
+    }
+
+    function onDragMove(event) {
+        moveDrag(event.clientX, event.clientY)
     }
 
     function onDragEnd() {
@@ -193,6 +203,70 @@ export function DeckSheet(props) {
             sheet.style.transform = ''
         }
     }
+
+    // A pull anywhere on the sheet closes it, not only on its top: down in a portrait phone when the lists are scrolled to the top
+    // (otherwise the swipe scrolls them), to the right on a landscape one. The listeners are native because a touchmove has to be
+    // non-passive to hold back the scrolling once the pull has started.
+    useEffect(() => {
+        const sheet = sheetRef.current
+
+        if (!sheet || !drawer) return undefined
+
+        let gesture = null
+
+        function onTouchStart(event) {
+            gesture = null
+
+            if (event.touches.length !== 1 || event.target.closest('.sheet-head')) return
+
+            const touch = event.touches[0]
+
+            gesture = { x: touch.clientX, y: touch.clientY, mode: null }
+        }
+
+        function onTouchMove(event) {
+            if (!gesture) return
+
+            const touch = event.touches[0]
+            const dx = touch.clientX - gesture.x
+            const dy = touch.clientY - gesture.y
+
+            if (gesture.mode === null) {
+                if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+
+                const pull = sideways() ? dx > 0 && Math.abs(dx) > Math.abs(dy) : dy > 0 && Math.abs(dy) > Math.abs(dx) && bodyRef.current.scrollTop <= 0
+
+                gesture.mode = pull ? 'pull' : 'scroll'
+
+                if (pull) beginDrag(touch.clientX, touch.clientY)
+            }
+
+            if (gesture.mode === 'pull') {
+                event.preventDefault()
+                moveDrag(touch.clientX, touch.clientY)
+            }
+        }
+
+        function onTouchEnd() {
+            if (gesture && gesture.mode === 'pull') onDragEnd()
+
+            gesture = null
+        }
+
+        sheet.addEventListener('touchstart', onTouchStart, { passive: true })
+        sheet.addEventListener('touchmove', onTouchMove, { passive: false })
+        sheet.addEventListener('touchend', onTouchEnd)
+        sheet.addEventListener('touchcancel', onTouchEnd)
+
+        return () => {
+            sheet.removeEventListener('touchstart', onTouchStart)
+            sheet.removeEventListener('touchmove', onTouchMove)
+            sheet.removeEventListener('touchend', onTouchEnd)
+            sheet.removeEventListener('touchcancel', onTouchEnd)
+        }
+    // beginDrag, moveDrag and onDragEnd only read refs and the onChange prop, so they are always current
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [drawer, onChange])
 
     return (
         <>
