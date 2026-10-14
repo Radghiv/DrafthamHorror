@@ -12,6 +12,7 @@ import { cardImageUrls } from '../data/CardImages'
 import { cardPageUrl } from '../data/ArkhamDbLinks'
 import { ExternalLinkIcon } from './wizard/Icons'
 import { textBoxFor } from '../data/CardTextBox'
+import { researchConnected } from '../data/ResearchCards'
 import { useT } from '../i18n'
 
 const GAP = 16
@@ -241,8 +242,10 @@ function PreviewContents() {
 
     const card = cardData && code ? cardData.find(item => item.code === code) : null
 
-    const bonded = card && card.bonded_cards ?
+    // the cards bonded to it, and (for a card that is researched) the other cards of its research family, shown the same way
+    const bondedCards = card && card.bonded_cards ?
         card.bonded_cards.map(item => ({ card: cardData.find(other => other.code === item.code), count: item.count })).filter(item => item.card) : []
+    const bonded = [...bondedCards, ...researchConnected(card, cardData).filter(other => !bondedCards.some(item => item.card.code === other.code)).map(other => ({ card: other, count: 1 }))]
     const customizations = card && card.customization_text ? customizationText(card) : null
     const texts = card ? cardTexts(card) : null
 
