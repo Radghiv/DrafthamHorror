@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux'
 
-import ExportDeck from '../draft/ExportDeck'
+import ExportDeck, { cardsMissingOctgnIds } from '../draft/ExportDeck'
 import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import CardLinkButton from './CardLinkButton'
 import useCardName from './useCardName'
@@ -17,6 +17,9 @@ function SettingsExport(props) {
 
     // the button of the file that was just exported shows a check mark for a moment
     const [exported, setExported] = useState(null)
+
+    // the cards that the last .o8d export had to leave out (null before one)
+    const [omitted, setOmitted] = useState(null)
 
     function flashExported(fileType) {
         setExported(fileType)
@@ -134,7 +137,7 @@ function SettingsExport(props) {
 
         specialCards.push({name: weaknessCard.name, key: weaknessCard.code, type_code: weaknessCard.type_code, count: 1 })
 
-        ExportDeck({
+        const result = ExportDeck({
             fileType: fileType,
             deckTitle: deckTitle,
             investigatorData: investigatorData,
@@ -142,9 +145,16 @@ function SettingsExport(props) {
             specialCards: specialCards,
             cardData: cardData
         })
+
+        if (result) setOmitted(result.omitted)
     }
 
     const { groups: signatureCards, hasChoice: useCheckbox } = signatureGroups(investigatorData)
+
+    // the cards an .o8d file can't carry: those of the last export (it knows the signature cards and the weakness too), or before the first one
+    // the drafted cards and the investigator
+    const missingIds = omitted || cardsMissingOctgnIds(cardList, cardData, investigatorData)
+    const shownMissing = missingIds.length > 8 ? missingIds.slice(0, 8).join(', ') + '…' : missingIds.join(', ')
 
     // make sure it's selected in the collection too
     var weaknessCards = cardData.filter( card => {
@@ -216,6 +226,9 @@ function SettingsExport(props) {
             </div>
 
             <div className="options-section">
+                {missingIds.length > 0 ?
+                    <p className="notice" role="status">{t("These cards have no OCTGN id in ArkhamDB yet, so ArkhamDB can't import them from an .o8d file and the file leaves them out: {names}. The plain text export (Import Deck, then Text) has every card.", { names: shownMissing })}</p>
+                    : null}
                 <button type="button" className="btn btn-primary btn-block" onClick={() => { handleExportClick('OCTGN'); flashExported('OCTGN') }}>{exported === 'OCTGN' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as .o8d')}</button>
                 <button type="button" className="btn btn-secondary btn-block" onClick={() => { handleExportClick('TXT'); flashExported('TXT') }}>{exported === 'TXT' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as plain text (.txt)')}</button>
                 <p className="field-hint">{t('Exports an OCTGN deck file. To import a downloaded .o8d deck into ArkhamDB, go to My Decks and click Import Deck, then File.')}</p>

@@ -52,7 +52,9 @@ function InvestigatorPanel(props) {
     const agathaClass = settings.primaryClass[0].toUpperCase() + settings.primaryClass.slice(1)
     // same-name versions of an investigator are listed as "Name (Pack)"
     const packVariant = settings.investigatorData ? settings.investigator + ' (' + settings.investigatorData.pack_name + ')' : null
-    const investigatorFull = settings.investigator === 'Agatha Crane' ? 'Agatha Crane (' + agathaClass + ')'
+    // '' while no investigator has been chosen
+    const investigatorFull = !settings.investigatorData ? ''
+        : settings.investigator === 'Agatha Crane' ? 'Agatha Crane (' + agathaClass + ')'
         : settings.parallel ? settings.investigator + ' (Parallel)'
         : investigatorData.includes(packVariant) ? packVariant : settings.investigator
 
@@ -170,6 +172,7 @@ function InvestigatorPanel(props) {
                     <div style={{display: 'flex', flexWrap: 'wrap', gap: '12px'}}>
                         <select id="investigator-select" name="investigator" value={investigatorFull} onChange={handleChangeInvestigator}
                             style={{flex: '1 1 260px', ...investigatorStyle}}>
+                            {investigatorFull === '' ? <option value="" disabled>{t('Choose an investigator')}</option> : null}
                             {investigatorData.map(name => (
                                 <option value={name} key={name} style={classStyle(investigatorColors[name])}>{name}</option>
                             ))}

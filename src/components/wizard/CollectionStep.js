@@ -10,7 +10,7 @@ import CollectionGroups, { CORE_CODES } from '../../data/CollectionGroups'
 import { buildCollectionGroups } from '../../data/PackCatalog'
 import { cardImageUrls } from '../../data/CardImages'
 import { boxArtFor } from '../../data/BoxArt'
-import { CheckIcon, RedrawIcon, FoldAllIcon, UnfoldAllIcon } from './Icons'
+import { CheckIcon, RedrawIcon, FoldAllIcon, UnfoldAllIcon, WarningIcon } from './Icons'
 import TabooField from './TabooField'
 import BanList from './BanList'
 
@@ -171,6 +171,7 @@ function CollectionStep() {
                     {chapters.map(chapter => (
                         <section className="chapter" key={chapter} aria-label={t('Chapter {number}', { number: chapter })}>
                             <h2 className="chapter-title">{t('Chapter {number}', { number: chapter })}</h2>
+                            {chapter === 2 ? <div className="status status-warn" role="note"><WarningIcon /><span>{t("ArkhamDB can't import Chapter 2 cards from .o8d files yet (it has no OCTGN ids for them). The plain text export works.")}</span></div> : null}
                             <div className="cycle-grid">
                                 {cycles.filter((cycle, index) => (groups[index].chapter || 1) === chapter)}
                             </div>

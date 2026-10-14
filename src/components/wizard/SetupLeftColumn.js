@@ -25,7 +25,8 @@ function SetupLeftColumn() {
                     <p className="investigator-subtitle">{info.classLine}</p>
                 </div>
                 :
-                <InvestigatorDraftPanel title={info.investigatorName} subtitle={info.classLine} />}
+                // nothing until an investigator has been chosen
+                settings.investigatorData ? <InvestigatorDraftPanel title={info.investigatorName} subtitle={info.classLine} /> : null}
             <DeckPreviewCurve />
         </div>
     )

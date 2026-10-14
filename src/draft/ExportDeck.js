@@ -2,6 +2,29 @@ import PackData from '../data/PackData'
 
 // Parallel investigators are using the wrong OCTGN id
 
+// ArkhamDB imports an .o8d file by the OCTGN id of each card, and the newest cards (the 2026 content) have none in its data yet: the importer
+// can't find them, so they are left out of the file (an empty id could even match the wrong card) and reported instead. The plain text export
+// goes by names and has every card.
+const hasOctgnId = item => Boolean(item.octgn_id)
+const labelOf = item => item.name + (item.subname ? ': ' + item.subname : '')
+
+// The names of the cards of the deck (and its investigator) that an .o8d file can't carry
+export function cardsMissingOctgnIds(cardList, cardData, investigatorData) {
+    const names = []
+
+    if (investigatorData && !investigatorData.octgn_id) names.push(investigatorData.name)
+
+    if (cardData) {
+        cardList.forEach(listItem => {
+            const card = cardData.find(dataItem => dataItem.code === listItem.key)
+
+            if (card && !card.octgn_id) names.push(labelOf(card))
+        })
+    }
+
+    return names
+}
+
 function ExportDeck(props) {
     const { fileType, deckTitle, investigatorData, cardList, specialCards, cardData } = props
 
@@ -48,18 +71,26 @@ function ExportDeck(props) {
         }
     })
 
-    if (fileType === 'OCTGN') ExportO8D({
-        deckTitle: (deckTitle.length > 0 ? deckTitle : 'Deck'),
-        investigator: investigatorData,
-        assets: asset,
-        events: event,
-        skills: skill,
-        treacheries: treachery,
-        enemies: enemy,
-        others: other
-    })
+    if (fileType === 'OCTGN') {
+        const omitted = [asset, event, skill, treachery, enemy, other].flatMap(list => list.filter(item => !hasOctgnId(item)).map(labelOf))
 
-    else ExportTXT({
+        if (!investigatorData.octgn_id) omitted.unshift(investigatorData.name)
+
+        ExportO8D({
+            deckTitle: (deckTitle.length > 0 ? deckTitle : 'Deck'),
+            investigator: investigatorData,
+            assets: asset.filter(hasOctgnId),
+            events: event.filter(hasOctgnId),
+            skills: skill.filter(hasOctgnId),
+            treacheries: treachery.filter(hasOctgnId),
+            enemies: enemy.filter(hasOctgnId),
+            others: other.filter(hasOctgnId)
+        })
+
+        return { omitted: omitted }
+    }
+
+    ExportTXT({
         deckTitle: (deckTitle.length > 0 ? deckTitle : 'Deck'),
         investigator: investigatorData,
         assets: asset,
@@ -76,8 +107,8 @@ function ExportO8D(props) {
         '<deck game="a6d114c7-2e2a-4896-ad8c-0330605c90bf" sleeveid="0">\r\n',
         '  <section name="Investigator" shared="False">\r\n'
     ]
-    console.log("Investigator:", props.investigator);
-    const o8dids = props.investigator.octgn_id.split(':')
+    // the investigator of the newest content has no id
+    const o8dids = (props.investigator.octgn_id || '').split(':').filter(Boolean)
 
     o8dids.forEach( item => {
         deckTextData.push('    <card qty="1" id="' + item + '">' + props.investigator.name.replace(/["]/g, '&quot;') + '</card>\r\n')

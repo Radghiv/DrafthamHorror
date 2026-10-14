@@ -28,9 +28,12 @@ function describeSetup(settings, tabooData, collection) {
     let investigatorName = settings.parallel ? t('{name} (Parallel)', { name: settings.investigator }) : settings.investigator
     if (settings.investigator === 'Agatha Crane') investigatorName = t('{name} ({details})', { name: settings.investigator, details: className(settings.primaryClass) })
 
+    // nothing chosen yet (the investigator of a deck from ArkhamDB comes with the deck)
+    if (!investigatorData) investigatorName = t('Not chosen yet')
+
     const factionCode = investigatorData ? (investigatorData.faction2_code ? 'multiclass' : investigatorData.faction_code) : 'neutral'
     const faction = className(factionCode)
-    const classLine = settings.secondaryClass ? t('{class} · {secondary} secondary', { class: faction, secondary: className(settings.secondaryClass) }) : faction
+    const classLine = !investigatorData ? '' : settings.secondaryClass ? t('{class} · {secondary} secondary', { class: faction, secondary: className(settings.secondaryClass) }) : faction
 
     let tabooLabel = t('None')
     if (tabooData && settings.selectedTaboo) {

@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
 
-import { reset, changeSetting, changeInvestigatorList, changeInvestigatorDeck, calculateFilteredCount, setSetupStep, setLanguage, LANGUAGE_KEY } from '../settings/settingsSlice'
+import { reset, changeSetting, changeInvestigatorDeck, calculateFilteredCount, setSetupStep, setLanguage, LANGUAGE_KEY } from '../settings/settingsSlice'
 import { setDeckList, changeDeckName, changeLevel0, updateDeckRequirements, changePhase } from '../draft/draftSlice'
 
 import DraftPhases from '../../data/DraftPhases'
@@ -141,7 +141,6 @@ export async function fetchCards(dispatch, getState) {
         dispatch(updateCardData(res))
         dispatch(syncCollectionPacks)
         dispatch(changeSetting( 'PrimaryClass', 'seeker' ))
-        dispatch(changeInvestigatorList( 'Agatha Crane' ))
 
         dispatch(calculateFilteredCount)
     })

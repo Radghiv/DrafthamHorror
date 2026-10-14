@@ -279,7 +279,7 @@ const settingsSlice = createSlice({
             state.complete = action.payload
         },
         reset(state, action) {
-            const deckSizeValue = state.selectedDeckSize ? state.selectedDeckSize : state.investigatorData.deck_requirements.size
+            const deckSizeValue = state.selectedDeckSize ? state.selectedDeckSize : state.investigatorData ? state.investigatorData.deck_requirements.size : state.deckSize
 
             state.deckSize = deckSizeValue
             state.selectedDeckSize = deckSizeValue

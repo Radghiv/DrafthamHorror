@@ -13,10 +13,14 @@ function StartStatus(props) {
     const investigatorMode = useSelector(state => state.settings.investigatorMode)
     const filteredCount = useSelector(state => state.settings.filteredCount)
 
-    const { enoughCards, needsDeck, noInvestigators } = useStartDraft()
+    const { enoughCards, needsDeck, needsInvestigator, noInvestigators } = useStartDraft()
 
     if (needsDeck) {
         return <div className="status status-bad" key="needs-deck"><WarningIcon /> {t('Validate an ArkhamDB deck ID in the Investigator step to continue')}</div>
+    }
+
+    if (needsInvestigator) {
+        return <div className="status status-bad" key="needs-investigator"><WarningIcon /> {t('Choose an investigator in the Investigator step to continue')}</div>
     }
 
     if (noInvestigators) {

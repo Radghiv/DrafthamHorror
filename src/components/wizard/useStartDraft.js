@@ -17,6 +17,7 @@ function useStartDraft() {
     const seed = useSelector(state => state.settings.seed)
     const deckID = useSelector(state => state.settings.deckID)
     const filteredCount = useSelector(state => state.settings.filteredCount)
+    const investigatorData = useSelector(state => state.settings.investigatorData)
     const deckSize = useSelector(state => state.settings.deckSize)
     const investigatorMode = useSelector(state => state.settings.investigatorMode)
     const investigatorDraftOptions = useSelector(state => state.settings.investigatorDraftOptions)
@@ -44,7 +45,10 @@ function useStartDraft() {
         [investigatorMode, cardData, investigatorDraftOptions, investigatorEntryList])
     const noInvestigators = investigatorMode === 'draft' && eligibleCount === 0
 
-    const canStart = enoughCards && !needsDeck && !noInvestigators
+    // choosing the investigator from the list: one has to be chosen
+    const needsInvestigator = investigatorMode === 'list' && !investigatorData
+
+    const canStart = enoughCards && !needsDeck && !noInvestigators && !needsInvestigator
 
     function start() {
         // the setup fades away and the investigator's card flies to the draft screen (copies are made before the screen changes)
@@ -80,7 +84,7 @@ function useStartDraft() {
         if (flight) requestAnimationFrame(flight.land)
     }
 
-    return { start, enoughCards, needsDeck, noInvestigators, eligibleCount, canStart, deckFetchError }
+    return { start, enoughCards, needsDeck, needsInvestigator, noInvestigators, eligibleCount, canStart, deckFetchError }
 }
 
 export default useStartDraft

@@ -35,7 +35,7 @@ function SetupWizard() {
 
     // a phone gets a one-line top bar (the steps open from it) and a bar at the bottom of the screen with the next action
     const phone = usePhoneLayout()
-    const { start, canStart } = useStartDraft()
+    const { start, canStart, needsInvestigator, needsDeck } = useStartDraft()
 
     const [stepsOpen, setStepsOpen] = useState(false)
     const topRef = useRef(null)
@@ -114,7 +114,9 @@ function SetupWizard() {
         <ol className="breadcrumbs">
             {STEPS.map((step, index) => {
                 const isCurrent = index === currentIndex
-                const isDone = !isCurrent && (index < currentIndex || (step.key === 'collection' && settings.collectionConfirmed))
+                // a step that is passed is done, except the investigator step while there is still no investigator (none chosen from the list, or a deck ID
+                // from ArkhamDB that has not been validated)
+                const isDone = !isCurrent && (index < currentIndex || (step.key === 'collection' && settings.collectionConfirmed)) && !(step.key === 'investigator' && (needsInvestigator || needsDeck))
 
                 return (
                     <li key={step.key}>
@@ -182,7 +184,7 @@ function SetupWizard() {
                         <button type="button" className="btn btn-secondary" onClick={() => goTo(STEPS[currentIndex - 1].key)}>{t('Back')}</button>}
                     {isLast ?
                         (phone ? <button type="button" className="btn btn-primary" onClick={start} disabled={!canStart}>{t('Start draft')}</button> : null) :
-                        <button type="button" className="btn btn-primary" onClick={goNext}>{current.key === 'collection' ? t('Confirm collection') : t('Continue')}</button>}
+                        <button type="button" className="btn btn-primary" onClick={goNext} disabled={current.key === 'investigator' && needsInvestigator}>{current.key === 'collection' ? t('Confirm collection') : t('Continue')}</button>}
                 </div>
             </section>
 

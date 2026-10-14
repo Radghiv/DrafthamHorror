@@ -1106,6 +1106,8 @@ input, select {
     --success-solid: #1f8f5f;
     --danger-bg: #fde8ea;
     --danger-text: #a3202f;
+    --warning-bg: #fff3c4;
+    --warning-text: #7a5200;
     --bar-bg: #1b1f3a;
     --bar-text: #ffffff;
     --bar-btn-bg: #ffffff;
@@ -1134,6 +1136,8 @@ input, select {
     --success-solid: #34b987;
     --danger-bg: #3a1a1f;
     --danger-text: #fca5a5;
+    --warning-bg: #3b3115;
+    --warning-text: #f6d77c;
     --bar-bg: #232a3d;
     --bar-text: #e8ebf2;
     --bar-btn-bg: #8c97ff;
@@ -1163,6 +1167,8 @@ input, select {
     --success-solid: #3aa57a;
     --danger-bg: #3a1c1c;
     --danger-text: #f0a59b;
+    --warning-bg: #3a3317;
+    --warning-text: #efd27a;
     --bar-bg: #1d332c;
     --bar-text: #ece6d6;
     --bar-btn-bg: #c9a24b;
@@ -1192,6 +1198,8 @@ input, select {
     --success-solid: #3aa57a;
     --danger-bg: #3d1c22;
     --danger-text: #f4a9a4;
+    --warning-bg: #393616;
+    --warning-text: #f1d878;
     --bar-bg: #16343b;
     --bar-text: #e6f1ec;
     --bar-btn-bg: #5fc9b3;
@@ -1665,6 +1673,10 @@ a {
 .status-bad {
     background: var(--danger-bg);
     color: var(--danger-text);
+}
+.status-warn {
+    background: var(--warning-bg);
+    color: var(--warning-text);
 }
 .status svg {
     flex: none;

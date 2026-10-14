@@ -39,7 +39,7 @@ function ReviewStep() {
     const rows = [
         { label: t('Collection'), edit: t('Edit collection'), value: info.packSummary, step: 'collection' },
         { label: t('Mode'), edit: t('Edit mode'), value: info.isUpgradeTab ? t('Upgrade') : t('Build Deck'), step: 'rules' },
-        { label: t('Investigator'), edit: t('Edit investigator'), value: t('{name} ({details})', { name: info.investigatorName, details: info.classLine }), step: 'investigator' },
+        { label: t('Investigator'), edit: t('Edit investigator'), value: info.classLine ? t('{name} ({details})', { name: info.investigatorName, details: info.classLine }) : info.investigatorName, step: 'investigator' },
         { label: t('Taboo list'), edit: t('Edit taboo list'), value: info.tabooLabel, step: 'collection' },
         ...(settings.bannedCards.length > 0 ? [{ label: t('Ban list'), edit: t('Edit ban list'), value: t('{count} card left out|{count} cards left out', { count: settings.bannedCards.length }), step: 'collection' }] : []),
         ...(info.investigatorMode === 'arkhamdb' ? [{ label: t('ArkhamDB deck'), edit: t('Edit ArkhamDB deck'), value: t('Deck {id}', { id: settings.deckID.trim() }), step: 'investigator' }] : []),
