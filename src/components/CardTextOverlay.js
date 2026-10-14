@@ -98,18 +98,30 @@ function OverlayBody(props) {
                 return
             }
 
-            container.style.display = ''
-            container.style.left = image.offsetLeft + 'px'
-            container.style.top = image.offsetTop + 'px'
-            container.style.width = width + 'px'
-            container.style.height = height + 'px'
+            // a picture that is fitted inside a bigger box (the big preview, when the screen is narrower than the box would be) is drawn
+            // smaller and centered in it: the texts go over the picture, not over the box
+            let drawnWidth = width
+            let drawnHeight = height
 
-            let size = OVERLAY_FONT * width
+            if (getComputedStyle(image).objectFit === 'contain') {
+                const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight)
+
+                drawnWidth = image.naturalWidth * scale
+                drawnHeight = image.naturalHeight * scale
+            }
+
+            container.style.display = ''
+            container.style.left = image.offsetLeft + (width - drawnWidth) / 2 + 'px'
+            container.style.top = image.offsetTop + (height - drawnHeight) / 2 + 'px'
+            container.style.width = drawnWidth + 'px'
+            container.style.height = drawnHeight + 'px'
+
+            let size = OVERLAY_FONT * drawnWidth
 
             text.style.fontSize = size + 'px'
 
-            while (size > OVERLAY_FONT_MIN * width && text.scrollHeight > text.clientHeight) {
-                size -= OVERLAY_FONT_STEP * width
+            while (size > OVERLAY_FONT_MIN * drawnWidth && text.scrollHeight > text.clientHeight) {
+                size -= OVERLAY_FONT_STEP * drawnWidth
                 text.style.fontSize = size + 'px'
             }
 

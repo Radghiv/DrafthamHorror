@@ -37,6 +37,11 @@ function DraftPanel(props) {
     // keys of the cards being redrawn: face down with their old face, waiting to be replaced
     const [redrawing, setRedrawing] = useState({})
 
+    // After a pick the cards of the next batch arrive face down while the old ones are still turning over: until they have turned, each
+    // slot keeps the face it had (null when no pick is turning). The slot that was picked shows nothing: its card is flying to the list.
+    const [leaving, setLeaving] = useState(null)
+    const leavingTimer = useRef(null)
+
     // what screen readers are told: the cards to choose from once they are all face up, and what was drafted
     const [announcement, setAnnouncement] = useState('')
 
@@ -114,6 +119,19 @@ function DraftPanel(props) {
 
         turnAtOnce.current = {}
 
+        if (speed !== 0) {
+            const faces = {}
+
+            draftPool.forEach((card, slot) => {
+                if (slot === index) faces[slot] = { blank: true }
+                else if (card.revealed && imageLoaded[slot] === true) faces[slot] = { card: card, src: cardImageUrls(card)[imageSource[slot] || 0] }
+            })
+
+            clearTimeout(leavingTimer.current)
+            setLeaving(faces)
+            leavingTimer.current = setTimeout(() => setLeaving(null), 600 / speed + 60)
+        }
+
         dispatch(changeIndex(index))
         dispatch(draftCard())
         setImageLoaded([])
@@ -149,6 +167,9 @@ function DraftPanel(props) {
             if (!(seenKey(index) in shownAt.current)) shownAt.current[seenKey(index)] = now
         })
 
+        // the old cards are still turning over: the new ones wait for them
+        if (leaving) return undefined
+
         const isReady = index => imageLoaded[index] === true || imageLoaded[index] === 'failed' || cardImageUrls(draftPool[index]).length === 0
 
         // all together: once every image is in (or the wait limit is up) all the pending cards turn over at the same moment
@@ -179,7 +200,9 @@ function DraftPanel(props) {
         }, wait)
 
         return () => clearTimeout(timer)
-    }, [draftPool, imageLoaded, redrawing, speed, animateTogether, dispatch])
+    }, [draftPool, imageLoaded, redrawing, leaving, speed, animateTogether, dispatch])
+
+    useEffect(() => () => clearTimeout(leavingTimer.current), [])
 
     const allRevealed = draftPool.length > 0 && draftPool.every(card => card.revealed)
     const poolSignature = draftPool.map(card => card.key).join('|')
@@ -469,16 +492,32 @@ function DraftPanel(props) {
         const imageSrc = sources[imageSource[i] || 0]
         const levelStr = draftPool[i].xp && draftPool[i].xp > 0 ? <span className='xpDots'>{' ' + '●'.repeat(draftPool[i].xp)}</span> : null
 
-        const cardFace = isLoaded ?
-            <><img className="draft-image" src={imageSrc} alt="" /><CardTextOverlay card={draftPool[i]} /></> :
-            <span className="draft-card-loading" style={{backgroundColor: classColor, display: 'block'}}>
-                <span className="cardName" style={{display: 'block', fontSize: '1.17em', fontWeight: 'bold', padding: '10px 10px 0 10px'}}>{cardName(draftPool[i])}</span>
-                <span className="cardXP" style={{display: 'block'}}>{levelStr}</span>
-                <span className="imageStatus">{hasImage ? t('Image loading...') : t('Image not available')}</span>
-                {hasImage ? <img style={{visibility: "hidden", position: "absolute"}} src={imageSrc} alt="" onLoad={() => imageDidLoad({index: i})} onError={() => imageDidFail(i, sources.length)} /> : null}
-            </span>
+        // loads the picture of the card in the background
+        const loader = hasImage && !isLoaded ?
+            <img style={{visibility: "hidden", position: "absolute"}} src={imageSrc} alt="" onLoad={() => imageDidLoad({index: i})} onError={() => imageDidFail(i, sources.length)} /> : null
 
         const faceUp = !!draftPool[i].revealed
+        const oldFace = leaving && !faceUp ? leaving[i] : null
+
+        let cardFace
+
+        if (oldFace) {
+            cardFace = oldFace.blank ?
+                <>{loader}</> :
+                <><img className="draft-image" src={oldFace.src} alt="" /><CardTextOverlay card={oldFace.card} />{loader}</>
+        }
+        else if (isLoaded) {
+            cardFace = <><img className="draft-image" src={imageSrc} alt="" /><CardTextOverlay card={draftPool[i]} /></>
+        }
+        else {
+            cardFace =
+                <span className="draft-card-loading" style={{backgroundColor: classColor, display: 'block'}}>
+                    <span className="cardName" style={{display: 'block', fontSize: '1.17em', fontWeight: 'bold', padding: '10px 10px 0 10px'}}>{cardName(draftPool[i])}</span>
+                    <span className="cardXP" style={{display: 'block'}}>{levelStr}</span>
+                    <span className="imageStatus">{hasImage ? t('Image loading...') : t('Image not available')}</span>
+                    {loader}
+                </span>
+        }
 
         const cardWrap =
             <div className={'draft-card-wrap' + (isSelected ? ' selected' : '') + (faceUp ? '' : ' facedown')} key={phone ? undefined : i}
