@@ -6,6 +6,7 @@ import { newSeed } from '../../random'
 import { buildShareLink, canShare } from '../../share'
 import describeSetup from './describeSetup'
 import StartStatus from './StartStatus'
+import { CheckIcon } from './Icons'
 import { useT } from '../../i18n'
 
 function ReviewStep() {
@@ -70,7 +71,7 @@ function ReviewStep() {
                         onChange={event => dispatch(changeSeed(event.target.value))} />
                     <button type="button" className="btn btn-secondary" onClick={() => dispatch(changeSeed(newSeed()))}>{t('New seed')}</button>
                     {canShare(store.getState()) ?
-                        <button type="button" className="btn btn-secondary" onClick={copyLink}>{linkCopied ? t('Link copied') : t('Copy link')}</button>
+                        <button type="button" className="btn btn-secondary" onClick={copyLink}>{linkCopied ? <><span className="pop-check"><CheckIcon size={16} /></span> {t('Link copied')}</> : t('Copy link')}</button>
                         : null}
                 </div>
                 <p className="field-hint">{t('The same seed with the same setup deals the same cards. The link carries this setup (collection, rules, taboo list) and the seed.')}</p>

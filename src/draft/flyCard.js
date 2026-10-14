@@ -1,7 +1,7 @@
 const DURATION = 700
 
 // the theme's primary color with an alpha (tokens are 6-digit hex colors, so an 8-digit hex does the job)
-function primaryWithAlpha(alpha) {
+export function primaryWithAlpha(alpha) {
     const primary = window.getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()
 
     return /^#[0-9a-f]{6}$/i.test(primary) ? primary + alpha : 'rgba(140, 151, 255, 0.6)'
@@ -12,7 +12,7 @@ function reducedMotion() {
 }
 
 // the easing curve of the flight, cubic-bezier(0.5, 0, 0.2, 1), as a function of the progress in time
-function ease(x) {
+export function ease(x) {
     if (x <= 0) return 0
     if (x >= 1) return 1
 
@@ -37,11 +37,11 @@ function ramp(t, start, end) {
     return Math.min(1, Math.max(0, (t - start) / (end - start)))
 }
 
-const mix = (a, b, p) => a + (b - a) * p
+export const mix = (a, b, p) => a + (b - a) * p
 
 // Calls draw(t) on every frame with the progress in time (0 to 1), then done(). The flight is driven from here, not by the Web
 // Animations API, because its destination moves while it flies (the page scrolls to the top after a pick): draw measures it again each frame.
-function runFrames(duration, draw, done) {
+export function runFrames(duration, draw, done) {
     const startedAt = performance.now()
     let frame = 0
 
@@ -123,7 +123,7 @@ export default function startCardFlight(cardElement, speed) {
             flying.style.opacity = String(mix(1, 0.25, p))
         }, () => {
             flying.remove()
-            highlight(target, { property: 'boxShadow', value: '0 0 0 0 ' + primaryWithAlpha('e6') }, { property: 'boxShadow', value: '0 0 0 14px ' + primaryWithAlpha('00') }, 500)
+            highlight(target, { property: 'boxShadow', value: '0 0 0 0 ' + primaryWithAlpha('e6') }, { property: 'boxShadow', value: '0 0 0 14px ' + primaryWithAlpha('00') }, 500 / speed)
         })
     }
 
@@ -195,7 +195,7 @@ export default function startCardFlight(cardElement, speed) {
         }, () => {
             flying.remove()
             row.style.opacity = ''
-            highlight(row, { property: 'backgroundColor', value: primaryWithAlpha('73') }, { property: 'backgroundColor', value: primaryWithAlpha('00') }, 600)
+            highlight(row, { property: 'backgroundColor', value: primaryWithAlpha('73') }, { property: 'backgroundColor', value: primaryWithAlpha('00') }, 600 / speed)
         })
     }
 

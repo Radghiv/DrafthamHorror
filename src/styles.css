@@ -1,5 +1,10 @@
 /* ================= Page basics ================= */
 
+/* the space of the scrollbar is always kept, so a page that gets longer than the screen (the pack list) doesn't push everything sideways */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
 /*
@@ -412,7 +417,7 @@ p {
     justify-self: center;
     position: relative;
     aspect-ratio: 0.72;
-    transition: transform 0.12s;
+    transition: transform calc(0.12s * var(--motion-scale, 1));
 }
 /* scaling (rather than moving) the selected card keeps the pointer over it, so a second click confirms the draft */
 .draft-card-wrap.selected {
@@ -1022,14 +1027,17 @@ input, select {
     font-weight: normal;
     font-style: normal;
 }
+/* the glyphs of the font run from about -0.22em to 0.73em around the baseline, so at full size they hang below the text: they are
+   scaled down and raised to be centered on the line, and with no line height of their own they don't make the line taller */
 .gameIcon {
     display: inline-block;
     margin: 0 0.06em;
     font-family: 'ArkhamIcons';
+    font-size: 0.85em;
     font-style: normal;
     font-weight: normal;
-    line-height: 1;
-    vertical-align: -0.08em;
+    line-height: 0;
+    vertical-align: 0.08em;
     text-transform: none;
 }
 /* a class (guardian, seeker...) as a dot in its color */
@@ -1322,11 +1330,10 @@ a {
     font-size: 14px;
     color: var(--muted);
 }
-.cols-control input[type="range"] {
+.cols-control .segmented-range {
+    flex: none;
     width: 110px;
     height: 44px;
-    margin: 0;
-    accent-color: var(--primary);
 }
 .cols-value {
     min-width: 36px;
@@ -1615,7 +1622,7 @@ a {
     height: 24px;
     border-radius: 50%;
     background: #ffffff;
-    transition: left 0.15s;
+    transition: left calc(0.15s * var(--motion-scale, 1));
 }
 .switch[aria-checked="true"] .switch-thumb {
     left: 25px;
@@ -1962,9 +1969,12 @@ a {
     flex-wrap: wrap;
     gap: 14px;
 }
+/* two groups of packs per row (one when the screen is too narrow for two), so each has room for its title and its art */
 .cycle {
-    flex: 1 1 300px;
-    min-width: 0;
+    flex: 0 1 calc(50% - 7px);
+    min-width: 280px;
+    box-sizing: border-box;
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -2386,25 +2396,55 @@ a {
     color: var(--muted);
 }
 
-/* finished draft: nothing left to configure, so the panels spread over the whole width (masonry columns) */
+/* finished draft: nothing left to configure, so the columns spread over the width: the investigator and the cost curve, the export and the
+   rest, and then each list (Draft List, Deck List, Removed List) as a column of its own to the right of them (as many next to each other as
+   fit, the others wrap under them). The columns grow to a largest width, so a few of them don't stretch over the whole screen. */
 .draft-layout.is-complete {
-    display: block;
-    column-width: 360px;
-    column-gap: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 24px;
 }
 .draft-layout.is-complete .draft-left,
-.draft-layout.is-complete .draft-main,
+.draft-layout.is-complete .draft-main {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: auto;
+    min-width: 0;
+}
+.draft-layout.is-complete .draft-main {
+    flex: 1 1 320px;
+    max-width: 480px;
+}
+/* the left column keeps the size it has while drafting */
+.draft-layout.is-complete .draft-left {
+    flex: 0 1 260px;
+    max-width: 300px;
+}
+/* the lists are columns themselves */
 .draft-layout.is-complete .draft-aside {
     display: contents;
 }
+/* a column with nothing in it (no export on an upgrade) takes no room */
+.draft-layout.is-complete .draft-main:empty {
+    display: none;
+}
 .draft-layout.is-complete .draft-left > *,
-.draft-layout.is-complete .draft-main > *,
-.draft-layout.is-complete .draft-aside > * {
+.draft-layout.is-complete .draft-main > * {
     display: block;
     width: 100%;
     max-width: none;
-    margin: 0 0 24px;
-    break-inside: avoid;
+    margin: 0;
+    box-sizing: border-box;
+}
+.draft-layout.is-complete .draft-aside > * {
+    display: block;
+    flex: 1 1 320px;
+    width: auto;
+    max-width: 480px;
+    min-width: 0;
+    margin: 0;
     box-sizing: border-box;
 }
 
@@ -2479,7 +2519,7 @@ a {
         background: var(--bg);
         box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
         visibility: hidden;
-        transition: transform 0.25s ease, visibility 0s linear 0.25s;
+        transition: transform calc(0.25s * var(--motion-scale, 1)) ease, visibility 0s linear calc(0.25s * var(--motion-scale, 1));
     }
     .draft-layout:not(.is-complete) .draft-left {
         left: 0;
@@ -2493,7 +2533,7 @@ a {
     .draft-layout:not(.is-complete) .draft-aside.is-open {
         transform: translateX(0);
         visibility: visible;
-        transition: transform 0.25s ease;
+        transition: transform calc(0.25s * var(--motion-scale, 1)) ease;
     }
     .draft-layout:not(.is-complete) .drawer-close {
         display: flex;
@@ -2611,7 +2651,7 @@ a {
     background: var(--surface);
     color: var(--text);
     box-shadow: var(--shadow);
-    transition: transform 0.12s;
+    transition: transform calc(0.12s * var(--motion-scale, 1));
 }
 .investigator-tile.selected {
     border-color: var(--primary);
@@ -2692,7 +2732,7 @@ a {
     justify-content: center;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
     opacity: 0;
-    transition: opacity 0.15s;
+    transition: opacity calc(0.15s * var(--motion-scale, 1));
 }
 .investigator-tile:hover .investigator-redraw,
 .investigator-tile-main:focus-visible ~ .investigator-redraw,
@@ -2748,7 +2788,7 @@ a {
     justify-content: center;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
     opacity: 0;
-    transition: opacity 0.15s;
+    transition: opacity calc(0.15s * var(--motion-scale, 1));
 }
 .draft-card-wrap:hover .draft-card-redraw,
 .draft-card-hit:focus-visible ~ .draft-card-redraw,
@@ -2779,7 +2819,7 @@ a {
     text-decoration: none;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
     opacity: 0;
-    transition: opacity 0.15s;
+    transition: opacity calc(0.15s * var(--motion-scale, 1));
 }
 .investigator-tile .card-link-btn {
     top: 20px;
@@ -2891,7 +2931,7 @@ a {
 .settings-popover .cols-label {
     display: inline;
 }
-.settings-popover .cols-control input[type="range"] {
+.settings-popover .cols-control .segmented-range {
     flex: 1;
     min-width: 0;
     width: auto;
@@ -3669,7 +3709,7 @@ main:focus {
     line-height: 20px;
     text-align: center;
     font-variant-numeric: tabular-nums;
-    animation: dock-bump 0.3s ease;
+    animation: dock-bump calc(0.3s * var(--motion-scale, 1)) ease;
 }
 @keyframes dock-bump {
     50% {
@@ -3699,12 +3739,12 @@ main:focus {
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
     visibility: hidden;
     transform: translateY(102%);
-    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+    transition: transform calc(0.25s * var(--motion-scale, 1)) ease, visibility 0s linear calc(0.25s * var(--motion-scale, 1));
 }
 .deck-sheet.is-open {
     visibility: visible;
     transform: translateY(0);
-    transition: transform 0.25s ease;
+    transition: transform calc(0.25s * var(--motion-scale, 1)) ease;
 }
 .sheet-head {
     flex: none;
@@ -3937,8 +3977,17 @@ main:focus {
 .is-phone .draft-layout.is-complete {
     display: flex;
     flex-direction: column;
-    column-width: auto;
     gap: 0;
+}
+.is-phone .draft-layout.is-complete .draft-left,
+.is-phone .draft-layout.is-complete .draft-main,
+.is-phone .draft-layout.is-complete .draft-aside {
+    display: contents;
+}
+.is-phone .draft-layout.is-complete .draft-left > *,
+.is-phone .draft-layout.is-complete .draft-main > *,
+.is-phone .draft-layout.is-complete .draft-aside > * {
+    margin: 0 0 24px;
 }
 .is-phone .draft-layout.is-complete .draft-aside > * {
     order: 1;
@@ -4132,7 +4181,7 @@ main:focus {
     font-size: 16px;
     line-height: normal;
 }
-.draft-main .settingsDiv input[type="range"] {
+.draft-main .settingsDiv .segmented-range {
     width: 100%;
     height: 44px;
     margin: 0;
@@ -4193,9 +4242,6 @@ main:focus {
     border-radius: 10px;
     background-color: var(--field-bg);
     color: var(--text);
-}
-.draft-main .settingsDiv input[type="range"] {
-    accent-color: var(--primary);
 }
 .draft-main .settingsDiv input[type="checkbox"] {
     accent-color: var(--primary);
@@ -4342,4 +4388,764 @@ main:focus {
     font-size: 13px;
     font-weight: 700;
     color: var(--muted);
+}
+
+/* ---- motion ----
+   The durations are written for 1× and multiplied by --motion-scale, which useMotionScale sets from the animation speed of the settings
+   (0.5 at 2×, 0 when the animations are off or reduced motion is asked for, which makes them end at once). */
+
+/* the setup steps slide in from the side they are reached from */
+@keyframes step-in-forward {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes step-in-back {
+    from { opacity: 0; transform: translateX(-24px); }
+    to { opacity: 1; transform: none; }
+}
+.step-enter {
+    animation-duration: calc(0.5s * var(--motion-scale, 1));
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    animation-fill-mode: backwards;
+}
+.step-enter-forward {
+    animation-name: step-in-forward;
+}
+.step-enter-back {
+    animation-name: step-in-back;
+}
+.step-enter-late {
+    animation-delay: calc(0.06s * var(--motion-scale, 1));
+}
+
+/* the investigators of the draft are dealt one after the other */
+@keyframes investigator-deal {
+    from { opacity: 0; transform: translateY(26px) rotateY(-70deg) scale(0.94); }
+    to { opacity: 1; transform: none; }
+}
+.investigator-pick-grid {
+    perspective: 1600px;
+}
+.investigator-deal {
+    animation: investigator-deal calc(0.7s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation-delay: calc(var(--deal-index, 0) * 0.14s * var(--motion-scale, 1));
+}
+
+/* a newly chosen investigator: the two sides of the card turn into place */
+@keyframes investigator-reveal {
+    from { opacity: 0; transform: rotateY(90deg) scale(0.92); }
+    50% { opacity: 1; }
+    to { opacity: 1; transform: none; }
+}
+.investigator-grid {
+    perspective: 1200px;
+}
+.investigator-reveal .investigator-div {
+    animation: investigator-reveal calc(0.7s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.investigator-reveal .investigator-div:nth-child(2) {
+    animation-delay: calc(0.12s * var(--motion-scale, 1));
+}
+
+/* the finished draft: the Draft List glows once while the panels settle */
+@keyframes complete-glow {
+    0%, 100% { box-shadow: 0 0 0 0 transparent; }
+    35% { box-shadow: 0 0 26px 5px var(--primary); }
+}
+.draft-layout.is-complete #draft-right-panel > .settingsDiv:first-of-type {
+    animation: complete-glow calc(1.6s * var(--motion-scale, 1)) ease-out calc(0.5s * var(--motion-scale, 1));
+}
+
+/* the cost curve: the bars grow and shift to their new height */
+.cost-stack {
+    transition: height calc(0.45s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.cost-bar {
+    transition: flex-grow calc(0.45s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .step-enter,
+    .investigator-deal,
+    .investigator-reveal .investigator-div,
+    .draft-layout.is-complete #draft-right-panel > .settingsDiv:first-of-type {
+        animation: none;
+    }
+    .cost-stack,
+    .cost-bar {
+        transition: none;
+    }
+}
+
+/* ---- segmented sliders ----
+   The slider (SegmentedRange) draws its positions as segments: the track is two pseudo-elements of the wrapper, one with a segment for every
+   step and one in the primary color clipped to --fill (0 to 1), behind a range input that has only its knob. The segments run from the
+   center of the knob at the first position to its center at the last, so the gaps between them are under the positions. */
+.segmented-range {
+    --range-thumb: 22px;
+    --range-gap: 3px;
+    --range-bar: 10px;
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: 44px;
+    min-width: 0;
+}
+.segmented-range::before,
+.segmented-range::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--range-thumb) / 2);
+    right: calc(var(--range-thumb) / 2);
+    top: 50%;
+    height: var(--range-bar);
+    margin-top: calc(var(--range-bar) / -2);
+    background-image: linear-gradient(to right, transparent calc(var(--range-gap) / 2), var(--segment-color, var(--line-strong)) 0, var(--segment-color, var(--line-strong)) calc(100% - var(--range-gap) / 2), transparent 0);
+    background-size: calc(100% / var(--steps)) 100%;
+    background-repeat: repeat-x;
+    pointer-events: none;
+}
+.segmented-range::after {
+    --segment-color: var(--primary);
+    clip-path: inset(0 calc(100% * (1 - var(--fill))) 0 0);
+}
+/* many steps: one bar, no gaps */
+.segmented-range.is-continuous {
+    --range-gap: 0px;
+}
+.segmented-range.is-continuous::before,
+.segmented-range.is-continuous::after {
+    background-size: 100% 100%;
+    border-radius: calc(var(--range-bar) / 2);
+}
+.segmented-range input[type="range"] {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+}
+.segmented-range input[type="range"]::-webkit-slider-runnable-track {
+    height: var(--range-thumb);
+    background: transparent;
+    border: 0;
+}
+.segmented-range input[type="range"]::-moz-range-track {
+    height: var(--range-thumb);
+    background: transparent;
+    border: 0;
+}
+.segmented-range input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    width: var(--range-thumb);
+    height: var(--range-thumb);
+    border: 3px solid var(--surface);
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 0 1px var(--line-strong), var(--shadow);
+    transition: transform calc(0.12s * var(--motion-scale, 1));
+}
+.segmented-range input[type="range"]::-moz-range-thumb {
+    box-sizing: border-box;
+    width: var(--range-thumb);
+    height: var(--range-thumb);
+    border: 3px solid var(--surface);
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 0 1px var(--line-strong), var(--shadow);
+    transition: transform calc(0.12s * var(--motion-scale, 1));
+}
+.segmented-range input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(1.12);
+}
+.segmented-range input[type="range"]:active::-moz-range-thumb {
+    transform: scale(1.12);
+}
+.segmented-range input[type="range"]:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+.segmented-range input[type="range"]:focus-visible::-moz-range-thumb {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+.segmented-range input[type="range"]:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+@media (prefers-reduced-motion: reduce) {
+    .segmented-range input[type="range"]::-webkit-slider-thumb,
+    .segmented-range input[type="range"]::-moz-range-thumb {
+        transition: none;
+    }
+}
+
+/* picking an investigator: while its card flies to the left column, the panels of the draft screen fade in (opacity only: a transform would
+   move the fixed bars inside them) */
+@keyframes panel-fade-in {
+    from { opacity: 0; }
+}
+.investigator-flight .draft-layout > .draft-left,
+.investigator-flight .draft-layout > .draft-main,
+.investigator-flight .draft-layout > .draft-aside {
+    animation: panel-fade-in calc(0.6s * var(--motion-scale, 1)) ease-out backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+    .investigator-flight .draft-layout > .draft-left,
+    .investigator-flight .draft-layout > .draft-main,
+    .investigator-flight .draft-layout > .draft-aside {
+        animation: none;
+    }
+}
+
+/* ---- motion, part 2: things that enter and leave, selections, feedback ----
+   Durations are written for 1× and scaled by --motion-scale, like the block above. A thing that leaves stays on the page with the class
+   is-leaving while its exit plays (see usePresence.js). */
+
+@keyframes fade-in {
+    from { opacity: 0; }
+}
+@keyframes fade-out {
+    to { opacity: 0; }
+}
+@keyframes popup-in {
+    from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+}
+@keyframes popup-out {
+    to { opacity: 0; transform: translateY(-6px) scale(0.97); }
+}
+@keyframes dialog-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.96); }
+}
+@keyframes dialog-out {
+    to { opacity: 0; transform: translateY(8px) scale(0.97); }
+}
+@keyframes notice-in {
+    from { opacity: 0; transform: translate(-50%, 16px); }
+}
+@keyframes notice-out {
+    to { opacity: 0; transform: translate(-50%, 16px); }
+}
+@keyframes banner-in {
+    from { opacity: 0; transform: translateY(-10px); }
+}
+@keyframes banner-out {
+    from { max-height: 320px; opacity: 1; }
+    to { max-height: 0; opacity: 0; transform: translateY(-10px); margin-bottom: 0; padding-top: 0; padding-bottom: 0; border-width: 0; }
+}
+@keyframes strip-in {
+    from { opacity: 0; transform: translateY(24px); }
+}
+@keyframes strip-out {
+    to { opacity: 0; transform: translateY(24px); }
+}
+@keyframes swap-in {
+    from { opacity: 0; transform: translateY(4px); }
+}
+@keyframes tick {
+    from { opacity: 0.4; transform: translateY(-35%) scale(1.25); }
+}
+@keyframes pop-in {
+    from { transform: scale(0); }
+    60% { transform: scale(1.25); }
+    to { transform: scale(1); }
+}
+@keyframes preview-in {
+    from { opacity: 0; transform: scale(0.97); }
+}
+
+/* popups */
+.settings-popover {
+    transform-origin: top right;
+    animation: popup-in calc(0.16s * var(--motion-scale, 1)) ease-out;
+}
+.settings-popover.is-leaving {
+    animation: popup-out calc(0.14s * var(--motion-scale, 1)) ease-in forwards;
+}
+.phone-step-menu {
+    transform-origin: top center;
+    animation: popup-in calc(0.16s * var(--motion-scale, 1)) ease-out;
+}
+.phone-step-menu.is-leaving {
+    animation: popup-out calc(0.14s * var(--motion-scale, 1)) ease-in forwards;
+}
+.dialog-backdrop {
+    animation: fade-in calc(0.18s * var(--motion-scale, 1)) ease-out;
+}
+.dialog {
+    animation: dialog-in calc(0.22s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.dialog-backdrop.is-leaving {
+    animation: fade-out calc(0.16s * var(--motion-scale, 1)) ease-in forwards;
+}
+.dialog-backdrop.is-leaving .dialog {
+    animation: dialog-out calc(0.16s * var(--motion-scale, 1)) ease-in forwards;
+}
+.update-notice {
+    animation: notice-in calc(0.25s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.update-notice.is-leaving {
+    animation: notice-out calc(0.2s * var(--motion-scale, 1)) ease-in forwards;
+}
+.resume-draft {
+    animation: banner-in calc(0.3s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.resume-draft.is-leaving {
+    overflow: hidden;
+    animation: banner-out calc(0.26s * var(--motion-scale, 1)) ease-in forwards;
+}
+
+/* the strip that confirms a pick on a phone, and the Done button, slide up from the dock */
+.phone-confirm,
+.phone-done {
+    animation: strip-in calc(0.22s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.phone-confirm.is-leaving,
+.phone-done.is-leaving {
+    animation: strip-out calc(0.2s * var(--motion-scale, 1)) ease-in forwards;
+}
+
+/* the text of the confirm bar and the phase in the header change with a short slide, and the counts tick */
+.confirm-swap {
+    display: block;
+    animation: swap-in calc(0.2s * var(--motion-scale, 1)) ease-out;
+}
+.app-phase {
+    animation: swap-in calc(0.25s * var(--motion-scale, 1)) ease-out;
+}
+.bar-count strong,
+.phone-count strong {
+    display: inline-block;
+    animation: tick calc(0.25s * var(--motion-scale, 1)) ease-out;
+}
+.segment,
+.phone-segment,
+.phone-step-line span {
+    transition: background-color calc(0.25s * var(--motion-scale, 1)), opacity calc(0.25s * var(--motion-scale, 1));
+}
+
+/* the preview of a card grows in */
+.previewRow {
+    transform-origin: left center;
+    animation: preview-in calc(0.14s * var(--motion-scale, 1)) ease-out;
+}
+.previewRowLeft {
+    transform-origin: right center;
+}
+
+/* a card or an investigator that gets selected pops and gives off a ring */
+@keyframes select-pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.075); }
+    100% { transform: scale(1.04); }
+}
+@keyframes tile-pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.055); }
+    100% { transform: scale(1.02); }
+}
+@keyframes select-ring {
+    from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 55%, transparent), var(--shadow-lift); }
+    to { box-shadow: 0 0 0 14px color-mix(in srgb, var(--primary) 0%, transparent), var(--shadow-lift); }
+}
+.draft-card-wrap.selected {
+    animation: select-pop calc(0.28s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.draft-card-wrap.selected .draft-card-hit {
+    animation: select-ring calc(0.5s * var(--motion-scale, 1)) ease-out;
+}
+.investigator-tile.selected {
+    animation: tile-pop calc(0.28s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* the box of cost modifiers of a card opens and closes (it is always on the card, hidden while closed) */
+.draft-modifiers-expanded {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(6px) scale(0.97);
+    transform-origin: bottom center;
+    transition: opacity calc(0.15s * var(--motion-scale, 1)) ease, transform calc(0.18s * var(--motion-scale, 1)) ease, visibility 0s linear calc(0.18s * var(--motion-scale, 1));
+}
+.draft-modifiers-expanded.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+}
+
+/* the collection step: a cycle folds up, and the check mark of a pack pops in */
+.cycle {
+    transition: gap calc(0.3s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.cycle.is-collapsed {
+    gap: 0;
+}
+.cycle-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.cycle-toggle:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+.cycle-chevron {
+    flex: none;
+    transition: transform calc(0.25s * var(--motion-scale, 1)) ease;
+}
+.cycle.is-collapsed .cycle-chevron {
+    transform: rotate(-90deg);
+}
+.cycle-body {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows calc(0.3s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.cycle-body-inner {
+    min-height: 0;
+    margin: -3px;
+    padding: 3px;
+    overflow: hidden;
+}
+.cycle.is-collapsed .cycle-body {
+    grid-template-rows: 0fr;
+}
+.cycle.is-collapsed .cycle-body-inner {
+    visibility: hidden;
+    transition: visibility 0s linear calc(0.3s * var(--motion-scale, 1));
+}
+.chip-check {
+    opacity: 0;
+    transform: scale(0.3);
+    transition: opacity calc(0.15s * var(--motion-scale, 1)), transform calc(0.28s * var(--motion-scale, 1)) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.chip[aria-pressed="true"] .chip-check {
+    opacity: 1;
+    transform: none;
+}
+
+/* a check mark that says a button did its job (a copied link, an exported deck) */
+.pop-check {
+    display: inline-flex;
+    vertical-align: middle;
+    animation: pop-in calc(0.3s * var(--motion-scale, 1)) ease-out;
+}
+
+/* changing the theme cross-fades the colors (setTheme holds the class for as long as the transitions run) */
+html.theme-fade *,
+html.theme-fade *::before,
+html.theme-fade *::after {
+    transition: background-color calc(0.35s * var(--motion-scale, 1)) ease, color calc(0.35s * var(--motion-scale, 1)) ease, border-color calc(0.35s * var(--motion-scale, 1)) ease, fill calc(0.35s * var(--motion-scale, 1)) ease, stroke calc(0.35s * var(--motion-scale, 1)) ease, box-shadow calc(0.35s * var(--motion-scale, 1)) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .settings-popover,
+    .phone-step-menu,
+    .dialog-backdrop,
+    .dialog,
+    .update-notice,
+    .resume-draft,
+    .phone-confirm,
+    .phone-done,
+    .confirm-swap,
+    .app-phase,
+    .bar-count strong,
+    .phone-count strong,
+    .previewRow,
+    .draft-card-wrap.selected,
+    .draft-card-wrap.selected .draft-card-hit,
+    .investigator-tile.selected,
+    .pop-check {
+        animation: none;
+    }
+    .draft-modifiers-expanded,
+    .cycle,
+    .cycle-chevron,
+    .cycle-body,
+    .chip-check,
+    .segment,
+    .phone-segment,
+    .phone-step-line span {
+        transition: none;
+    }
+    html.theme-fade *,
+    html.theme-fade *::before,
+    html.theme-fade *::after {
+        transition: none;
+    }
+}
+
+/* Resume: no card flies, the investigator of the draft screen turns into place like a newly chosen one */
+.resume-flight .draft-left .investigator-div {
+    animation: investigator-reveal calc(0.7s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.resume-flight .draft-left .investigator-div:nth-child(2) {
+    animation-delay: calc(0.12s * var(--motion-scale, 1));
+}
+.resume-flight .draft-left .investigator-grid {
+    perspective: 1200px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .resume-flight .draft-left .investigator-div {
+        animation: none;
+    }
+}
+
+/* ---- motion, part 3: phase panels, messages, toggles, rows, hover ---- */
+
+/* the panels of a paused upgrade draft rise in one after the other */
+@keyframes panel-rise {
+    from { opacity: 0; transform: translateY(14px); }
+}
+.draft-layout:not(.is-complete) .phase-panel {
+    animation: panel-rise calc(0.35s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.draft-layout:not(.is-complete) .phase-panel:nth-child(2) {
+    animation-delay: calc(0.08s * var(--motion-scale, 1));
+}
+.draft-layout:not(.is-complete) .phase-panel:nth-child(3) {
+    animation-delay: calc(0.16s * var(--motion-scale, 1));
+}
+.draft-layout:not(.is-complete) .phase-panel:nth-child(n+4) {
+    animation-delay: calc(0.24s * var(--motion-scale, 1));
+}
+
+/* messages slide in, and the ones that go away fold up */
+@keyframes message-out {
+    from { max-height: 200px; opacity: 1; }
+    to { max-height: 0; opacity: 0; margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; border-width: 0; }
+}
+.status,
+.notice-error {
+    animation: swap-in calc(0.25s * var(--motion-scale, 1)) ease-out;
+}
+.status.is-leaving,
+.notice-error.is-leaving {
+    overflow: hidden;
+    animation: message-out calc(0.22s * var(--motion-scale, 1)) ease-in forwards;
+}
+.fetch-error {
+    animation: fade-in calc(0.3s * var(--motion-scale, 1)) ease-out;
+}
+.mode-enter {
+    animation: swap-in calc(0.25s * var(--motion-scale, 1)) ease-out;
+}
+
+/* the ban list: the suggestions drop in, the chips pop in and shrink away */
+@keyframes chip-in {
+    from { opacity: 0; transform: scale(0.8); }
+}
+@keyframes chip-out {
+    to { opacity: 0; transform: scale(0.8); }
+}
+.ban-suggestions {
+    transform-origin: top;
+    animation: popup-in calc(0.14s * var(--motion-scale, 1)) ease-out;
+}
+.ban-list .chip {
+    animation: chip-in calc(0.22s * var(--motion-scale, 1)) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ban-list .chip.is-leaving {
+    pointer-events: none;
+    animation: chip-out calc(0.18s * var(--motion-scale, 1)) ease-in forwards;
+}
+
+/* the toggles (segmented buttons): one pill slides to the chosen button (useSegmentedPills measures it; without it the chosen button
+   has its own background) */
+.segmented {
+    position: relative;
+}
+.segmented[data-pill] button {
+    position: relative;
+}
+.segmented[data-pill]::before {
+    content: '';
+    position: absolute;
+    left: var(--pill-left, 4px);
+    top: var(--pill-top, 4px);
+    width: var(--pill-width, 0);
+    height: var(--pill-height, 0);
+    border-radius: 9px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    opacity: var(--pill-opacity, 0);
+    pointer-events: none;
+}
+.segmented[data-pill="ready"]::before {
+    transition: left calc(0.25s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1), top calc(0.25s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1), width calc(0.25s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1), height calc(0.25s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1), opacity calc(0.15s * var(--motion-scale, 1));
+}
+.segmented[data-pill] button[aria-checked="true"],
+.segmented[data-pill] button[aria-pressed="true"] {
+    background: transparent;
+    box-shadow: none;
+}
+
+/* the rows of a list that appears all at once cascade in */
+@keyframes row-in {
+    from { opacity: 0; transform: translateX(-10px); }
+}
+.cardlist-item.row-enter {
+    animation: row-in calc(0.3s * var(--motion-scale, 1)) ease-out backwards;
+    animation-delay: calc(var(--row, 0) * 0.035s * var(--motion-scale, 1));
+}
+
+/* a card of the draft and an investigator tile rise a little under the pointer (only where there is a pointer to hover with) */
+@media (hover: hover) {
+    .draft-card-wrap:not(.facedown):not(.selected):hover {
+        transform: scale(1.025);
+        z-index: 2;
+    }
+    .investigator-tile:not(.selected):hover {
+        transform: scale(1.012);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .draft-layout:not(.is-complete) .phase-panel,
+    .status,
+    .notice-error,
+    .fetch-error,
+    .mode-enter,
+    .ban-suggestions,
+    .ban-list .chip,
+    .cardlist-item.row-enter {
+        animation: none;
+    }
+    .segmented[data-pill="ready"]::before {
+        transition: none;
+    }
+}
+
+/* the collection step: the packs of Chapter 1 and Chapter 2 apart */
+.chapters {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+.chapter {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.chapter-title {
+    margin: 0;
+    padding: 0;
+    font-size: 18px;
+}
+
+/* the art behind a group of packs: the picture of its first investigator (the portrait is the left part of the card, so the picture is
+   enlarged to fill the width with it), under a gradient that keeps the text readable */
+.cycle {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+.cycle-art {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+.cycle-art img {
+    position: absolute;
+    left: 0;
+    top: 36%;
+    width: 200%;
+    max-width: none;
+    transform: translateY(-36%);
+    opacity: 0;
+    transition: opacity calc(0.4s * var(--motion-scale, 1)) ease;
+}
+.cycle-art img.loaded {
+    opacity: 1;
+}
+/* a card that isn't an investigator: the art is the top part of a portrait card */
+.cycle-art.is-portrait img {
+    top: 28%;
+    width: 100%;
+    transform: translateY(-28%);
+}
+.cycle-art::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--surface-2) 95%, transparent) 0%, color-mix(in srgb, var(--surface-2) 74%, transparent) 50%, color-mix(in srgb, var(--surface-2) 42%, transparent) 100%);
+}
+/* the buttons of the packs that are not chosen keep a background of their own so their names can be read over the art */
+.cycle .chip[aria-pressed="false"] {
+    background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+}
+
+/* the boxes of the products behind a group of packs: at the right of the banner, bigger than it so the edges cut them, with the gradient of the
+   art on the left to keep the title readable (a group with several boxes overlaps them) */
+.cycle-boxes {
+    position: absolute;
+    top: -26px;
+    right: 108px;
+    z-index: -1;
+    display: flex;
+    pointer-events: none;
+}
+.cycle-boxes img {
+    display: block;
+    height: 150px;
+    width: auto;
+    margin-left: -54px;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+}
+.cycle-boxes img:first-child {
+    margin-left: 0;
+}
+/* several boxes side by side, smaller so that they stay at the right of the title: long ones (the Return to... boxes) or tall ones (the
+   investigator decks, which are narrow in their square picture, so they are bigger and overlap more) */
+.cycle-boxes.is-many.is-long {
+    top: -12px;
+}
+.cycle-boxes.is-many.is-long img {
+    height: 84px;
+    margin-left: -50px;
+}
+.cycle-boxes.is-many.is-tall {
+    top: -22px;
+}
+.cycle-boxes.is-many.is-tall img {
+    height: 112px;
+    margin-left: -82px;
+}
+.cycle-boxes.is-many img:first-child {
+    margin-left: 0;
+}
+/* a group that is too narrow for its title and its art: the art goes to the edge and fades */
+@container (max-width: 470px) {
+    .cycle-boxes {
+        right: 8px;
+        opacity: 0.4;
+    }
+}
+
+@media (max-width: 620px) {
+    .cycle {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
 }

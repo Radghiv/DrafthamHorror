@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useLayoutEffect } from 'react'
 import { useSelector } from 'react-redux'
 
 import ColorForClass from '../data/ClassColors'
@@ -24,6 +24,18 @@ function InvestigatorPanel(props) {
     // ArkhamDB images of some investigators are portrait (a landscape card saved turned): those are rotated back. Kept in state
     // and set on every load, so the panel showing another investigator never keeps the rotation of the previous one.
     const [rotated, setRotated] = useState({ front: false, back: false })
+
+    // when another investigator is chosen (not when the panel first shows one) the two sides turn over into place: a change of the key
+    // starts the animation again
+    const [revealCount, setRevealCount] = useState(0)
+    const shownInvestigator = useRef(investigator)
+
+    useLayoutEffect(() => {
+        if (shownInvestigator.current === investigator) return
+
+        shownInvestigator.current = investigator
+        setRevealCount(count => count + 1)
+    }, [investigator])
 
     function imageDidLoad(side, event) {
         const isPortrait = event.target.naturalHeight > event.target.naturalWidth
@@ -60,7 +72,7 @@ function InvestigatorPanel(props) {
         <div className="settingsDiv">
             <h2>{props.title || investigator}</h2>
             {props.subtitle ? <p className="investigator-subtitle">{props.subtitle}</p> : null}
-            <div className="investigator-grid">
+            <div className={'investigator-grid' + (revealCount > 0 ? ' investigator-reveal' : '')} key={revealCount}>
                 {investigatorCardImage}
                 {investigatorCardImageBack}
             </div>

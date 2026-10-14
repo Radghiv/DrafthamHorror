@@ -11,6 +11,8 @@ import RequiredThumbs from './RequiredThumbs'
 import { RedrawIcon, ZoomIcon } from './wizard/Icons'
 import usePhoneLayout from './usePhoneLayout'
 import CardLinkButton from './CardLinkButton'
+import startInvestigatorFlight from '../draft/flyInvestigator'
+import { Presence } from './usePresence'
 import { useT } from '../i18n'
 
 // One side of an investigator card. ArkhamDB images of some investigators are portrait, so those are turned (front clockwise,
@@ -41,6 +43,7 @@ function InvestigatorPick() {
     const options = useSelector(state => state.settings.investigatorDraftOptions)
     const cardData = useSelector(state => state.data.cardData)
     const scrollToTop = useSelector(state => state.settings.scrollToTop)
+    const animationSpeed = useSelector(state => state.settings.animationSpeed)
     const allEntries = useInvestigatorEntries()
 
     const dispatch = useDispatch()
@@ -64,7 +67,15 @@ function InvestigatorPick() {
 
     // the deck draft starts from the top of the page, where its first cards are
     function pick(entry) {
+        // the tile goes away without the pointer leaving it, so the preview of its card would stay on the screen
+        doCardOverlay(null)
+
+        // the picked investigator's card flies to the left column of the draft screen that follows (a copy is made before the screen changes,
+        // and it lands once the new screen has been drawn)
+        const flight = startInvestigatorFlight(Array.from(document.querySelectorAll('.investigator-tile')).find(tile => tile.dataset.entry === entry), animationSpeed)
+
         dispatch(pickInvestigator(entry))
+        if (flight) requestAnimationFrame(flight.land)
         if (scrollToTop) window.scrollTo(0, 0)
     }
 
@@ -80,7 +91,13 @@ function InvestigatorPick() {
         handleClick(entry)
     }
 
+    function redraw(index) {
+        doCardOverlay(null)
+        dispatch(redrawInvestigator(index))
+    }
+
     function handleReroll() {
+        doCardOverlay(null)
         setSelected(null)
         dispatch(startInvestigatorDraft)
     }
@@ -99,7 +116,7 @@ function InvestigatorPick() {
                     const classColor = card ? OfficialColorForClass(card.faction_code) : undefined
 
                     return (
-                        <div key={entry} className={'investigator-tile' + (isSelected ? ' selected' : '')} style={{borderTopColor: classColor}} onClick={event => handleBoxClick(event, entry)}>
+                        <div key={entry} data-entry={entry} className={'investigator-tile investigator-deal' + (isSelected ? ' selected' : '')} style={{borderTopColor: classColor, '--deal-index': index}} onClick={event => handleBoxClick(event, entry)}>
                             <button type="button" className="investigator-tile-main" aria-pressed={isSelected} onClick={() => handleClick(entry)}>
                                 <InvestigatorImage card={card} side="front" alt={t('{name} (front)', { name: entry })} />
                                 <InvestigatorImage card={card} side="back" alt={t('{name} (back)', { name: entry })} />
@@ -109,7 +126,7 @@ function InvestigatorPick() {
                             {phone ? <RequiredThumbs investigator={card} tap caption /> : null}
                             {phone ?
                                 <div className="draft-tile-actions">
-                                    <button type="button" className="tile-action" disabled={!canRedraw} aria-label={t('Redraw {name}', { name: entry })} onClick={() => dispatch(redrawInvestigator(index))}><RedrawIcon /><span>{t('Redraw')}</span></button>
+                                    <button type="button" className="tile-action" disabled={!canRedraw} aria-label={t('Redraw {name}', { name: entry })} onClick={() => redraw(index)}><RedrawIcon /><span>{t('Redraw')}</span></button>
                                     <button type="button" className="tile-action" disabled={!card} aria-label={t('Zoom {name}', { name: t('{name} (front)', { name: entry }) })} onClick={event => doCardOverlay(card, event, 'front')}><ZoomIcon /><span>{t('Front')}</span></button>
                                     <button type="button" className="tile-action" disabled={!card} aria-label={t('Zoom {name}', { name: t('{name} (back)', { name: entry }) })} onClick={event => doCardOverlay(card, event, 'back')}><ZoomIcon /><span>{t('Back side')}</span></button>
                                 </div>
@@ -117,7 +134,7 @@ function InvestigatorPick() {
                                 <>
                                     <CardLinkButton card={card} />
                                     <button type="button" className="btn btn-secondary investigator-redraw" disabled={!canRedraw}
-                                        aria-label={t('Redraw {name}', { name: entry })} title={t('Redraw')} onClick={() => dispatch(redrawInvestigator(index))}><RedrawIcon /></button>
+                                        aria-label={t('Redraw {name}', { name: entry })} title={t('Redraw')} onClick={() => redraw(index)}><RedrawIcon /></button>
                                 </>}
                         </div>
                     )
@@ -125,17 +142,17 @@ function InvestigatorPick() {
             </div>
 
             {phone ?
-                (current ?
+                <Presence visible={Boolean(current)} exit={220}>
                     <div className="phone-confirm no-dock" role="group">
                         <span className="phone-confirm-text" aria-live="polite">{t('Draft {name}?', { name: current })}</span>
                         <button type="button" className="btn btn-primary" onClick={() => pick(current)}>{t('Draft this investigator')}</button>
                     </div>
-                    : null)
+                </Presence>
                 :
             <div className="confirm-bar">
                 <div className="bar-row">
                     <div className="confirm-bar-text" aria-live="polite">
-                        {current ? t('Draft {name}?', { name: current }) : t('Select an investigator')}
+                        <span className="confirm-swap" key={current || ''}>{current ? t('Draft {name}?', { name: current }) : t('Select an investigator')}</span>
                         <span className="confirm-bar-hint">{t('Click the selected investigator again to pick it. Hover the cards (or press and hold them) for a bigger preview.')}</span>
                     </div>
                     <div className="confirm-bar-actions">

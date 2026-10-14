@@ -6,6 +6,7 @@ import { startDraft } from '../features/draft/draftSlice'
 import BuildChaosSettings from './BuildChaosSettings'
 import BuildDraftSettings from './BuildDraftSettings'
 import DraftPhases from '../data/DraftPhases'
+import { playPanelsLeave } from '../draft/screenTransitions'
 import { useT } from '../i18n'
 
 function VersatilePanel(props) {
@@ -18,10 +19,12 @@ function VersatilePanel(props) {
     const phase = DraftPhases.VersatilePhase
 
     const dispatch = useDispatch()
+    const animationSpeed = useSelector(state => state.settings.animationSpeed)
 
     if (!deckLoaded) return null
 
     function handleStartDraft() {
+        playPanelsLeave(animationSpeed)
         dispatch(startDraft(DraftPhases.VersatilePhase))
     }
 
@@ -68,7 +71,7 @@ function VersatilePanel(props) {
     const button = <button className="button-rect button-green" onClick={handleStartDraft}>{t('Draft')}</button>
 
     return (
-        <div className='settingsDiv'>
+        <div className='settingsDiv phase-panel'>
             <h3>{t('Level 0 Draft Options')}</h3>
             <h5>{t('Versatile')}</h5>
             <h2 className="draft-quantity">{t('{count} card|{count} cards', { count: draftTotal })}</h2>

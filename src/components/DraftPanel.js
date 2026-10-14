@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector, useDispatch, useStore } from 'react-redux'
 
 import { advanceDraft, updateUpgradeOption, changeIndex, hideDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, expandModifiers, minimizeModifiers, holdModifiers, selectDraftCard, changeDraftPoolProperty } from '../features/draft/draftSlice'
 
@@ -19,6 +19,8 @@ import useScrollLock from './useScrollLock'
 import CardLinkButton from './CardLinkButton'
 import { PLAYER_CARD_BACK } from '../data/CardImages'
 import { ANIMATION_SPEEDS } from '../data/AnimationSpeed'
+import { Presence } from './usePresence'
+import { prepareCompletionExit } from '../draft/screenTransitions'
 import { useT } from '../i18n'
 
 // pause between the start of one card turning and the start of the next (the turns overlap: a card doesn't wait for the previous
@@ -68,6 +70,7 @@ function DraftPanel(props) {
     const speed = reducedMotion ? 0 : ANIMATION_SPEEDS[animationSpeed]
 
     const dispatch = useDispatch()
+    const store = useStore()
 
     // big preview of the card under the pointer (on touch screens: of the card that is pressed and held)
     const doCardOverlay = useCardOverlay()
@@ -100,10 +103,19 @@ function DraftPanel(props) {
         dispatch(updateUpgradeOption(index, event.target.value))
     }
 
+    // after a pick or Done: if that ended the drafting (the draft is complete, or the upgrade draft is paused), the cards that were on the table
+    // fade away (the copy was made before the pick)
+    function finishPick(completion) {
+        if (completion) requestAnimationFrame(() => { if (!store.getState().settings.drafting) completion.play() })
+    }
+
     function doneClick(event) {
+        const completion = prepareCompletionExit(animationSpeed, -1)
+
         dispatch(rememberUndoPoint)
         if (requireConfirmation) dispatch(selectDraftCard(null))
         dispatch(advanceDraft(true))
+        finishPick(completion)
     }
 
     function draftCardWithIndex(props) {
@@ -112,6 +124,8 @@ function DraftPanel(props) {
         // the card turns into its row of the Draft List: the copy is made before the pool is replaced, and lands on the
         // row once the list has re-rendered
         doCardOverlay(null)
+
+        const completion = prepareCompletionExit(animationSpeed, index)
 
         if (draftPool[index]) setAnnouncement(t('Drafted {name}', { name: cardName(draftPool[index]) }))
 
@@ -138,6 +152,8 @@ function DraftPanel(props) {
         setImageLoaded([])
         setImageSource([])
         if (requireConfirmation) dispatch(selectDraftCard(null))
+
+        finishPick(completion)
 
         // the first cards of the next batch are at the top
         const scrolling = scrollToTop && window.scrollY > 0
@@ -471,11 +487,12 @@ function DraftPanel(props) {
                 </div>
             </div>
 
-            if (open) {
+            // always on the card, hidden while closed, so it can open and close smoothly
+            {
                 const { modifierList, upgradeSelector, researchSelector } = modifierParts(i)
 
                 if (modifierList.length > 0 || upgradeSelector || researchSelector) {
-                    modifierBox = <div className="draft-modifiers-expanded" style={{ backgroundColor: classColor }} onClick={event => expandPanelClick(i, event)}>
+                    modifierBox = <div className={'draft-modifiers-expanded' + (open ? ' is-open' : '')} style={{ backgroundColor: classColor }} onClick={event => expandPanelClick(i, event)}>
                         <div className="modifier-panel-div">
                             {modifierList.length > 0 ?
                                 <p className="upgrade-header"><b>{t('Cost Modifiers')}</b></p>
@@ -527,7 +544,7 @@ function DraftPanel(props) {
         }
 
         const cardWrap =
-            <div className={'draft-card-wrap' + (isSelected ? ' selected' : '') + (faceUp ? '' : ' facedown')} key={phone ? undefined : i}
+            <div className={'draft-card-wrap' + (isSelected ? ' selected' : '') + (faceUp ? '' : ' facedown')} key={phone ? undefined : i} data-card-key={draftPool[i].key}
                 onPointerEnter={event => { if (faceUp && hasImage) doCardOverlay(draftPool[i], event) }}
                 onPointerLeave={() => doCardOverlay(null)}
                 onMouseLeave={() => minimizePanelHover(i)}>
@@ -605,11 +622,11 @@ function DraftPanel(props) {
                     aria-label={progress.isUpgrade ? t('Drafted XP') : t('Drafted cards')}>
                     {segments}
                 </div>
-                <div className="bar-count"><strong>{progressValue}</strong> / {progressTarget} {progressUnit}</div>
+                <div className="bar-count"><strong key={progressValue}>{progressValue}</strong> / {progressTarget} {progressUnit}</div>
             </div>
             <div className="bar-row">
                 <div className="confirm-bar-text" aria-live="polite">
-                    {confirmText}
+                    <span className="confirm-swap" key={confirmText}>{confirmText}</span>
                     {!insufficientOptions ?
                         <span className="confirm-bar-hint">{requireConfirmation ? t('Click the selected card again or press Enter. Esc clears the selection.') : t('Picks are added right away.')}</span>
                         : null}
@@ -671,7 +688,7 @@ function DraftPanel(props) {
             <div className='draft-container' style={{ '--flip-duration': speed === 0 ? '0s' : (0.6 / speed) + 's', ...(cardsPerRow > 0 ? { gridTemplateColumns: 'repeat(' + cardsPerRow + ', minmax(0, 1fr))' } : {}) }}>
                 {images}
             </div>
-            {phone ? phoneConfirm : confirmBar}
+            {phone ? <Presence visible={Boolean(phoneConfirm)} exit={220}>{phoneConfirm}</Presence> : confirmBar}
             {sheetContents}
             <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
         </>

@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 
+import { motionScale } from './components/useMotionScale'
+
 const DURATION = 500
 const EASING = 'cubic-bezier(0.2, 0.8, 0.2, 1)'
 
@@ -20,8 +22,11 @@ function useFlipLayout(containerRef, layoutKey) {
 
         const items = container.querySelectorAll(':scope > .draft-left > *, :scope > .draft-main > *, :scope > .draft-aside > *')
         const keyChanged = lastKey.current !== layoutKey
-        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        const scale = motionScale()
+        const reduceMotion = scale === 0 || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
         const next = new WeakMap()
+        const stagger = 70 * scale
+        let arrivals = 0
 
         items.forEach(element => {
             const rect = element.getBoundingClientRect()
@@ -40,14 +45,14 @@ function useFlipLayout(containerRef, layoutKey) {
                 if (dx !== 0 || dy !== 0) {
                     element.animate(
                         [{ transform: 'translate(' + dx + 'px, ' + dy + 'px)' }, { transform: 'translate(0, 0)' }],
-                        { duration: DURATION, easing: EASING }
+                        { duration: DURATION * scale, easing: EASING }
                     )
                 }
             }
             else {
                 element.animate(
                     [{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }],
-                    { duration: DURATION, easing: EASING }
+                    { duration: DURATION * scale, easing: EASING, delay: stagger * arrivals++, fill: 'backwards' }
                 )
             }
         })

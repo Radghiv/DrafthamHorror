@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux'
 
 import { changeSetting } from '../features/settings/settingsSlice'
 import { useT } from '../i18n'
+import SegmentedRange from './SegmentedRange'
 
 function PhaseSettings(props) {
     const t = useT()
@@ -21,14 +22,14 @@ function PhaseSettings(props) {
             <div className="fblist">
                 <label className="fbphasesettingleft">{t('Cards to select from:')}</label>
                 <span className="fbphasesettingslider">
-                    <input type="range" min="1" max="20" value={settings.draftCount[phase-1]} name='DraftCount' onChange={handleChange}/>
+                    <SegmentedRange min="1" max="20" value={settings.draftCount[phase-1]} name='DraftCount' onChange={handleChange}/>
                 </span>
                 <span className="fbphasesettingslidervalue">{settings.draftCount[phase-1]}</span>
             </div>
             <div className="fblist">
                 <label className="fbphasesettingleft">{t('Cards selected in this stage:')}{' '}</label>
                 <span className='fbphasesettingslider'>
-                    <input type="range" min="0" max={settings.deckSize} value={settings.draftCards[phase-1]} name='DraftCards' onChange={handleChange}/>
+                    <SegmentedRange min="0" max={settings.deckSize} value={settings.draftCards[phase-1]} name='DraftCards' onChange={handleChange}/>
                 </span>
                 <span className="fbphasesettingslidervalue">{settings.draftCards[phase-1]}</span>
             </div>

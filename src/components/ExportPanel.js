@@ -6,6 +6,7 @@ import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import CardLinkButton from './CardLinkButton'
 import useCardName from './useCardName'
 import { requiredQuantity, signatureGroups } from '../data/RequiredCards'
+import { CheckIcon } from './wizard/Icons'
 import { useT } from '../i18n'
 
 function SettingsExport(props) {
@@ -13,6 +14,14 @@ function SettingsExport(props) {
     const [useSignatures, changeUseSignatures] = useState([ true, false, false, false])
     const [basicWeakness, changeBasicWeakness] = useState(['Random basic weakness', '01000'])
     const [deckTitle, changeDeckTitle] = useState('')
+
+    // the button of the file that was just exported shows a check mark for a moment
+    const [exported, setExported] = useState(null)
+
+    function flashExported(fileType) {
+        setExported(fileType)
+        setTimeout(() => setExported(current => current === fileType ? null : current), 2200)
+    }
 
     const investigator = useSelector(state => state.settings.investigator)
     const investigatorData = useSelector(state => state.settings.investigatorData)
@@ -207,8 +216,8 @@ function SettingsExport(props) {
             </div>
 
             <div className="options-section">
-                <button type="button" className="btn btn-primary btn-block" onClick={() => handleExportClick('OCTGN')}>{t('Export as .o8d')}</button>
-                <button type="button" className="btn btn-secondary btn-block" onClick={() => handleExportClick('TXT')}>{t('Export as plain text (.txt)')}</button>
+                <button type="button" className="btn btn-primary btn-block" onClick={() => { handleExportClick('OCTGN'); flashExported('OCTGN') }}>{exported === 'OCTGN' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as .o8d')}</button>
+                <button type="button" className="btn btn-secondary btn-block" onClick={() => { handleExportClick('TXT'); flashExported('TXT') }}>{exported === 'TXT' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as plain text (.txt)')}</button>
                 <p className="field-hint">{t('Exports an OCTGN deck file. To import a downloaded .o8d deck into ArkhamDB, go to My Decks and click Import Deck, then File.')}</p>
             </div>
         </div>

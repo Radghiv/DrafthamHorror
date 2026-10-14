@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useSelector } from 'react-redux'
 
+import { Presence } from './usePresence'
 import { useT } from '../i18n'
 
 // The confirmation of a restart. Restarting throws away the picks made so far, so it first asks and says what happens.
@@ -32,14 +33,13 @@ export function RestartDialog(props) {
         return () => document.removeEventListener('keydown', handleKeyDown)
     }, [open])
 
-    if (!open) return null
-
     function confirm() {
         onClose()
         onRestart()
     }
 
     return createPortal(
+        <Presence visible={open} exit={180}>
         <div className="dialog-backdrop" onClick={onClose}>
             <div className="dialog" role="alertdialog" aria-modal="true" aria-labelledby="restart-title" aria-describedby="restart-text"
                 onClick={event => event.stopPropagation()}>
@@ -54,7 +54,8 @@ export function RestartDialog(props) {
                     <button type="button" className="btn btn-primary" onClick={confirm}>{t('Restart draft')}</button>
                 </div>
             </div>
-        </div>,
+        </div>
+        </Presence>,
         document.body)
 }
 

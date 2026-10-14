@@ -14,7 +14,7 @@ function PhoneProgressCount() {
 
     const progress = useDraftProgress()
 
-    return <span className="phone-count"><strong>{progress.value}</strong> / {progress.target}<span className="phone-count-unit"> {progress.isUpgrade ? t('XP') : t('cards')}</span></span>
+    return <span className="phone-count"><strong key={progress.value}>{progress.value}</strong> / {progress.target}<span className="phone-count-unit"> {progress.isUpgrade ? t('XP') : t('cards')}</span></span>
 }
 
 function PhoneProgressLine() {
@@ -57,10 +57,10 @@ function AppHeader(props) {
             <header className="app-header phone-top">
                 <div className="phone-top-row">
                     <AppLogo onClick={onHome} />
-                    {compact && phaseText ? <h1 className="app-phase" title={phaseText}>{phaseText}</h1> : <span className="phone-top-fill"></span>}
+                    {compact && phaseText ? <h1 className="app-phase" title={phaseText} key={phaseText}>{phaseText}</h1> : <span className="phone-top-fill"></span>}
                     {showCardsPerRow ? <PhoneProgressCount /> : null}
                     {onUndo && !hasDock ? <button type="button" className="icon-btn" onClick={onUndo} aria-label={t('Undo')} title={t('Undo the last pick (Ctrl+Z)')}><UndoIcon /></button> : null}
-                    <SettingsMenu draftOptions={showCardsPerRow} onRestart={onRestart} />
+                    <SettingsMenu onRestart={onRestart} />
                 </div>
                 {showCardsPerRow ? <PhoneProgressLine /> : null}
             </header>
@@ -70,9 +70,9 @@ function AppHeader(props) {
     return (
         <header className={'app-header' + (compact ? ' app-header-compact' : '')}>
             <AppLogo onClick={onHome} />
-            {compact && phaseText ? <h1 className="app-phase">{phaseText}</h1> : null}
+            {compact && phaseText ? <h1 className="app-phase" key={phaseText}>{phaseText}</h1> : null}
             <div className="app-header-controls">
-                <SettingsMenu draftOptions={showCardsPerRow} />
+                <SettingsMenu />
                 {onUndo ? <button type="button" className="btn btn-secondary" onClick={onUndo} title={t('Undo the last pick (Ctrl+Z)')}>{t('Undo')}</button> : null}
                 {onRestart ? <RestartButton onRestart={onRestart} /> : null}
             </div>

@@ -69,6 +69,11 @@ export function popUndo() {
     return { snapshot: snapshot, depth: undoStack.length }
 }
 
+// The latest undo point, left in place
+export function peekUndo() {
+    return undoStack[undoStack.length - 1] || null
+}
+
 export function clearUndo() {
     undoStack = []
     startSnapshot = null

@@ -146,3 +146,20 @@ export function ZoomIcon() {
         </svg>
     )
 }
+
+// two chevrons moving toward each other (fold everything up) and away from each other (unfold everything)
+export function FoldAllIcon() {
+    return (
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M5 3.5 10 8.5 15 3.5 M5 16.5 10 11.5 15 16.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    )
+}
+
+export function UnfoldAllIcon() {
+    return (
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M5 8.5 10 3.5 15 8.5 M5 11.5 10 16.5 15 11.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    )
+}

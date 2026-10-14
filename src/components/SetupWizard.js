@@ -14,6 +14,7 @@ import InvestigatorPanel from './InvestigatorPanel'
 import AppLogo from './AppLogo'
 import SettingsMenu from './SettingsMenu'
 import describeSetup from './wizard/describeSetup'
+import { Presence } from './usePresence'
 import { CheckIcon } from './wizard/Icons'
 import { useT, msg } from '../i18n'
 
@@ -42,6 +43,12 @@ function SetupWizard() {
     const currentIndex = Math.max(0, STEPS.findIndex(step => step.key === settings.setupStep))
     const current = STEPS[currentIndex]
     const info = describeSetup(settings, tabooData, collection)
+
+    // the direction the new step comes from, decided once when the step changes (a later render of the same step must not change it,
+    // or the animation would restart)
+    const travel = useRef({ index: currentIndex, direction: 'forward' })
+
+    if (travel.current.index !== currentIndex) travel.current = { index: currentIndex, direction: currentIndex > travel.current.index ? 'forward' : 'back' }
 
     const subtitles = {
         collection: t('{first} · {second}', { first: info.packSummary, second: info.tabooLabel }),
@@ -140,11 +147,11 @@ function SetupWizard() {
                     <div className="phone-step-line" aria-hidden="true">
                         {STEPS.map((step, index) => <span className={index <= currentIndex ? 'filled' : ''} key={step.key}></span>)}
                     </div>
-                    {stepsOpen ?
+                    <Presence visible={stepsOpen} exit={140}>
                         <nav className="phone-step-menu" id="phone-step-menu" aria-label={t('Setup steps')}>
                             {stepList}
                         </nav>
-                        : null}
+                    </Presence>
                 </div>
                 :
                 <div className="wizard-top">
@@ -160,13 +167,15 @@ function SetupWizard() {
             <SetupLeftColumn />
 
             <section className="panel wizard-main" aria-label={t(current.title)}>
-                <div>
+                <div key={'head-' + current.key} className={'step-enter step-enter-' + travel.current.direction}>
                     <p className="eyebrow">{t('Step {current} of {total}', { current: currentIndex + 1, total: STEPS.length })}</p>
                     <h1 className="panel-title" ref={headingRef} tabIndex={-1} style={{outline: 'none'}}>{t(current.heading)}</h1>
                     {current.lead ? <p className="panel-lead">{t(current.lead)}</p> : null}
                 </div>
 
-                {content}
+                <div key={'body-' + current.key} className={'step-enter step-enter-' + travel.current.direction + ' step-enter-late'}>
+                    {content}
+                </div>
 
                 <div className="wizard-actions">
                     {isFirst ? <span></span> :

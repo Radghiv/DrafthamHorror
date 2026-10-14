@@ -7,14 +7,14 @@ import ScrollToTopToggle from './ScrollToTopToggle'
 import LanguageSelect from './LanguageSelect'
 import ThemeToggle from './ThemeToggle'
 import { RestartDialog } from './RestartButton'
+import { Presence } from './usePresence'
 import { SettingsIcon } from './wizard/Icons'
 import { useT } from '../i18n'
 
-// The settings button and the small panel it opens: language and theme everywhere, and on the drafting screen also the cards per row
-// and the animation options (draftOptions). The panel closes with a click outside, Escape or the button itself.
+// The settings button and the small panel it opens: all the settings, on every screen. The panel closes with a click outside, Escape or the button itself.
 // With onRestart (a phone, where the header has no room for a Restart button) the panel also holds Restart, which asks for confirmation.
 function SettingsMenu(props) {
-    const { draftOptions, onRestart } = props
+    const { onRestart } = props
 
     const t = useT()
 
@@ -48,24 +48,20 @@ function SettingsMenu(props) {
                 title={t('Settings')} aria-label={t('Settings')} onClick={() => setOpen(!open)}>
                 <SettingsIcon />
             </button>
-            {open ?
+            <Presence visible={open} exit={140}>
                 <div className="settings-popover" id="settings-popover" role="group" aria-label={t('Settings')}>
                     <h2>{t('Settings')}</h2>
                     <LanguageSelect />
                     <ThemeToggle />
+                    <AnimationSpeedSlider />
                     <ScrollToTopToggle />
-                    {draftOptions ?
-                        <>
-                            <CardsPerRowSlider />
-                            <AnimationSpeedSlider />
-                            <AnimateTogetherToggle />
-                        </>
-                        : null}
+                    <AnimateTogetherToggle />
+                    <CardsPerRowSlider />
                     {onRestart ?
                         <button type="button" className="btn btn-secondary" aria-haspopup="dialog" onClick={() => { setOpen(false); setRestarting(true) }}>{t('Restart')}</button>
                         : null}
                 </div>
-                : null}
+            </Presence>
             {onRestart ? <RestartDialog open={restarting} onClose={() => setRestarting(false)} onRestart={onRestart} /> : null}
         </div>
     )

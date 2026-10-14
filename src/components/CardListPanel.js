@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 
 import { costWithTaboo } from '../draft/DrawDraft'
@@ -6,6 +6,7 @@ import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import useCardName from './useCardName'
 import CardLinkButton from './CardLinkButton'
 import { costBin } from './CostCurve'
+import { motionScale } from './useMotionScale'
 import { useT } from '../i18n'
 
 function CardListPanel(props) {
@@ -85,116 +86,89 @@ function CardListPanel(props) {
         doCardOverlay(null)
     }
 
+    // Rows that appear together (a resumed draft, an undone restart) cascade in: they are remembered here with their place in the cascade for
+    // a moment. A single new row is a pick, which has its own flight to the row.
+    const [fresh, setFresh] = useState({})
+    const knownKeys = useRef(null)
+    const freshTimer = useRef(null)
+    const listSignature = cardList.map(item => item.key).join('|')
+
+    useLayoutEffect(() => {
+        const now = new Set(cardList.map(item => item.key))
+        const before = knownKeys.current
+
+        knownKeys.current = now
+
+        // the first time the panel is drawn only counts when a saved draft is being resumed
+        const resuming = before === null && document.documentElement.classList.contains('resume-flight')
+        const added = Array.from(now).filter(key => before === null ? resuming : !before.has(key))
+
+        if (added.length < 2) return
+
+        setFresh(Object.fromEntries(added.map((key, position) => [key, position])))
+        clearTimeout(freshTimer.current)
+        freshTimer.current = setTimeout(() => setFresh({}), 1200 * motionScale() + 600)
+        // only when the rows change, not each time the list object does
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [listSignature])
+
+    useEffect(() => () => clearTimeout(freshTimer.current), [])
+
     // touch screens have no hover: tapping a row opens the preview
     function onTapCard(event) {
         if (isTouchScreen()) previewCard(event)
     }
 
+    // one row of a list: the name, the level as dots, the number of copies and the link to the card
+    function renderRow(item, index) {
+        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
+        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
+        const place = fresh[item.key]
+        const entering = place !== undefined
+
+        return <p className={rowClass(item) + (entering ? ' row-enter' : '')} style={entering ? { '--row': Math.min(place, 14) } : undefined} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={item.key || index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+    }
+
     const assetHeader = assetCount > 0 ? <h4>{t('Assets ({count})', { count: assetCount })}</h4> : null
     
     const handHeader = hand.length > 0 ? <p className='slot-header'>{t('Hand')}</p> : null
-    const handContents = hand.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const handContents = hand.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const hand2Header = hand2.length > 0 ? <p className='slot-header'>{t('Hand x2')}</p> : null
-    const hand2Contents = hand2.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const hand2Contents = hand2.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const arcaneHeader = arcane.length > 0 ? <p className='slot-header'>{t('Arcane')}</p> : null
-    const arcaneContents = arcane.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const arcaneContents = arcane.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const arcane2Header = arcane2.length > 0 ? <p className='slot-header'>{t('Arcane x2')}</p> : null
-    const arcane2Contents = arcane2.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const arcane2Contents = arcane2.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const accessoryHeader = accessory.length > 0 ? <p className='slot-header'>{t('Accessory')}</p> : null
-    const accessoryContents = accessory.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const accessoryContents = accessory.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const bodyHeader = body.length > 0 ? <p className='slot-header'>{t('Body')}</p> : null
-    const bodyContents = body.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const bodyContents = body.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const allyHeader = ally.length > 0 ? <p className='slot-header'>{t('Ally')}</p> : null
-    const allyContents = ally.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const allyContents = ally.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const tarotHeader = tarot.length > 0 ? <p className='slot-header'>{t('Tarot')}</p> : null
-    const tarotContents = tarot.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const tarotContents = tarot.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const otherassetHeader = otherasset.length > 0 ? <p className='slot-header'>{t('Other')}</p> : null
-    const otherassetContents = otherasset.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const otherassetContents = otherasset.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const permanentHeader = permanent.length > 0 ? <p className='slot-header'>{t('Permanent')}</p> : null
-    const permanentContents = permanent.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const permanentContents = permanent.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const eventHeader = eventCount > 0 ? <h4>{t('Events ({count})', { count: eventCount })}</h4> : null
-    const eventContents = event.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const eventContents = event.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const skillHeader = skillCount > 0 ? <p className='slot-header'>{t('Skills ({count})', { count: skillCount })}</p> : null
-    const skillContents = skill.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const skillContents = skill.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const otherHeader = otherCount > 0 ? <h4>{t('Other ({count})', { count: otherCount })}</h4> : null
-    const otherContents = other.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map((item, index) => {
-        const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
-        const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
-
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
-    })
+    const otherContents = other.sort((a, b) => compareNames(a, b) || a.xp - b.xp).map(renderRow)
 
     const header = props.deck ?
         <h3>{deckName.length > 0 ? deckName : t('Deck')}</h3> :

@@ -6,6 +6,7 @@ import { changeSetting } from '../features/settings/settingsSlice'
 import DraftPhases from '../data/DraftPhases'
 import { isDraftTypeEnabled } from '../data/DraftModes'
 import { useT } from '../i18n'
+import SegmentedRange from './SegmentedRange'
 
 function BuildDraftSettings(props) {
     const t = useT()
@@ -68,7 +69,7 @@ function BuildDraftSettings(props) {
             <div className="fbsetting">
                 <label className="fbdraftsettingleft">{t('Cards to select from:')}</label>
                 <span className="fbdraftsettingslider">
-                    <input type="range" min="2" max="20" step="1" value={draftCount[phase-1]} name="DraftCount" onChange={handleCountChange}/>
+                    <SegmentedRange min="2" max="20" step="1" value={draftCount[phase-1]} name="DraftCount" onChange={handleCountChange}/>
                 </span>
                 <span className="fbdraftsettingslidervalue">{draftCount[phase-1]}</span>
             </div>

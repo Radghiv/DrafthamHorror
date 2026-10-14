@@ -9,6 +9,7 @@ import useInvestigatorEntries from '../useInvestigatorEntries'
 import { pendingLevel0Count } from '../../draft/Level0'
 import DraftPhases from '../../data/DraftPhases'
 import { seedRandom } from '../../random'
+import { startSetupFlight } from '../../draft/flyInvestigator'
 
 // Shared by every "Start" button in the setup flow
 function useStartDraft() {
@@ -26,6 +27,7 @@ function useStartDraft() {
     const draftOrder = useSelector(state => state.settings.draftOrder)
     const level0Swaps = useSelector(state => state.draft.level0Swaps)
     const level0Adds = useSelector(state => state.draft.level0Adds)
+    const animationSpeed = useSelector(state => state.settings.animationSpeed)
 
     const dispatch = useDispatch()
 
@@ -45,6 +47,9 @@ function useStartDraft() {
     const canStart = enoughCards && !needsDeck && !noInvestigators
 
     function start() {
+        // the setup fades away and the investigator's card flies to the draft screen (copies are made before the screen changes)
+        const flight = startSetupFlight(animationSpeed)
+
         // the same seed deals the same cards
         seedRandom(seed)
 
@@ -71,6 +76,8 @@ function useStartDraft() {
         else {
             dispatch(startDraft(isUpgradeTab ? DraftPhases.UpgradePhase : DraftPhases.BuildPhase1))
         }
+
+        if (flight) requestAnimationFrame(flight.land)
     }
 
     return { start, enoughCards, needsDeck, noInvestigators, eligibleCount, canStart, deckFetchError }

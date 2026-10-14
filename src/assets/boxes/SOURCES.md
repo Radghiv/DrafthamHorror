@@ -1,0 +1,36 @@
+# Box art
+
+Pictures of the boxes of the products, used behind the groups of packs in the Collection step. They are the product images of the Fantasy Flight
+Games product pages (https://www.fantasyflightgames.com/productline/arkham-horror-the-card-game/), (c) Fantasy Flight Games / Asmodee; this site is
+not produced, endorsed, supported or affiliated with them (see the notice at the bottom of the app).
+
+| File | Product page | Image |
+| --- | --- | --- |
+| arkham-horror-the-card-game-revised-core-set.webp | https://www.fantasyflightgames.com/product/arkham-horror-the-card-game-revised-core-set/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC60_Product-Image.webp |
+| the-dunwich-legacy-campaign-expansion.webp | https://www.fantasyflightgames.com/product/the-dunwich-legacy-campaign-expansion/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC66_Product-Image-1.webp |
+| the-path-to-carcosa-campaign-expansion.webp | https://www.fantasyflightgames.com/product/the-path-to-carcosa-campaign-expansion/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC68_Product-Image-1.webp |
+| the-forgotten-age-campaign-expansion.webp | https://www.fantasyflightgames.com/product/the-forgotten-age-campaign-expansion/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc73_box_left_500.webp |
+| the-circle-undone-campaign-expansion.webp | https://www.fantasyflightgames.com/product/the-circle-undone-campaign-expansion/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc75_box-left500.webp |
+| the-dream-eaters-campaign-expansion.webp | https://www.fantasyflightgames.com/product/the-dream-eaters-campaign-expansion/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc79-image0500.webp |
+| the-innsmouth-conspiracy-campaign-expansion.webp | https://www.fantasyflightgames.com/product/the-innsmouth-conspiracy-campaign-expansion/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc81_box-left500.webp |
+| edge-of-the-earth-campaign-expansion.webp | https://www.fantasyflightgames.com/product/edge-of-the-earth-campaign-expansion/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC64_Product-Image-1.webp |
+| the-scarlet-keys-investigator-expansion.webp | https://www.fantasyflightgames.com/product/the-scarlet-keys-investigator-expansion/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC70_Product-Image-1.webp |
+| the-feast-of-hemlock-vale-campaign-expansion.webp | https://www.fantasyflightgames.com/product/the-feast-of-hemlock-vale-campaign-expansion/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc77_box-left500.webp |
+| the-drowned-city-campaign-expansion.webp | https://www.fantasyflightgames.com/product/the-drowned-city-campaign-expansion/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC84_Product-Image-1.webp |
+| return-to-the-night-of-the-zealot.webp | https://www.fantasyflightgames.com/product/return-to-the-night-of-the-zealot/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc26_main.webp |
+| return-to-the-dunwich-legacy.webp | https://www.fantasyflightgames.com/product/return-to-the-dunwich-legacy/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc28_main.webp |
+| return-to-the-path-to-carcosa.webp | https://www.fantasyflightgames.com/product/return-to-the-path-to-carcosa/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc36_main.webp |
+| return-to-the-forgotten-age.webp | https://www.fantasyflightgames.com/product/return-to-the-forgotten-age/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc46-box-left500.webp |
+| return-to-the-circle-undone.webp | https://www.fantasyflightgames.com/product/return-to-the-circle-undone/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc61-image1500.webp |
+| nathaniel-cho-investigator-starter-deck.webp | https://www.fantasyflightgames.com/product/nathaniel-cho-investigator-starter-deck/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc47-box500.webp |
+| the-blob-that-ate-everything.webp | https://www.fantasyflightgames.com/product/the-blob-that-ate-everything/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc45_main.webp |
+| arkham-horror-the-card-game.webp | https://www.fantasyflightgames.com/product/arkham-horror-the-card-game/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC100_Product-Image-1.webp |
+| tommy-muldoon-investigator-deck.webp | https://www.fantasyflightgames.com/product/tommy-muldoon-investigator-deck/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC101_Product-Image.webp |
+| harvey-walters-investigator-starter-deck.webp | https://www.fantasyflightgames.com/product/harvey-walters-investigator-starter-deck/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc48-box500.webp |
+| winifred-habbamock-investigator-starter-deck.webp | https://www.fantasyflightgames.com/product/winifred-habbamock-investigator-starter-deck/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc49-box500.webp |
+| jacqueline-fine-investigator-starter-deck.webp | https://www.fantasyflightgames.com/product/jacqueline-fine-investigator-starter-deck/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc50-box500.webp |
+| stella-clark-investigator-starter-deck.webp | https://www.fantasyflightgames.com/product/stella-clark-investigator-starter-deck/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/ahc51-box500.webp |
+| carolyn-fern-investigator-deck.webp | https://www.fantasyflightgames.com/product/carolyn-fern-investigator-deck/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC102_Product-Image.webp |
+| andre-patel-investigator-deck.webp | https://www.fantasyflightgames.com/product/andre-patel-investigator-deck/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC103_Product-Image.webp |
+| marie-lambeau-investigator-deck.webp | https://www.fantasyflightgames.com/product/marie-lambeau-investigator-deck/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC104_Product-Image.webp |
+| miguel-de-la-cruz-investigator-deck.webp | https://www.fantasyflightgames.com/product/miguel-de-la-cruz-investigator-deck/ | https://cdn.svc.asmodee.net/production-fantasyflightgames/uploads/image-converter/2026/09/FFG_AHC105_Product-Image.webp |

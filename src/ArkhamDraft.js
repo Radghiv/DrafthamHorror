@@ -6,9 +6,14 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { reset, changeSeed } from './features/settings/settingsSlice'
+import { reset, changeSeed, updateImageOverlay } from './features/settings/settingsSlice'
 import { fetchCards, fetchTaboo, fetchPacks, changeFetchError } from './features/data/dataSlice'
 import { undoLastPick } from './features/draftHistory'
+import { prepareCardReturn } from './draft/returnCard'
+import { playLeaveEffect, playCompletionLeave } from './draft/screenTransitions'
+import { motionSpeed } from './data/AnimationSpeed'
+import useMotionScale from './components/useMotionScale'
+import useSegmentedPills from './components/useSegmentedPills'
 import { clearUndo, clearSavedDraft } from './features/draftState'
 import { restartDraft } from './features/draftRestart'
 
@@ -50,6 +55,10 @@ function ArkhamDraft() {
     const draftType = useSelector(state => state.settings.draftType)
     const currentLevel0Name = useSelector(state => state.draft.currentLevel0Name)
     const undoDepth = useSelector(state => state.settings.undoDepth)
+    const animationSpeed = useSelector(state => state.settings.animationSpeed)
+
+    useMotionScale()
+    useSegmentedPills()
 
     // what screen readers are told about things that don't change the screen much (an undone pick)
     const [announcement, setAnnouncement] = useState('')
@@ -102,8 +111,20 @@ function ArkhamDraft() {
     const layoutRef = useRef(null)
     useFlipLayout(layoutRef, draftComplete)
 
+    // the cards that were being hovered are gone when the draft ends, without the pointer having left them: their preview goes too
+    useEffect(() => {
+        if (draftComplete) dispatch(updateImageOverlay({ imagesrc: null }))
+    }, [draftComplete, dispatch])
+
     function undo() {
+        // from the finished draft: the panels that only it has fade away
+        if (draftComplete) playCompletionLeave(animationSpeed)
+
+        // the card of the pick that is taken back flies from the Draft List to its place among the cards to choose from
+        const flight = dispatch(prepareCardReturn(motionSpeed(animationSpeed)))
+
         dispatch(undoLastPick)
+        if (flight) requestAnimationFrame(flight.land)
         setAnnouncement(t('Last pick undone'))
     }
 
@@ -116,6 +137,7 @@ function ArkhamDraft() {
 
     // The logo leaves the draft for the setup screens. An unfinished draft keeps its save, so it can be resumed from there; a complete one has nothing to resume.
     function goHome() {
+        playLeaveEffect(animationSpeed)
         clearUndo()
         if (draftComplete) clearSavedDraft()
         dispatch(reset())
@@ -174,7 +196,7 @@ function ArkhamDraft() {
     }
     else if (investigatorDrafting) {
         contents =
-        <div className={'draft-layout' + (phone ? ' has-strip' : '')}>
+        <div className={'draft-layout' + (phone ? ' has-strip' : '')} key="investigator-pick">
             <div className="draft-main">
                 <InvestigatorPick />
             </div>
@@ -207,7 +229,7 @@ function ArkhamDraft() {
                 {buildXPList.length > 0 ? <BuildUpgradePanel /> : null}
                 {draftTab === 'Build Deck' ? <ExportPanel /> : null}
             </div>
-            <DeckRightColumn alwaysShowDraftList={true} />
+            <DeckRightColumn alwaysShowDraftList={true} split={true} />
         </div>
     }
     else if (deckLoaded) {

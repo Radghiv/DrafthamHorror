@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { setCardsPerRow, CARDS_PER_ROW_KEY } from '../features/settings/settingsSlice'
 import { saveJSON } from '../storage'
 import { useT } from '../i18n'
+import SegmentedRange from './SegmentedRange'
 
 // How many cards of the draft are shown per row; 0 lets the layout decide from the available width
 function CardsPerRowSlider() {
@@ -25,7 +26,7 @@ function CardsPerRowSlider() {
     return (
         <label className="cols-control">
             <span className="cols-label">{t('Cards per row')}</span>
-            <input type="range" min="0" max="6" step="1" value={value} onChange={handleChange} aria-valuetext={text} />
+            <SegmentedRange min="0" max="6" step="1" value={value} onChange={handleChange} aria-valuetext={text} />
             <span className="cols-value">{text}</span>
         </label>
     )

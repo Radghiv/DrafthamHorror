@@ -18,7 +18,7 @@ export default defineConfig({
             manifest: {
                 name: 'Draftham Horror',
                 short_name: 'Draftham',
-                description: 'Drafting tool for Arkham Horror: The Card Game',
+                description: 'Draft your investigator, deck cards and upgrades for Arkham Horror: The Card Game from the packs you own.',
                 start_url: './',
                 scope: './',
                 display: 'standalone',

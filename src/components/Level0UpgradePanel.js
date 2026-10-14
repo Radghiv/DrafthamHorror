@@ -6,6 +6,7 @@ import { startDraft } from '../features/draft/draftSlice'
 import BuildChaosSettings from './BuildChaosSettings'
 import BuildDraftSettings from './BuildDraftSettings'
 import DraftPhases from '../data/DraftPhases'
+import { playPanelsLeave } from '../draft/screenTransitions'
 import { useT } from '../i18n'
 
 function Level0UpgradePanel(props) {
@@ -20,8 +21,10 @@ function Level0UpgradePanel(props) {
     const phase = props.phase
 
     const dispatch = useDispatch()
+    const animationSpeed = useSelector(state => state.settings.animationSpeed)
 
     function handleStartDraft() {
+        playPanelsLeave(animationSpeed)
         dispatch(startDraft(phase))
     }
 
@@ -82,7 +85,7 @@ function Level0UpgradePanel(props) {
     const button = <button className="button-rect button-green" onClick={handleStartDraft}>{t('Draft')}</button>
 
     return (
-        <div className='settingsDiv'>
+        <div className='settingsDiv phase-panel'>
             <h3>{t('Level 0 Draft Options')}</h3>
             <h5>{t('Adaptable, Exile replacements, etc.')}</h5>
             <h2 className="draft-quantity">{t('{count} card|{count} cards', { count: draftTotal })}</h2>

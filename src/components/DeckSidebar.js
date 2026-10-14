@@ -44,7 +44,7 @@ export function PhoneDock(props) {
 
     return (
         <div className="phone-dock">
-            <button type="button" className="dock-btn" aria-expanded={drawer === 'left'} aria-controls="draft-left-panel"
+            <button type="button" className="dock-btn" data-investigator-target="true" aria-expanded={drawer === 'left'} aria-controls="draft-left-panel"
                 onClick={() => onChange(drawer === 'left' ? null : 'left')}>
                 <PersonIcon />
                 <span>{t('Investigator')}</span>
@@ -103,13 +103,30 @@ export function DeckLeftColumn(props) {
 }
 
 // Right column: the lists kept apart, with what is being drafted now on top of the existing deck (when one was loaded
-// from ArkhamDB), and the removed cards last
+// from ArkhamDB), and the removed cards last. With split (the finished draft) the Draft List (and the removed cards) and the Deck List
+// are columns of their own.
 export function DeckRightColumn(props) {
-    const { alwaysShowDraftList, open, onClose, inSheet, hidden } = props
+    const { alwaysShowDraftList, open, onClose, inSheet, hidden, split } = props
 
     const deckList = useSelector(state => state.draft.deckList)
     const cardList = useSelector(state => state.draft.cardList)
     const removedList = useSelector(state => state.draft.removedList)
+
+    if (split) {
+        return (
+            <>
+                <div className="draft-aside" id="draft-right-panel">
+                    {alwaysShowDraftList || cardList.length > 0 ? <CardListPanel list={cardList} /> : null}
+                    {removedList.length > 0 ? <CardListPanel list={removedList} removed={true} /> : null}
+                </div>
+                {deckList.length > 0 ?
+                    <div className="draft-aside">
+                        <CardListPanel list={deckList} deck={true} />
+                    </div>
+                    : null}
+            </>
+        )
+    }
 
     return (
         <div className={'draft-aside' + (open ? ' is-open' : '') + (inSheet ? ' in-sheet' : '')} id="draft-right-panel" hidden={hidden} role={inSheet ? 'tabpanel' : undefined}>

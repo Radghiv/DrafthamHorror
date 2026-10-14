@@ -5,8 +5,9 @@ import { setAnimationSpeed, ANIMATION_SPEED_KEY } from '../features/settings/set
 import { ANIMATION_SPEEDS, animationSpeedLabel } from '../data/AnimationSpeed'
 import { saveJSON } from '../storage'
 import { useT } from '../i18n'
+import SegmentedRange from './SegmentedRange'
 
-// Speed of the draft animations; the first position turns them off
+// Speed of all the animations of the site; the first position turns them off
 function AnimationSpeedSlider() {
     const t = useT()
 
@@ -26,7 +27,7 @@ function AnimationSpeedSlider() {
     return (
         <label className="cols-control">
             <span className="cols-label">{t('Animation speed')}</span>
-            <input type="range" min="0" max={ANIMATION_SPEEDS.length - 1} step="1" value={value} onChange={handleChange} aria-valuetext={text} />
+            <SegmentedRange min="0" max={ANIMATION_SPEEDS.length - 1} step="1" value={value} onChange={handleChange} aria-valuetext={text} />
             <span className="cols-value">{text}</span>
         </label>
     )

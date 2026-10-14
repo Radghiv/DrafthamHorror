@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { changeSetting } from '../../features/settings/settingsSlice'
 import { validateDeck, unloadDeck, setDeckValidation } from '../../features/data/dataSlice'
 import { CheckIcon } from './Icons'
+import { Presence } from '../usePresence'
 import { useT } from '../../i18n'
 
 // ArkhamDB deck the investigator is taken from. Validating switches the setup to the deck's investigator and, when upgrading,
@@ -51,12 +52,16 @@ function DeckImport() {
                     t("Enter an ArkhamDB deck ID to load an existing deck, so cards that take effect while upgrading are used. Validating switches the investigator to the deck's. Drafted cards are added to a drafted list, and cards removed by an upgrade (or forcibly, such as by On Your Own) appear in a removed cards list.") :
                     t("Enter an ArkhamDB deck ID to take its investigator, class choices, deck size and taboo list. Only those are used: the deck's cards are not.")}</p>
             </div>
-            {result === 'valid' ?
-                <div className="status status-ok" role="status"><CheckIcon /> {validation.name ? t('"{name}" is a valid deck for {investigator}.', { name: validation.name, investigator: validation.investigator }) : t('Valid deck for {investigator}.', { investigator: validation.investigator })} {t('To pick another investigator, clear or change the deck ID.')}</div>
-                : null}
-            {result === 'invalid' || deckFetchError ?
-                <p className="notice notice-error" role="alert">{t('Deck not found. Currently only unpublished decks can be loaded. Make sure the ID is correct and that "Make your decks public" is selected in your ArkhamDB settings.')}</p>
-                : null}
+            <Presence visible={result === 'valid'} exit={220}>
+                {result === 'valid' ?
+                    <div className="status status-ok" role="status"><CheckIcon /> {validation.name ? t('"{name}" is a valid deck for {investigator}.', { name: validation.name, investigator: validation.investigator }) : t('Valid deck for {investigator}.', { investigator: validation.investigator })} {t('To pick another investigator, clear or change the deck ID.')}</div>
+                    : null}
+            </Presence>
+            <Presence visible={result === 'invalid' || Boolean(deckFetchError)} exit={220}>
+                {result === 'invalid' || deckFetchError ?
+                    <p className="notice notice-error" role="alert">{t('Deck not found. Currently only unpublished decks can be loaded. Make sure the ID is correct and that "Make your decks public" is selected in your ArkhamDB settings.')}</p>
+                    : null}
+            </Presence>
         </form>
     )
 }

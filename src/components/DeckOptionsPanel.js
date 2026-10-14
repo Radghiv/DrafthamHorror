@@ -10,6 +10,7 @@ import DraftPhases from '../data/DraftPhases'
 import ResearchLogs from '../data/ResearchLogs'
 import useCardName from './useCardName'
 import { useT, msg } from '../i18n'
+import SegmentedRange from './SegmentedRange'
 
 // the names of the classes that can be chosen, by their code
 const factionNames = {
@@ -246,7 +247,7 @@ function DeckOptionsPanel(props) {
             <div className="setting-row">
                 <label className="setting-label" htmlFor="level0-count"><strong>{t('Cards to select from')}</strong><span>{t('For the level 0 drafts')}</span></label>
                 <div className="setting-control">
-                    <input id="level0-count" className="range" type="range" min="2" max="20" step="1" value={draftCount[level0Phase - 1]}
+                    <SegmentedRange id="level0-count" className="range" min="2" max="20" step="1" value={draftCount[level0Phase - 1]}
                         onChange={event => dispatch(changeSetting('DraftCount', { phase: level0Phase, value: event.target.value }))} />
                     <span className="value-badge">{draftCount[level0Phase - 1]}</span>
                 </div>

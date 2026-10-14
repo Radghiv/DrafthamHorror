@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { addBannedCard, removeBannedCard, clearBannedCards, calculateFilteredCount } from '../../features/settings/settingsSlice'
 import useCardOverlay from '../OverlayImage'
 import useCardName from '../useCardName'
+import { motionScale } from '../useMotionScale'
 import { useT } from '../../i18n'
 
 const normalize = text => text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -19,6 +20,8 @@ function BanList() {
     const dispatch = useDispatch()
 
     const [query, setQuery] = useState('')
+
+    const [leaving, setLeaving] = useState([])
 
     // the suggestions are shown while the search is being used: they close when the focus leaves the search and its list
     const [open, setOpen] = useState(false)
@@ -71,16 +74,45 @@ function BanList() {
         setQuery('')
     }
 
+    // a chip that is taken off shrinks away first, then the card leaves the list
     function unban(name) {
         doCardOverlay(null)
-        dispatch(removeBannedCard(name))
-        dispatch(calculateFilteredCount)
+
+        const wait = 180 * motionScale()
+
+        if (wait <= 0) {
+            dispatch(removeBannedCard(name))
+            dispatch(calculateFilteredCount)
+
+            return
+        }
+
+        setLeaving(current => [...current, name])
+        setTimeout(() => {
+            dispatch(removeBannedCard(name))
+            dispatch(calculateFilteredCount)
+            setLeaving(current => current.filter(item => item !== name))
+        }, wait)
     }
 
     function clearAll() {
         doCardOverlay(null)
-        dispatch(clearBannedCards())
-        dispatch(calculateFilteredCount)
+
+        const wait = 180 * motionScale()
+
+        if (wait <= 0) {
+            dispatch(clearBannedCards())
+            dispatch(calculateFilteredCount)
+
+            return
+        }
+
+        setLeaving(bannedCards.slice())
+        setTimeout(() => {
+            dispatch(clearBannedCards())
+            dispatch(calculateFilteredCount)
+            setLeaving([])
+        }, wait)
     }
 
     function handleKeyDown(event) {
@@ -114,7 +146,7 @@ function BanList() {
             {bannedCards.length > 0 ?
                 <div className="chips">
                     {bannedCards.map(name => (
-                        <button type="button" className="chip" key={name} aria-pressed="true" aria-label={t('Take {name} off the ban list', { name: displayName(name) })} onClick={() => unban(name)}
+                        <button type="button" className={'chip' + (leaving.includes(name) ? ' is-leaving' : '')} key={name} aria-pressed="true" aria-label={t('Take {name} off the ban list', { name: displayName(name) })} onClick={() => unban(name)}
                             {...preview(cardsByName.get(name))}>
                             <span className="chip-label" data-text={displayName(name)}>{displayName(name)}</span>
                             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3 3 11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>

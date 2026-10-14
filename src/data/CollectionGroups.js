@@ -1,4 +1,5 @@
-// Collection layout: pack codes grouped by cycle, hard coded (also avoids incomplete ArkhamDB entries)
+// Collection layout: pack codes grouped by cycle, hard coded (also avoids incomplete ArkhamDB entries). A group is of Chapter 1 unless it says
+// chapter: 2.
 const CollectionGroups = [
     { title: 'Core', codes: ['core', 'core2'] },
     { title: 'The Dunwich Legacy', codes: ['dwl', 'tmm', 'tece', 'bota', 'uau', 'wda', 'litas'] },
@@ -13,8 +14,8 @@ const CollectionGroups = [
     { title: 'The Drowned City', codes: ['tdcp'] },
     { title: 'Starter Decks', codes: ['nat', 'har', 'win', 'jac', 'ste'] },
     { title: 'Return to Boxes', codes: ['rtnotz', 'rtdwl', 'rtptc', 'rttfa', 'rttcu'] },
-    { title: 'Starter Decks 2026', codes: ['mar', 'tom', 'mig', 'and', 'car'] },
-    { title: 'Core 2026', codes: ['core_2026'] }
+    { title: 'Starter Decks 2026', codes: ['mar', 'tom', 'mig', 'and', 'car'], chapter: 2 },
+    { title: 'Core 2026', codes: ['core_2026'], chapter: 2 }
 ]
 
 export const CORE_CODES = ['core', 'core2', 'core_2026']

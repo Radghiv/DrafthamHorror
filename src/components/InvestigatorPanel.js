@@ -195,20 +195,22 @@ function InvestigatorPanel(props) {
                 ))}
             </div>
 
-            {mode === 'list' ? listFields : null}
+            <div className="stack mode-enter" key={mode}>
+                {mode === 'list' ? listFields : null}
 
-            {mode === 'arkhamdb' ?
-                <>
-                    <DeckImport />
-                    {deckLocked ? listFields : null}
-                </>
-                : null}
+                {mode === 'arkhamdb' ?
+                    <>
+                        <DeckImport />
+                        {deckLocked ? listFields : null}
+                    </>
+                    : null}
 
-            {mode === 'draft' ?
-                <>
-                    <InvestigatorDraftSettings />
-                </>
-                : null}
+                {mode === 'draft' ?
+                    <>
+                        <InvestigatorDraftSettings />
+                    </>
+                    : null}
+            </div>
         </div>
     )
 }

@@ -16,22 +16,22 @@ function StartStatus(props) {
     const { enoughCards, needsDeck, noInvestigators } = useStartDraft()
 
     if (needsDeck) {
-        return <div className="status status-bad"><WarningIcon /> {t('Validate an ArkhamDB deck ID in the Investigator step to continue')}</div>
+        return <div className="status status-bad" key="needs-deck"><WarningIcon /> {t('Validate an ArkhamDB deck ID in the Investigator step to continue')}</div>
     }
 
     if (noInvestigators) {
-        return <div className="status status-bad" role="alert"><WarningIcon /> {t('No investigator matches the investigator draft options')}</div>
+        return <div className="status status-bad" role="alert" key="no-investigators"><WarningIcon /> {t('No investigator matches the investigator draft options')}</div>
     }
 
     if (!enoughCards) {
-        return <div className="status status-bad" role="alert"><WarningIcon /> {t('There are not enough cards in the selected packs to draft a complete deck. Add packs in the collection.')}</div>
+        return <div className="status status-bad" role="alert" key="not-enough"><WarningIcon /> {t('There are not enough cards in the selected packs to draft a complete deck. Add packs in the collection.')}</div>
     }
 
     if (investigatorMode === 'draft') {
-        return <div className="status status-ok"><CheckIcon /> {t('The investigator is drafted first, then the deck')}</div>
+        return <div className="status status-ok" key="investigator-first"><CheckIcon /> {t('The investigator is drafted first, then the deck')}</div>
     }
 
-    return <div className="status status-ok"><CheckIcon /> {extra ? t('Enough cards to draft a complete deck ({count} legal cards)', { count: filteredCount }) : t('Enough cards to draft a complete deck')}</div>
+    return <div className="status status-ok" key="enough"><CheckIcon /> {extra ? t('Enough cards to draft a complete deck ({count} legal cards)', { count: filteredCount }) : t('Enough cards to draft a complete deck')}</div>
 }
 
 export default StartStatus
