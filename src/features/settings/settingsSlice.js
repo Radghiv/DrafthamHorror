@@ -12,6 +12,7 @@ export const COLLECTION_CONFIRMED_KEY = 'draftham.collectionConfirmed'
 export const CARDS_PER_ROW_KEY = 'draftham.cardsPerRow'
 export const ANIMATION_SPEED_KEY = 'draftham.animationSpeed'
 export const ANIMATE_TOGETHER_KEY = 'draftham.animateTogether'
+export const SCROLL_TO_TOP_KEY = 'draftham.scrollToTop'
 export const BANNED_CARDS_KEY = 'draftham.bannedCards'
 export const LANGUAGE_KEY = 'draftham.language'
 
@@ -68,6 +69,8 @@ const initialState = {
 
     // new cards of the draft turn over all at once instead of one after the other
     animateTogether: loadJSON(ANIMATE_TOGETHER_KEY, false),
+    // whether the page scrolls to the top after a pick, where the new cards are
+    scrollToTop: loadJSON(SCROLL_TO_TOP_KEY, true) !== false,
 
     // cards shown per row while drafting; 0 = decided by the available width
     cardsPerRow: loadJSON(CARDS_PER_ROW_KEY, 0),
@@ -333,6 +336,9 @@ const settingsSlice = createSlice({
         setAnimateTogether(state, action) {
             state.animateTogether = action.payload
         },
+        setScrollToTop(state, action) {
+            state.scrollToTop = action.payload
+        },
         setAnimationSpeed(state, action) {
             state.animationSpeed = action.payload
         },
@@ -501,7 +507,7 @@ function calculateFilteredCount(dispatch, getState) {
     dispatch(changeSetting('FilteredResearch', research))
 }
 
-export const { changeInvestigator, changeSetting, beginDraft, endDraft, reset, updateImageOverlay, setSetupStep, confirmCollection, setUpgradeAfterLevel0, setCardsPerRow, setAnimationSpeed, setAnimateTogether, addBannedCard, removeBannedCard, clearBannedCards, setHighlightCost, setUndoDepth, changeSeed, setLanguage,
+export const { changeInvestigator, changeSetting, beginDraft, endDraft, reset, updateImageOverlay, setSetupStep, confirmCollection, setUpgradeAfterLevel0, setCardsPerRow, setAnimationSpeed, setAnimateTogether, setScrollToTop, addBannedCard, removeBannedCard, clearBannedCards, setHighlightCost, setUndoDepth, changeSeed, setLanguage,
     setInvestigatorMode, setInvestigatorDraftOption, beginInvestigatorDraft, endInvestigatorDraft, replaceInvestigatorInPool } = settingsSlice.actions
 export { changeInvestigatorList, changeInvestigatorDeck, calculateFilteredCount }
 

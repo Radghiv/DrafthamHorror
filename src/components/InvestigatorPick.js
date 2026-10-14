@@ -40,6 +40,7 @@ function InvestigatorPick() {
     const pool = useSelector(state => state.settings.investigatorPool)
     const options = useSelector(state => state.settings.investigatorDraftOptions)
     const cardData = useSelector(state => state.data.cardData)
+    const scrollToTop = useSelector(state => state.settings.scrollToTop)
     const allEntries = useInvestigatorEntries()
 
     const dispatch = useDispatch()
@@ -64,7 +65,7 @@ function InvestigatorPick() {
     // the deck draft starts from the top of the page, where its first cards are
     function pick(entry) {
         dispatch(pickInvestigator(entry))
-        window.scrollTo(0, 0)
+        if (scrollToTop) window.scrollTo(0, 0)
     }
 
     function handleClick(entry) {

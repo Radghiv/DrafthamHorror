@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import CardsPerRowSlider from './CardsPerRowSlider'
 import AnimationSpeedSlider from './AnimationSpeedSlider'
 import AnimateTogetherToggle from './AnimateTogetherToggle'
+import ScrollToTopToggle from './ScrollToTopToggle'
 import LanguageSelect from './LanguageSelect'
 import ThemeToggle from './ThemeToggle'
 import { RestartDialog } from './RestartButton'
@@ -52,6 +53,7 @@ function SettingsMenu(props) {
                     <h2>{t('Settings')}</h2>
                     <LanguageSelect />
                     <ThemeToggle />
+                    <ScrollToTopToggle />
                     {draftOptions ?
                         <>
                             <CardsPerRowSlider />

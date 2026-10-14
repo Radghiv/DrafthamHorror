@@ -1,7 +1,7 @@
 import { loadJSON, saveJSON } from './storage'
 
 const THEME_KEY = 'draftham.theme'
-const THEMES = ['light', 'dark', 'arkham']
+const THEMES = ['light', 'dark', 'arkham', 'innsmouth']
 const DEFAULT_THEME = 'arkham'
 
 export function getTheme() {

@@ -1074,7 +1074,7 @@ input, select {
 
 /* ================= Themes and components ================= */
 
-/* Design tokens: light ("day"), dark ("night") and "arkham" (the colors of the game) themes. The theme is selected with data-theme on <html> (see theme.js). */
+/* Design tokens: light ("day"), dark ("night"), "arkham" (the colors of the game) and "innsmouth" (sea blue-green) themes. The theme is selected with data-theme on <html> (see theme.js). */
 :root {
     /* the typeface of the whole UI: the Arkham theme switches it to the typewriter font */
     --font: 'DM Sans', sans-serif;
@@ -1138,7 +1138,7 @@ input, select {
 :root[data-theme="arkham"] {
     color-scheme: dark;
     --font: 'Special Elite', cursive;
-    --bg: #0e1a17;
+    --bg: #0c1613;
     --surface: #14241f;
     --surface-2: #1a2e28;
     --text: #ece6d6;
@@ -1162,6 +1162,35 @@ input, select {
     --bar-fill: #c9a24b;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     --shadow-lift: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 18px rgba(201, 162, 75, 0.22);
+}
+
+:root[data-theme="innsmouth"] {
+    color-scheme: dark;
+    --font: 'Special Elite', cursive;
+    --bg: #07151a;
+    --surface: #0d2228;
+    --surface-2: #133038;
+    --text: #e6f1ec;
+    --muted: #9fb8b4;
+    --line: #1e434b;
+    --line-strong: #4f8a93;
+    --primary: #5fc9b3;
+    --primary-text: #06171a;
+    --primary-soft: #123c3b;
+    --seg-bg: #051116;
+    --field-bg: #051116;
+    --success-bg: #12362c;
+    --success-text: #8be0b9;
+    --success-solid: #3aa57a;
+    --danger-bg: #3d1c22;
+    --danger-text: #f4a9a4;
+    --bar-bg: #16343b;
+    --bar-text: #e6f1ec;
+    --bar-btn-bg: #5fc9b3;
+    --bar-btn-text: #06171a;
+    --bar-fill: #5fc9b3;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-lift: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 18px rgba(95, 201, 179, 0.2);
 }
 
 body {
@@ -2912,12 +2941,15 @@ a {
     gap: 10px;
 }
 
-/* the typewriter font of the Arkham theme has taller letters: give lines of text more room so they never touch */
-:root[data-theme="arkham"] .App {
+/* the typewriter font of the Arkham themes has taller letters: give lines of text more room so they never touch */
+:root[data-theme="arkham"] .App,
+:root[data-theme="innsmouth"] .App {
     line-height: 1.45;
 }
 :root[data-theme="arkham"] .step-title,
-:root[data-theme="arkham"] .step-sub {
+:root[data-theme="arkham"] .step-sub,
+:root[data-theme="innsmouth"] .step-title,
+:root[data-theme="innsmouth"] .step-sub {
     line-height: 1.5;
 }
 

@@ -12,7 +12,7 @@ export const restoreDraftState = createAction('draftState/restore')
 
 // Settings that are preferences or belong to the setup screens rather than to the draft: restoring a snapshot leaves them as they are
 export const PREFERENCE_KEYS = [
-    'animationSpeed', 'animateTogether', 'cardsPerRow', 'bannedCards', 'collectionConfirmed', 'setupStep', 'highlightCost',
+    'animationSpeed', 'animateTogether', 'scrollToTop', 'cardsPerRow', 'bannedCards', 'collectionConfirmed', 'setupStep', 'highlightCost',
     'imagesrc', 'imageanchor', 'imagecode', 'imagepinned', 'undoDepth', 'language',
     'investigatorMode', 'investigatorDraftOptions', 'investigatorPool', 'investigatorDrafting'
 ]
