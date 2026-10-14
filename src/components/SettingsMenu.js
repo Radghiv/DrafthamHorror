@@ -8,6 +8,7 @@ import LanguageSelect from './LanguageSelect'
 import ThemeToggle from './ThemeToggle'
 import { RestartDialog } from './RestartButton'
 import { Presence } from './usePresence'
+import InstallButton from './InstallButton'
 import { SettingsIcon } from './wizard/Icons'
 import { useT } from '../i18n'
 
@@ -43,6 +44,8 @@ function SettingsMenu(props) {
     }, [open])
 
     return (
+        <>
+        <InstallButton />
         <div className="settings-menu" ref={wrapperRef}>
             <button type="button" className="icon-btn" aria-haspopup="true" aria-expanded={open} aria-controls="settings-popover"
                 title={t('Settings')} aria-label={t('Settings')} onClick={() => setOpen(!open)}>
@@ -64,6 +67,7 @@ function SettingsMenu(props) {
             </Presence>
             {onRestart ? <RestartDialog open={restarting} onClose={() => setRestarting(false)} onRestart={onRestart} /> : null}
         </div>
+        </>
     )
 }
 

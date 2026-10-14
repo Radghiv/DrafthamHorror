@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-import { collectionImageUrls, savedImageUrls, deleteSavedImages, downloadImages, IMAGE_CACHE } from './imageCache'
+import { collectionImageUrls, savedImageUrls, deleteSavedImages, downloadImages, rememberImage, startRememberingImages, subscribeToSavedImages, IMAGE_CACHE } from './imageCache'
 
 const card = (code, extra) => ({ code, name: 'Card ' + code, type_code: 'asset', faction_code: 'guardian', pack_code: 'core', imagesrc: '/bundles/cards/' + code + '.png', ...extra })
 
@@ -40,6 +40,7 @@ describe('the picture cache', () => {
 
         const cache = {
             put: async (url, response) => { store.set(url, response) },
+            match: async url => store.get(url),
             keys: async () => Array.from(store.keys()).map(url => ({ url: url }))
         }
 
@@ -71,5 +72,36 @@ describe('the picture cache', () => {
         await deleteSavedImages()
 
         expect((await savedImageUrls()).size).toBe(0)
+    })
+
+    it('saves a picture that is shown, once, and tells the ones that follow', async () => {
+        let saved = 0
+        const stop = subscribeToSavedImages(() => { saved++ })
+
+        rememberImage('https://www.arkhamdb.com/bundles/cards/09.png')
+        rememberImage('https://www.arkhamdb.com/bundles/cards/09.png')
+        await new Promise(resolve => setTimeout(resolve, 20))
+        stop()
+
+        expect(Array.from(await savedImageUrls())).toEqual(['https://www.arkhamdb.com/bundles/cards/09.png'])
+        expect(window.fetch).toHaveBeenCalledTimes(1)
+        expect(saved).toBe(1)
+    })
+
+    it('saves the card pictures that load in the page, and nothing else', async () => {
+        const stop = startRememberingImages()
+        const card = document.createElement('img')
+        const other = document.createElement('img')
+
+        card.setAttribute('src', 'https://cdn.arkham.build/optimized/01001.webp')
+        other.setAttribute('src', 'https://example.com/logo.png')
+        document.body.appendChild(card)
+        document.body.appendChild(other)
+        card.dispatchEvent(new Event('load'))
+        other.dispatchEvent(new Event('load'))
+        await new Promise(resolve => setTimeout(resolve, 20))
+        stop()
+
+        expect(Array.from(await savedImageUrls())).toEqual(['https://cdn.arkham.build/optimized/01001.webp'])
     })
 })

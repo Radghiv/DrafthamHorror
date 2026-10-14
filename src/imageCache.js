@@ -7,6 +7,9 @@ import { cardImageUrls } from './data/CardImages'
 
 export const IMAGE_CACHE = 'card-images'
 
+// The addresses of the card pictures (ArkhamDB's and arkham.build's); the same pattern is the route of the service worker in vite.config.js
+export const IMAGE_URL_PATTERN = /^https:\/\/(www\.arkhamdb\.com\/bundles\/cards\/|cdn\.arkham\.build\/).*\.(png|jpe?g|webp)$/i
+
 const PLAYER_TYPES = ['asset', 'event', 'skill']
 
 export function imageCacheAvailable() {
@@ -41,6 +44,81 @@ export function collectionImageUrls(cardData, collection) {
     return Array.from(urls)
 }
 
+// ---- Saving the pictures the app shows. The service worker does it too, but only in the published app and once the newest version is in
+// charge (the first visit, a version waiting for "Reload"), so the app saves what it shows itself: every card picture that loads on the
+// screen is also put in the cache (it is in the HTTP cache of the browser by then, so this costs no new download).
+
+// the addresses already looked at or being saved in this visit
+const known = new Set()
+const waiting = []
+let saving = 0
+const listeners = new Set()
+
+// Calls listener each time a picture has been saved; returns the function that stops it
+export function subscribeToSavedImages(listener) {
+    listeners.add(listener)
+
+    return () => listeners.delete(listener)
+}
+
+async function saveOne(url) {
+    try {
+        const cache = await window.caches.open(IMAGE_CACHE)
+
+        if (await cache.match(url)) return
+
+        // the picture loaded, so this is a picture and not the error page that answers for a missing one
+        await cache.put(url, await fetch(url, { mode: 'no-cors' }))
+        listeners.forEach(listener => listener())
+    }
+    catch (e) {
+        // not essential: it is tried again the next time the picture shows
+        known.delete(url)
+    }
+}
+
+// one picture at a time of the few that are saved at once
+function saveAndGoOn(url) {
+    saving++
+    saveOne(url).finally(() => {
+        saving--
+        drain()
+    })
+}
+
+// a few at a time, so a screen full of pictures doesn't start as many requests at once
+function drain() {
+    while (saving < 3 && waiting.length > 0) saveAndGoOn(waiting.shift())
+}
+
+export function rememberImage(url) {
+    if (!imageCacheAvailable() || known.has(url)) return
+
+    known.add(url)
+    waiting.push(url)
+    drain()
+}
+
+// Starts saving every card picture that loads in the page; returns the function that stops it
+export function startRememberingImages() {
+    if (typeof document === 'undefined') return () => {}
+
+    // a load event doesn't bubble, so it is caught on the way down
+    function handleLoad(event) {
+        const image = event.target
+
+        if (image && image.tagName === 'IMG') {
+            const url = image.currentSrc || image.src
+
+            if (IMAGE_URL_PATTERN.test(url)) rememberImage(url)
+        }
+    }
+
+    document.addEventListener('load', handleLoad, true)
+
+    return () => document.removeEventListener('load', handleLoad, true)
+}
+
 // The addresses that are saved, as a set (empty when the cache can't be read)
 export async function savedImageUrls() {
     if (!imageCacheAvailable()) return new Set()
@@ -58,6 +136,8 @@ export async function savedImageUrls() {
 
 export async function deleteSavedImages() {
     if (!imageCacheAvailable()) return
+
+    known.clear()
 
     try {
         await window.caches.delete(IMAGE_CACHE)
@@ -99,6 +179,8 @@ export async function downloadImages(urls, onProgress, shouldStop, parallel = 4)
                 if (!(await pictureLoads(url))) throw new Error('no picture')
 
                 await cache.put(url, await fetch(url, { mode: 'no-cors' }))
+                known.add(url)
+                listeners.forEach(listener => listener())
                 done++
             }
             catch (e) {

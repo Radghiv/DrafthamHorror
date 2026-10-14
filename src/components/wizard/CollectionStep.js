@@ -2,15 +2,14 @@ import React, { useMemo, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { changeCollection } from '../../features/collection/collectionSlice'
-import { clearCache } from '../../cache'
-import { useT, useFormatDate, LONG_DATE } from '../../i18n'
+import { useT } from '../../i18n'
 import useCardName from '../useCardName'
 
 import CollectionGroups, { CORE_CODES } from '../../data/CollectionGroups'
 import { buildCollectionGroups } from '../../data/PackCatalog'
 import { cardImageUrls } from '../../data/CardImages'
 import { boxArtFor } from '../../data/BoxArt'
-import { CheckIcon, RedrawIcon, FoldAllIcon, UnfoldAllIcon, WarningIcon } from './Icons'
+import { CheckIcon, FoldAllIcon, UnfoldAllIcon, WarningIcon } from './Icons'
 import TabooField from './TabooField'
 import CachePanel from './CachePanel'
 import BanList from './BanList'
@@ -28,12 +27,10 @@ export function countSelectedPacks(collection) {
 
 function CollectionStep() {
     const t = useT()
-    const formatDate = useFormatDate()
     const { packName } = useCardName()
     const collection = useSelector(state => state.collection)
     const packs = useSelector(state => state.data.packs)
     const cardData = useSelector(state => state.data.cardData)
-    const dataDate = useSelector(state => state.data.dataDate)
 
     // the groups come from the pack list of ArkhamDB (so new packs appear by themselves), or the built-in layout without it
     const groups = useMemo(() => packs && cardData ? buildCollectionGroups(packs, cardData, pack => packName(pack.code), t) : CollectionGroups, [packs, cardData, packName, t])
@@ -133,23 +130,8 @@ function CollectionStep() {
 
     const { coreCount, packCount } = countSelectedPacks(collection)
 
-    // fetches the cards, packs and taboo lists of ArkhamDB again: the saved copy is deleted and the page starts over
-    async function refreshData() {
-        await clearCache()
-        window.location.reload()
-    }
-
     return (
         <div className="stack">
-            <div className="notice data-card">
-                <p>
-                    {dataDate ? t('Card data from ArkhamDB, fetched on {date}.', { date: formatDate(dataDate, LONG_DATE) }) : t('Card data from ArkhamDB.')}{' '}
-                    {t('It is kept in this browser until you refresh it.')}
-                </p>
-                <button type="button" className="btn btn-secondary" onClick={refreshData}>
-                    <RedrawIcon /> {t('Refresh card data')}
-                </button>
-            </div>
             <CachePanel />
             <div className="field-grid">
                 <TabooField />

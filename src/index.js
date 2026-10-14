@@ -8,9 +8,13 @@ import { Provider } from 'react-redux'
 
 import { fetchCards, fetchTaboo, fetchPacks, fetchTranslations } from './features/data/dataSlice'
 import { loadLocale, setCurrentLanguage } from './i18n'
+import { startRememberingImages } from './imageCache'
 
 async function start() {
     initTheme()
+
+    // the pictures of the cards that show are kept for the offline storage panel and for working without a connection
+    startRememberingImages()
 
     // the texts of the saved language are ready before anything is shown
     const language = store.getState().settings.language

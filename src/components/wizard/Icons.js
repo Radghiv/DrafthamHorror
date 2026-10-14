@@ -163,3 +163,12 @@ export function UnfoldAllIcon() {
         </svg>
     )
 }
+
+// An arrow going down into a tray: download, install
+export function DownloadIcon() {
+    return (
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+            <path d="M11 3.5v10.5 M6.5 9.5 11 14l4.5-4.5 M4 18h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    )
+}

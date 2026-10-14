@@ -1983,23 +1983,6 @@ a {
 
 /* collection step */
 
-/* where the card data comes from and the button that fetches it again, at the top of the Collection step */
-.data-card {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px 20px;
-}
-.data-card p {
-    margin: 0;
-    flex: 1 1 260px;
-}
-.data-card .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
 .collection-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -5314,4 +5297,66 @@ html.theme-fade *::after {
     .cache-progress > span {
         transition: none;
     }
+}
+
+/* the install button next to the settings, with a tooltip that says why: on hover and keyboard focus, and when it is tapped where there is
+   no install dialog to open (class show-tip) */
+.install-btn {
+    position: relative;
+}
+.install-tip {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 960;
+    box-sizing: border-box;
+    width: min(280px, 80vw);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    font-size: 14px;
+    line-height: 1.4;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: opacity calc(0.15s * var(--motion-scale, 1)) ease, transform calc(0.15s * var(--motion-scale, 1)) ease, visibility 0s linear calc(0.15s * var(--motion-scale, 1));
+}
+.install-btn:hover .install-tip,
+.install-btn:focus-within .install-tip,
+.install-btn.show-tip .install-tip {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+}
+.install-tip span {
+    color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+    .install-tip {
+        transition: none;
+    }
+}
+.cache-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+}
+.cache-summary {
+    margin: 0 0 6px;
+}
+.cache-head .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }

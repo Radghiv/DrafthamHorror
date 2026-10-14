@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 
 import { savedCopyRows, readSavedCopy, deleteSavedCopy, saveCopy } from '../../features/data/dataSlice'
-import { imageCacheAvailable, collectionImageUrls, savedImageUrls, deleteSavedImages, downloadImages } from '../../imageCache'
-import { useT, useFormatDate } from '../../i18n'
+import { imageCacheAvailable, collectionImageUrls, savedImageUrls, deleteSavedImages, downloadImages, subscribeToSavedImages } from '../../imageCache'
+import { clearCache } from '../../cache'
+import { RedrawIcon } from './Icons'
+import { useT, useFormatDate, LONG_DATE } from '../../i18n'
 
 function formatBytes(bytes, language) {
     const units = ['B', 'KB', 'MB', 'GB']
@@ -20,7 +22,7 @@ function formatBytes(bytes, language) {
 
 // One line of the list: what it is, what is kept, and the two buttons: delete it all, and download what is missing
 function CacheRow(props) {
-    const { title, detail, progress, canDelete, canFill, busy, onDelete, onFill, onCancel } = props
+    const { title, detail, progress, canDelete, canFill, busy, readOnly, onDelete, onFill, onCancel } = props
 
     const t = useT()
 
@@ -30,12 +32,12 @@ function CacheRow(props) {
                 <strong>{title}</strong>
                 <span>{detail}</span>
             </div>
-            <div className="cache-actions">
+            {readOnly ? null : <div className="cache-actions">
                 <button type="button" className="btn btn-secondary" disabled={!canDelete || busy} onClick={onDelete}>{t('Delete')}</button>
                 {progress ?
                     <button type="button" className="btn btn-secondary" onClick={onCancel}>{t('Cancel')}</button> :
                     <button type="button" className="btn btn-secondary" disabled={!canFill || busy} onClick={onFill}>{t('Download missing')}</button>}
-            </div>
+            </div>}
             {progress ? <div className="cache-progress" role="progressbar" aria-valuemin="0" aria-valuemax={progress.total} aria-valuenow={progress.done + progress.failed}><span style={{ width: (progress.total ? (progress.done + progress.failed) / progress.total * 100 : 0) + '%' }}></span></div> : null}
         </li>
     )
@@ -51,6 +53,7 @@ function CachePanel() {
     const language = useSelector(state => state.settings.language)
     const cardData = useSelector(state => state.data.cardData)
     const collection = useSelector(state => state.collection)
+    const dataDate = useSelector(state => state.data.dataDate)
 
     const [open, setOpen] = useState(false)
     const [rows, setRows] = useState([])
@@ -60,6 +63,25 @@ function CachePanel() {
     const [progress, setProgress] = useState(null)
 
     const stopRef = useRef(false)
+
+    // the pictures and the use of the storage (the data rows take longer to read, and only change with the buttons)
+    const refreshImages = useCallback(async () => {
+        const wanted = collectionImageUrls(cardData, collection)
+        const saved = await savedImageUrls()
+
+        setImages({ total: wanted.length, missing: wanted.filter(url => !saved.has(url)), savedCount: wanted.filter(url => saved.has(url)).length, available: imageCacheAvailable() })
+
+        if (window.navigator.storage && window.navigator.storage.estimate) {
+            try {
+                const estimate = await window.navigator.storage.estimate()
+
+                setUsage({ used: estimate.usage || 0, quota: estimate.quota || 0 })
+            }
+            catch (e) {
+                setUsage(null)
+            }
+        }
+    }, [cardData, collection])
 
     const refresh = useCallback(async () => {
         const loaded = await Promise.all(savedCopyRows().map(async row => {
@@ -78,23 +100,23 @@ function CachePanel() {
         }))
 
         setRows(loaded)
+        await refreshImages()
+    }, [refreshImages])
 
-        const wanted = collectionImageUrls(cardData, collection)
-        const saved = await savedImageUrls()
+    // while the panel is open the count follows the pictures that get saved (looked at again at most twice a second)
+    useEffect(() => {
+        if (!open) return undefined
 
-        setImages({ total: wanted.length, missing: wanted.filter(url => !saved.has(url)), savedCount: wanted.filter(url => saved.has(url)).length, available: imageCacheAvailable() })
+        let timer = null
+        const stop = subscribeToSavedImages(() => {
+            if (timer === null) timer = setTimeout(() => { timer = null; refreshImages() }, 500)
+        })
 
-        if (window.navigator.storage && window.navigator.storage.estimate) {
-            try {
-                const estimate = await window.navigator.storage.estimate()
-
-                setUsage({ used: estimate.usage || 0, quota: estimate.quota || 0 })
-            }
-            catch (e) {
-                setUsage(null)
-            }
+        return () => {
+            stop()
+            clearTimeout(timer)
         }
-    }, [cardData, collection])
+    }, [open, refreshImages])
 
     useEffect(() => {
         if (open) refresh()
@@ -146,10 +168,18 @@ function CachePanel() {
     const dataRows = rows.filter(item => !item.row.language)
     const languageRows = rows.filter(item => item.row.language)
 
+    // the cards, the packs and the taboo lists are only shown: "Refresh card data" renews them all at once (and starts the page over, so the
+    // app uses them); the languages and the pictures can be deleted and downloaded one by one
     const renderDataRow = item => (
         <CacheRow key={item.row.id} title={item.row.language ? item.row.title : t(item.row.title)} detail={detailOf(item)} busy={busy !== null}
-            canDelete={item.anySaved} canFill={!item.complete} onDelete={() => removeCopies(item)} onFill={() => fillCopies(item)} />
+            readOnly={!item.row.language} canDelete={item.anySaved} canFill={!item.complete} onDelete={() => removeCopies(item)} onFill={() => fillCopies(item)} />
     )
+
+    // fetches the cards, packs, taboo lists and names of ArkhamDB again: every saved copy is deleted and the page starts over
+    async function refreshData() {
+        await clearCache()
+        window.location.reload()
+    }
 
     let imageDetail = ''
 
@@ -161,10 +191,19 @@ function CachePanel() {
 
     return (
         <section className={'cache-panel' + (open ? ' is-open' : '')}>
-            <button type="button" className="cycle-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
-                <svg className="cycle-chevron" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="m3 5 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                <strong>{t('Offline storage')}</strong>
-            </button>
+            <div className="cache-head">
+                <button type="button" className="cycle-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+                    <svg className="cycle-chevron" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="m3 5 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    <strong>{t('Offline storage')}</strong>
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={refreshData}>
+                    <RedrawIcon /> {t('Refresh card data')}
+                </button>
+            </div>
+            <p className="field-hint cache-summary">
+                {dataDate ? t('Card data from ArkhamDB, fetched on {date}.', { date: formatDate(dataDate, LONG_DATE) }) : t('Card data from ArkhamDB.')}{' '}
+                {t('It is kept in this browser until you refresh it.')}
+            </p>
             {open ?
                 <div className="cache-body">
                     <p className="field-hint">{t('What the app keeps on this device so that it starts at once and works without a connection.')}</p>
