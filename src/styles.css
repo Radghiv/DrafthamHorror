@@ -2646,6 +2646,7 @@ a {
 /* the Redraw button sits over the top center of the card and only shows on hover or keyboard focus (always on touch screens) */
 .investigator-tile {
     position: relative;
+    cursor: pointer;
 }
 .investigator-redraw {
     position: absolute;
@@ -4040,38 +4041,38 @@ main:focus {
     order: -1;
 }
 
-/* The older panels of the draft screens (Level 0 options, Versatile, bonus experience, the upgrade that was paused) have rows of fixed height and
-   text under 16px, which is too small to tap and makes iOS zoom the page when a field is focused. On a phone each row is a label and its
-   control, as tall as a finger. */
-.is-phone .draft-main .settingsDiv {
+/* The older panels of the draft screens (Level 0 options, Versatile, bonus experience, the upgrade that was paused) were built with rows of fixed
+   height and text under 16px. They are dressed like the rest of the app (the panel, field and button looks): every row is a label and its
+   control, as tall as a finger (which is also what iOS needs so that it doesn't zoom the page when a field is focused). */
+.draft-main .settingsDiv {
     padding: 18px 16px 20px;
 }
-.is-phone .draft-main .fbsetting,
-.is-phone .draft-main .fblist {
+.draft-main .fbsetting,
+.draft-main .fblist {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(108px, 42%) auto;
     align-items: center;
     gap: 6px 12px;
     margin: 0 0 10px;
 }
-.is-phone .draft-main .fblist {
+.draft-main .fblist {
     grid-template-columns: auto minmax(0, 1fr);
 }
-.is-phone .draft-main .fblist .fblistright {
+.draft-main .fblist .fblistright {
     display: none;
 }
-.is-phone .draft-main .fbdraftsettingleft,
-.is-phone .draft-main .fbdraftsettingcenter,
-.is-phone .draft-main .fbdraftsettingright,
-.is-phone .draft-main .fbdraftsettingslider,
-.is-phone .draft-main .fbdraftsettingslidervalue,
-.is-phone .draft-main .fbphasesettingleft,
-.is-phone .draft-main .fbphasesettingcenter,
-.is-phone .draft-main .fbphasesettingright,
-.is-phone .draft-main .fbphasesettingslider,
-.is-phone .draft-main .fbphasesettingslidervalue,
-.is-phone .draft-main .fblistleft,
-.is-phone .draft-main .fblistcenter {
+.draft-main .fbdraftsettingleft,
+.draft-main .fbdraftsettingcenter,
+.draft-main .fbdraftsettingright,
+.draft-main .fbdraftsettingslider,
+.draft-main .fbdraftsettingslidervalue,
+.draft-main .fbphasesettingleft,
+.draft-main .fbphasesettingcenter,
+.draft-main .fbphasesettingright,
+.draft-main .fbphasesettingslider,
+.draft-main .fbphasesettingslidervalue,
+.draft-main .fblistleft,
+.draft-main .fblistcenter {
     flex-basis: auto;
     width: auto;
     min-width: 0;
@@ -4080,16 +4081,16 @@ main:focus {
     text-align: left;
     font-size: 15px;
 }
-.is-phone .draft-main .fbdraftsettingcenter,
-.is-phone .draft-main .fbdraftsettingslider,
-.is-phone .draft-main .fbphasesettingcenter,
-.is-phone .draft-main .fbphasesettingslider {
+.draft-main .fbdraftsettingcenter,
+.draft-main .fbdraftsettingslider,
+.draft-main .fbphasesettingcenter,
+.draft-main .fbphasesettingslider {
     display: flex;
     align-items: center;
 }
-.is-phone .draft-main .settingsDiv select,
-.is-phone .draft-main .settingsDiv input[type="text"],
-.is-phone .draft-main .settingsDiv input[type="number"] {
+.draft-main .settingsDiv select,
+.draft-main .settingsDiv input[type="text"],
+.draft-main .settingsDiv input[type="number"] {
     box-sizing: border-box;
     width: 100%;
     height: 44px;
@@ -4099,23 +4100,23 @@ main:focus {
     font-size: 16px;
     line-height: normal;
 }
-.is-phone .draft-main .settingsDiv input[type="range"] {
+.draft-main .settingsDiv input[type="range"] {
     width: 100%;
     height: 44px;
     margin: 0;
 }
-.is-phone .draft-main .settingsDiv input[type="checkbox"] {
+.draft-main .settingsDiv input[type="checkbox"] {
     width: 24px;
     height: 24px;
     margin: 0;
 }
-.is-phone .draft-main .description {
+.draft-main .description {
     width: auto;
     margin: 10px 0 0;
     font-size: 14px;
     line-height: 1.45;
 }
-.is-phone .button-rect {
+.draft-main .button-rect {
     width: auto;
     min-width: 120px;
     height: auto;
@@ -4123,6 +4124,71 @@ main:focus {
     margin: 10px 0 4px;
     padding: 0 22px;
     font-size: 16px;
+}
+
+.draft-main .settingsDiv {
+    padding: 22px 24px 24px;
+    text-align: left;
+}
+.draft-main .settingsDiv > h3 {
+    margin: 0;
+    padding: 0;
+    font-size: 22px;
+    line-height: 1.2;
+}
+.draft-main .settingsDiv > h2.draft-quantity {
+    margin: 2px 0 16px;
+    padding: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+}
+.draft-main .settingsDiv .fbsetting,
+.draft-main .settingsDiv .fblist {
+    max-width: 640px;
+}
+.draft-main .settingsDiv .fbsetting > label,
+.draft-main .settingsDiv .fblist > label {
+    font-weight: 700;
+}
+.draft-main .settingsDiv .fblist {
+    margin-bottom: 6px;
+}
+.draft-main .settingsDiv select,
+.draft-main .settingsDiv input[type="text"],
+.draft-main .settingsDiv input[type="number"] {
+    border: 2px solid var(--line-strong);
+    border-radius: 10px;
+    background-color: var(--field-bg);
+    color: var(--text);
+}
+.draft-main .settingsDiv input[type="range"] {
+    accent-color: var(--primary);
+}
+.draft-main .settingsDiv input[type="checkbox"] {
+    accent-color: var(--primary);
+}
+.draft-main .settingsDiv .fbdraftsettingslidervalue,
+.draft-main .settingsDiv .fbphasesettingslidervalue {
+    min-width: 40px;
+    margin: 0;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: var(--primary-soft);
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+}
+.draft-main .settingsDiv .description {
+    max-width: 640px;
+    margin: 14px 0 0;
+}
+.draft-main .settingsDiv .button-rect {
+    border-radius: 12px;
+    font-weight: 700;
+}
+.draft-main .settingsDiv .button-green {
+    margin-top: 16px;
 }
 
 /* the preview opened by a tap or a long press: the card, then its bonded cards and customizations, in a layer that scrolls */

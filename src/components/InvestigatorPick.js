@@ -61,9 +61,22 @@ function InvestigatorPick() {
         return eligibleInvestigators(allEntries, cardData, options).some(entry => !names.has(entry.replace(/\s\(.*\)$/, '')))
     }, [pool, cardData, options, allEntries])
 
+    // the deck draft starts from the top of the page, where its first cards are
+    function pick(entry) {
+        dispatch(pickInvestigator(entry))
+        window.scrollTo(0, 0)
+    }
+
     function handleClick(entry) {
-        if (current === entry) dispatch(pickInvestigator(entry))
+        if (current === entry) pick(entry)
         else setSelected(entry)
+    }
+
+    // the whole box of an investigator works like its pictures; the buttons and thumbnails in it keep doing their own thing
+    function handleBoxClick(event, entry) {
+        if (event.target.closest('button, a, .required-thumb')) return
+
+        handleClick(entry)
     }
 
     function handleReroll() {
@@ -85,7 +98,7 @@ function InvestigatorPick() {
                     const classColor = card ? OfficialColorForClass(card.faction_code) : undefined
 
                     return (
-                        <div key={entry} className={'investigator-tile' + (isSelected ? ' selected' : '')} style={{borderTopColor: classColor}}>
+                        <div key={entry} className={'investigator-tile' + (isSelected ? ' selected' : '')} style={{borderTopColor: classColor}} onClick={event => handleBoxClick(event, entry)}>
                             <button type="button" className="investigator-tile-main" aria-pressed={isSelected} onClick={() => handleClick(entry)}>
                                 <InvestigatorImage card={card} side="front" alt={t('{name} (front)', { name: entry })} />
                                 <InvestigatorImage card={card} side="back" alt={t('{name} (back)', { name: entry })} />
@@ -114,7 +127,7 @@ function InvestigatorPick() {
                 (current ?
                     <div className="phone-confirm no-dock" role="group">
                         <span className="phone-confirm-text" aria-live="polite">{t('Draft {name}?', { name: current })}</span>
-                        <button type="button" className="btn btn-primary" onClick={() => dispatch(pickInvestigator(current))}>{t('Draft this investigator')}</button>
+                        <button type="button" className="btn btn-primary" onClick={() => pick(current)}>{t('Draft this investigator')}</button>
                     </div>
                     : null)
                 :
@@ -125,7 +138,7 @@ function InvestigatorPick() {
                         <span className="confirm-bar-hint">{t('Click the selected investigator again to pick it. Hover the cards (or press and hold them) for a bigger preview.')}</span>
                     </div>
                     <div className="confirm-bar-actions">
-                        <button type="button" className="btn btn-primary" aria-disabled={!current} onClick={() => { if (current) dispatch(pickInvestigator(current)) }}>{t('Draft this investigator')}</button>
+                        <button type="button" className="btn btn-primary" aria-disabled={!current} onClick={() => { if (current) pick(current) }}>{t('Draft this investigator')}</button>
                         <button type="button" className="btn btn-secondary" onClick={handleReroll}><RedrawIcon /> {t('Redraw all')}</button>
                     </div>
                 </div>
