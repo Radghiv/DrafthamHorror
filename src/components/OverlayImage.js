@@ -37,10 +37,17 @@ function swallowClickAfterTouch() {
     document.addEventListener('pointercancel', finish, true)
 }
 
+// True on a screen whose main input can't hover (a phone or a tablet)
+export function isTouchScreen() {
+    return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(hover: none)').matches
+}
+
 // Returns a function that shows (or, without a card, hides) the big card preview. It takes the card, the pointer event that
 // triggered it (the hovered element and the pointer height are kept so the preview can be placed beside it) and the side.
 // With a mouse or pen the preview follows the hover. On a touch screen there is no hover: pressing and holding the card opens the
 // preview in the middle of the screen, where it stays until it is tapped away (a short tap does what it always does).
+// Things a tap does nothing on (the rows of the card lists, thumbnails) also pass their click event, on touch screens only: the
+// preview then opens at once.
 function useCardOverlay() {
     const dispatch = useDispatch()
     const store = useStore()
@@ -62,6 +69,12 @@ function useCardOverlay() {
         if (!card) {
             // lifting the finger doesn't close a preview opened by a long press
             if (!store.getState().settings.imagepinned) dispatch(updateImageOverlay({ imagesrc: null }))
+
+            return
+        }
+
+        if (event && event.type === 'click') {
+            show(card, side, null, true)
 
             return
         }

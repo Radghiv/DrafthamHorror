@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux'
 
 import ExportDeck from '../draft/ExportDeck'
-import useCardOverlay from './OverlayImage'
+import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import CardLinkButton from './CardLinkButton'
 import useCardName from './useCardName'
 import { requiredQuantity, signatureGroups } from '../data/RequiredCards'
@@ -41,19 +41,26 @@ function SettingsExport(props) {
     const doCardOverlay = useCardOverlay()
     const { cardName: localName, cardSubname } = useCardName()
 
-    function onEnterCard(event) {
+    function previewCard(event) {
         // basic weakness
-        if (event.target.id === '01000') return
+        if (event.currentTarget.id === '01000') return
 
-        const cardArray = cardData.filter(item => item.code === event.target.id)
+        const card = cardData.find(item => item.code === event.currentTarget.id)
 
-        if (cardArray && cardArray.length > 0) {
-            doCardOverlay(cardArray[0], event)
-        }
+        if (card) doCardOverlay(card, event)
     }
 
-    function onLeaveCard(event) {
+    function onEnterCard(event) {
+        previewCard(event)
+    }
+
+    function onLeaveCard() {
         doCardOverlay(null)
+    }
+
+    // touch screens have no hover: tapping a card opens the preview
+    function onTapCard(event) {
+        if (isTouchScreen()) previewCard(event)
     }
 
     function handleWeaknessClick() {
@@ -158,7 +165,7 @@ function SettingsExport(props) {
                         }
                         
                     return (
-                        <p className="export-card" id={cardData[signatureID].code} key={cardData[signatureID].code} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard}>{cardName + quantityText}<CardLinkButton card={cardData[signatureID]} size="small" /></p>)
+                        <p className="export-card" id={cardData[signatureID].code} key={cardData[signatureID].code} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard}>{cardName + quantityText}<CardLinkButton card={cardData[signatureID]} size="small" /></p>)
                     })
 
                     return (useCheckbox ?
@@ -194,7 +201,7 @@ function SettingsExport(props) {
             <div className="options-section">
                 <h4>{t('Weaknesses')}</h4>
                 <div className="export-weakness">
-                    <p className="export-card" id={basicWeakness[1]} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard}>{basicWeakness[1] === '01000' ? t('Random basic weakness') : basicWeakness[0]}</p>
+                    <p className="export-card" id={basicWeakness[1]} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard}>{basicWeakness[1] === '01000' ? t('Random basic weakness') : basicWeakness[0]}</p>
                     <button type="button" className="btn btn-secondary" onClick={() => handleWeaknessClick()}>{t('Draw weakness')}</button>
                 </div>
             </div>

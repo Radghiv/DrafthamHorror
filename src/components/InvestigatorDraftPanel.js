@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
 
 import ColorForClass from '../data/ClassColors'
-import useCardOverlay from './OverlayImage'
+import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import CardImage from './CardImage'
 import RequiredThumbs from './RequiredThumbs'
 import CardLinkButton from './CardLinkButton'
@@ -15,6 +15,11 @@ function InvestigatorPanel(props) {
     const investigator = useSelector(state => state.settings.investigator)
 
     const doCardOverlay = useCardOverlay()
+
+    // touch screens have no hover: tapping the picture opens the preview
+    function tapPreview(event, side) {
+        if (isTouchScreen() && !event.target.closest('a')) doCardOverlay(investigatorData, event, side)
+    }
 
     // ArkhamDB images of some investigators are portrait (a landscape card saved turned): those are rotated back. Kept in state
     // and set on every load, so the panel showing another investigator never keeps the rotation of the previous one.
@@ -37,14 +42,14 @@ function InvestigatorPanel(props) {
         const placeholder = label => <div className="investigator-div-loading" style={{backgroundColor: classColor}}><h3>{label}</h3><p>{t('Image not available')}</p><p><a href={investigatorData.url} target="_blank" rel="noreferrer noopener">{t('View on ArkhamDB')}</a></p></div>
 
         investigatorCardImage =
-            <div className="investigator-div" style={{backgroundColor: classColor}} onPointerEnter={event => doCardOverlay(investigatorData, event, 'front')} onPointerLeave={() => doCardOverlay(null)}>
+            <div className="investigator-div" style={{backgroundColor: classColor}} onPointerEnter={event => doCardOverlay(investigatorData, event, 'front')} onPointerLeave={() => doCardOverlay(null)} onClick={event => tapPreview(event, 'front')}>
                 <CardImage card={investigatorData} side="front" className={'investigator-image' + (rotated.front ? ' rotatecw' : '')} alt={investigator}
                     onLoad={event => imageDidLoad('front', event)} fallback={placeholder(investigator)} />
                 <CardLinkButton card={investigatorData} size="medium" />
             </div>
 
         investigatorCardImageBack =
-            <div className="investigator-div" style={{backgroundColor: classColor}} onPointerEnter={event => doCardOverlay(investigatorData, event, 'back')} onPointerLeave={() => doCardOverlay(null)}>
+            <div className="investigator-div" style={{backgroundColor: classColor}} onPointerEnter={event => doCardOverlay(investigatorData, event, 'back')} onPointerLeave={() => doCardOverlay(null)} onClick={event => tapPreview(event, 'back')}>
                 <CardImage card={investigatorData} side="back" className={'investigator-image' + (rotated.back ? ' rotateccw' : '')} alt={t('{name} (back)', { name: investigator })}
                     onLoad={event => imageDidLoad('back', event)} fallback={placeholder(t('{name} (Back)', { name: investigator }))} />
                 <CardLinkButton card={investigatorData} size="medium" />

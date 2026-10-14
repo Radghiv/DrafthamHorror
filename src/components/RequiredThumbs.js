@@ -1,7 +1,7 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 
-import useCardOverlay from './OverlayImage'
+import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import useCardName from './useCardName'
 import CardImage from './CardImage'
 import CardLinkButton from './CardLinkButton'
@@ -9,7 +9,8 @@ import { requiredCards } from '../data/RequiredCards'
 import { useT } from '../i18n'
 
 // With withLinks, each one has a link to its ArkhamDB page (not where the thumbnails are inside a button, like the investigator draft).
-// The cards the deckbuilding instructions of an investigator put in the deck, as small pictures. Hovering one shows the big preview.
+// The cards the deckbuilding instructions of an investigator put in the deck, as small pictures. Hovering one shows the big preview
+// (on touch screens, pressing and holding it, or just tapping it when it isn't inside a button).
 // The deck size is only known for the investigator being drafted, so the quantity of a few cards is the default one for the others.
 function RequiredThumbs(props) {
     const { investigator, withLinks } = props
@@ -33,7 +34,8 @@ function RequiredThumbs(props) {
     return (
         <span className="required-thumbs" aria-label={t('Cards that always come with this investigator')}>
             {required.cards.map(({ card, count }) => (
-                <span className="required-thumb" key={card.code} onPointerEnter={event => doCardOverlay(card, event)} onPointerLeave={() => doCardOverlay(null)}>
+                <span className="required-thumb" key={card.code} onPointerEnter={event => doCardOverlay(card, event)} onPointerLeave={() => doCardOverlay(null)}
+                    onClick={withLinks ? event => { if (isTouchScreen()) doCardOverlay(card, event) } : undefined}>
                     <CardImage card={card} className="required-thumb-image" alt={cardName(card)} fallback={<span className="required-thumb-missing">{cardName(card)}</span>} />
                     {count > 1 ? <span className="required-thumb-count">×{count}</span> : null}
                     {withLinks ? <CardLinkButton card={card} size="small" /> : null}

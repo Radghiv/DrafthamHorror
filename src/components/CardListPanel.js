@@ -2,7 +2,7 @@ import React from 'react'
 import { useSelector } from 'react-redux'
 
 import { costWithTaboo } from '../draft/DrawDraft'
-import useCardOverlay from './OverlayImage'
+import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import useCardName from './useCardName'
 import CardLinkButton from './CardLinkButton'
 import { costBin } from './CostCurve'
@@ -70,16 +70,24 @@ function CardListPanel(props) {
     const doCardOverlay = useCardOverlay()
     const { cardName, compareNames } = useCardName()
 
-    function onEnterCard(event) {
-        const cardArray = cardData.filter(item => item.code === event.target.id)
+    // the row (currentTarget) holds the card code; the target can be a part of it, like the dots of the level
+    function previewCard(event) {
+        const card = cardData.find(item => item.code === event.currentTarget.id)
 
-        if (cardArray && cardArray.length > 0) {
-            doCardOverlay(cardArray[0], event)
-        }
+        if (card) doCardOverlay(card, event)
     }
 
-    function onLeaveCard(event) {
+    function onEnterCard(event) {
+        previewCard(event)
+    }
+
+    function onLeaveCard() {
         doCardOverlay(null)
+    }
+
+    // touch screens have no hover: tapping a row opens the preview
+    function onTapCard(event) {
+        if (isTouchScreen()) previewCard(event)
     }
 
     const assetHeader = assetCount > 0 ? <h4>{t('Assets ({count})', { count: assetCount })}</h4> : null
@@ -89,7 +97,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const hand2Header = hand2.length > 0 ? <p className='slot-header'>{t('Hand x2')}</p> : null
@@ -97,7 +105,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const arcaneHeader = arcane.length > 0 ? <p className='slot-header'>{t('Arcane')}</p> : null
@@ -105,7 +113,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const arcane2Header = arcane2.length > 0 ? <p className='slot-header'>{t('Arcane x2')}</p> : null
@@ -113,7 +121,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const accessoryHeader = accessory.length > 0 ? <p className='slot-header'>{t('Accessory')}</p> : null
@@ -121,7 +129,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const bodyHeader = body.length > 0 ? <p className='slot-header'>{t('Body')}</p> : null
@@ -129,7 +137,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const allyHeader = ally.length > 0 ? <p className='slot-header'>{t('Ally')}</p> : null
@@ -137,7 +145,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const tarotHeader = tarot.length > 0 ? <p className='slot-header'>{t('Tarot')}</p> : null
@@ -145,7 +153,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const otherassetHeader = otherasset.length > 0 ? <p className='slot-header'>{t('Other')}</p> : null
@@ -153,7 +161,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const permanentHeader = permanent.length > 0 ? <p className='slot-header'>{t('Permanent')}</p> : null
@@ -161,7 +169,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const eventHeader = eventCount > 0 ? <h4>{t('Events ({count})', { count: eventCount })}</h4> : null
@@ -169,7 +177,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const skillHeader = skillCount > 0 ? <p className='slot-header'>{t('Skills ({count})', { count: skillCount })}</p> : null
@@ -177,7 +185,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const otherHeader = otherCount > 0 ? <h4>{t('Other ({count})', { count: otherCount })}</h4> : null
@@ -185,7 +193,7 @@ function CardListPanel(props) {
         const countStr = item.count > 1 ? ' ' + t('x{count}', { count: item.count }) : null
         const levelStr = item.xp && item.xp > 0 ? <span className='xpDots'>{' ' + '\u25CF'.repeat(costWithTaboo(item))}</span> : null
 
-        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item)} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
     })
 
     const header = props.deck ?
