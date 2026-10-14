@@ -139,10 +139,13 @@ function DraftPanel(props) {
         setImageSource([])
         if (requireConfirmation) dispatch(selectDraftCard(null))
 
-        if (flight) requestAnimationFrame(() => flight.land(cardKey))
-
         // the first cards of the next batch are at the top
-        if (scrollToTop && window.scrollY > 0) window.scrollTo({ top: 0, behavior: speed === 0 ? 'auto' : 'smooth' })
+        const scrolling = scrollToTop && window.scrollY > 0
+
+        // the flight is told where the page is scrolling to: the list moves with it, and the card lands on the row's final place
+        if (flight) requestAnimationFrame(() => flight.land(cardKey, scrolling ? 0 : window.scrollY))
+
+        if (scrolling) window.scrollTo({ top: 0, behavior: speed === 0 ? 'auto' : 'smooth' })
     }
 
     // New cards arrive face down and are turned one after the other, each starting shortly after the previous one started (not when it is
