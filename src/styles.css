@@ -145,30 +145,99 @@ p {
     margin-bottom: -5px;
 }
 
+/* The details of the cost modifiers of a card: a small box over the bottom of the card (over its rules text; the pill is at the top, over the
+   pips). Sizes follow the width of the card, like the pill. */
 .draft-modifiers-expanded {
-    margin: auto;
-    padding-bottom: 2px;
-    width: 96%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0.3em 0.6em 0.4em;
+    font-size: 10px;
     color: #1b1f3a;
-    border: #1b1f3a solid 2px;
-    border-radius: 10px;
+    border: #1b1f3a solid 1.5px;
+    border-radius: 8px;
     position: absolute;
-    top: 2px;
-    right: 2px;
-    z-index: 2;
+    left: 3%;
+    right: 3%;
+    bottom: 2.5%;
+    z-index: 4;
+}
+@supports (width: 1cqw) {
+    .draft-modifiers-expanded {
+        left: 3cqw;
+        right: 3cqw;
+        bottom: 3cqw;
+        font-size: clamp(10px, 3.7cqw, 14px);
+    }
+}
+.draft-modifiers-expanded .modifier-panel-div {
+    margin: 0;
+    font-size: inherit;
+}
+.draft-modifiers-expanded .upgrade-header {
+    margin: 0 0 0.15em;
+    font-size: 0.9em;
+}
+.draft-modifiers-expanded .modifier-panel-div > div:not(.full-width) {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6em;
+}
+.draft-modifiers-expanded .modifierleft,
+.draft-modifiers-expanded .modifierright {
+    display: inline;
+    width: auto;
+    height: auto;
+    margin: 0;
+    line-height: 1.3;
+    text-align: left;
+}
+.draft-modifiers-expanded .full-width {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.3em;
+}
+.draft-modifiers-expanded .full-width .upgrade-header {
+    flex: 1 0 100%;
+}
+.draft-modifiers-expanded .upgradeselect {
+    width: 100%;
+    height: auto;
+    margin: 0.1em 0 0;
+    padding: 0.15em 1.7em 0.15em 0.4em;
+    font-size: 1em;
+}
+.draft-modifiers-expanded .modifiercheckbox {
+    width: 1.1em;
+    height: 1.1em;
+    margin: 0;
+}
+/* The cost in XP of a card of an upgrade draft, as a small pill over the level pips under its cost (the five dots in the arc of the cost
+   circle). Hovering it, or clicking to hold it open, opens the box that has the modifiers and the choices. The sizes follow the width of
+   the card (the card is a size container); the percentages are for browsers without container units. */
+.draft-card-wrap {
+    container-type: inline-size;
 }
 .draft-modifiers-minimized {
     margin: 0;
     padding: 0;
-    width: 15%;
+    box-sizing: border-box;
+    width: 16%;
     color: #1b1f3a;
-    border: #1b1f3a solid 2px;
-    border-radius: 10px;
+    border: #1b1f3a solid 1.5px;
+    border-radius: 999px;
     position: absolute;
-    top: 2px;
-    right: 2px;
+    top: 7.4%;
+    left: 1.6%;
     z-index: 2;
-
+}
+@supports (width: 1cqw) {
+    .draft-modifiers-minimized {
+        top: 10.4cqw;
+        left: 1.4cqw;
+        width: max(15.5cqw, 38px);
+    }
 }
 .modifierleft {
     display: inline-block;
@@ -313,6 +382,12 @@ p {
 .floatingImageNear {
     --preview-height: min(92vh, max(60vh, 525px));
 }
+@supports (height: 100dvh) {
+    .floatingImageCenter,
+    .floatingImageNear {
+        --preview-height: min(92dvh, max(60dvh, 525px));
+    }
+}
 .overlayImage {
     width: auto;
     max-width: min(92vw, max(57.5vw, 525px));
@@ -431,16 +506,33 @@ p {
     padding: 0;
     font-size: 9pt;
 }
+.draft-modifiers-minimized.is-open {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #1b1f3a;
+}
+.draft-modifiers-minimized .modifier-panel-div {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.25em;
+    margin: 0;
+    padding: 0.06em 0 0.12em;
+    font-size: 11px;
+}
+@supports (width: 1cqw) {
+    .draft-modifiers-minimized .modifier-panel-div {
+        font-size: clamp(10px, 3.8cqw, 17px);
+    }
+}
 .minimized-modifier-cost {
-    font-size: 14pt;
-    line-height: 1em;
-    vertical-align: middle;
+    font-size: 1.15em;
+    line-height: 1;
     margin: 0;
     padding: 0;
 }
 .minimized-modifier-xp {
-    font-size: 6pt;
-    vertical-align: middle;
+    font-size: 0.7em;
+    line-height: 1;
+    margin: 0;
     padding: 0;
 }
 .upgrade-header {
@@ -655,53 +747,6 @@ input, select {
         flex-basis: 15%;
     }
 
-    .modifier-panel-div {
-        margin: 2px 0 2px 0;
-        font-size: 5pt;
-    }
-    .upgrade-header {
-        font-size: 5pt;
-        margin-bottom: 2px;
-        margin-top: 4px;
-    }
-    .draft-modifiers-expanded {
-        margin: auto;
-        padding-bottom: 2px;
-        width: 94%;
-        border: #1b1f3a solid 1px;
-        border-radius: 6px;
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        z-index: 2;
-    }    
-
-    .draft-modifiers-minimized {
-        width: 22%;
-        border: #1b1f3a solid 1px;
-        border-radius: 6px;
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        z-index: 2;
-    }    
-    .minimized-modifier-cost {
-        font-size: 9pt;
-        line-height: 1em;
-        vertical-align: middle;
-        margin: 0;
-        padding: 0;
-    }
-    .minimized-modifier-xp {
-        font-size: 5pt;
-        vertical-align: middle;
-        margin: -1px 0 0 0;
-        padding: 0;
-    }
-    .upgradeselect {
-            font-size: 5pt;
-        margin: 2px 0 0 0;
-    }
     .cardName {
         font-size: 10pt;
     }
@@ -728,22 +773,6 @@ input, select {
     }
     .draft-card-link {
         font-size: 11px;
-    }
-    .modifierleft {
-        height: 10px;
-        line-height: 10px;
-    }
-    .modifierright {
-        height: 10px;
-        line-height: 10px;
-        margin-left: 2px;
-    }
-    .modifiercheckbox {
-        height: 0.8em;
-        width: 0.8em;
-        line-height: 0.8em;
-        margin-top: -2px;
-        vertical-align: middle;
     }
     .investigator-image {
         border-radius: 6px;
@@ -797,6 +826,7 @@ input, select {
 /* a face down card can't be picked, redrawn or inspected yet */
 .draft-card-wrap.facedown .draft-card-redraw,
 .draft-card-wrap.facedown .draft-card-link,
+.draft-card-wrap.facedown .draft-xp-chip,
 .draft-card-wrap.facedown .draft-modifiers-minimized,
 .draft-card-wrap.facedown .draft-modifiers-expanded {
     visibility: hidden;
@@ -2399,7 +2429,8 @@ a {
 }
 
 /* below this width the three columns can't coexist: the cards take the full width and the side columns become drawers
-   that slide over them, opened from tabs on the screen edges */
+   that slide over them, opened from tabs on the screen edges. The drawers and their scrim sit above the header controls (z-index 950)
+   and below the card preview (999 and up). */
 @media only screen and (max-width: 1380px) {
     .draft-main {
         flex-basis: 100%;
@@ -2409,7 +2440,7 @@ a {
         position: fixed;
         top: 0;
         bottom: 0;
-        z-index: 900;
+        z-index: 970;
         flex: none;
         width: min(88vw, 380px);
         max-width: none;
@@ -2489,7 +2520,7 @@ a {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 800;
+        z-index: 960;
         background: rgba(0, 0, 0, 0.55);
     }
 }
@@ -2835,14 +2866,11 @@ a {
     min-width: 0;
     width: auto;
 }
-@media only screen and (max-width: 600px) {
-    .settings-popover {
-        position: fixed;
-        top: 76px;
-        left: 8px;
-        right: 8px;
-        width: auto;
-    }
+/* on a phone it can be taller than what is left of the screen */
+.is-phone .settings-popover {
+    max-height: calc(100vh - 80px);
+    max-height: calc(100dvh - 80px);
+    overflow-y: auto;
 }
 
 /* confirmation dialog (Restart) */
@@ -3061,13 +3089,18 @@ label.export-option {
     .draft-card-wrap,
     .investigator-tile-main,
     .required-thumb,
-    .cardlist-item {
+    .investigator-div,
+    .cardlist-item,
+    .export-card,
+    .cost-col {
         -webkit-user-select: none;
         user-select: none;
         -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
     }
     .draft-card-wrap img,
     .investigator-image-frame img,
+    .investigator-div img,
     .required-thumb img {
         pointer-events: none;
         -webkit-user-drag: none;
@@ -3212,3 +3245,883 @@ main:focus {
     box-shadow: var(--shadow-lift);
 }
 
+
+/* ---------- phone layout ----------
+   Chosen in JavaScript (usePhoneLayout.js: a narrow screen, or a phone held sideways), which puts the .is-phone class on .App and renders
+   the components that only exist here, so none of this reaches a PC. The elements it adds are drawn from the bottom of the screen, where
+   the thumb is: a dock (the investigator, Undo, the card lists), one sheet for the two side columns, a strip to confirm a pick.
+   z-index: strip and dock 930/940 (the header 940, its settings panel above it), sheet scrim 960, sheet 970, previews 999 and up. */
+.is-phone {
+    --dock-h: 60px;
+    --dock-total: calc(var(--dock-h) + env(safe-area-inset-bottom, 0px));
+    --phone-top-h: 60px;
+    --dock-rail: 0px;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+}
+.is-phone .panel {
+    padding: 20px;
+}
+
+/* the top bar: logo, phase, how far the draft is, settings. It stays at the top. */
+.is-phone .phone-top {
+    position: sticky;
+    top: 0;
+    z-index: 940;
+    display: block;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+    background: var(--bg);
+}
+.phone-top-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 56px;
+    padding: 0 8px 0 var(--gutter);
+}
+.phone-top .app-logo {
+    height: 36px;
+    width: auto;
+    border-radius: 6px;
+}
+.phone-top .app-logo-button {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+}
+.phone-top .app-phase {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 18px;
+    line-height: 1.2;
+}
+.phone-top-fill {
+    flex: 1;
+}
+.phone-count {
+    flex: none;
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.phone-count strong {
+    font-size: 17px;
+    color: var(--text);
+}
+/* the count says what it counts only where there is room for the phase as well */
+@media (max-width: 380px) {
+    .phone-count-unit {
+        display: none;
+    }
+}
+.phone-top .app-header-controls {
+    flex: none;
+    margin: 0;
+    gap: 6px;
+}
+.phone-progress {
+    display: flex;
+    gap: 2px;
+    height: 4px;
+    padding: 0 var(--gutter);
+}
+.phone-segment,
+.phone-step-line span {
+    flex: 1;
+    min-width: 1px;
+    border-radius: 2px;
+    background: var(--line-strong);
+    opacity: 0.35;
+}
+.phone-segment.filled,
+.phone-step-line span.filled {
+    background: var(--primary);
+    opacity: 1;
+}
+
+/* the screen of a draft: room for the dock and the strip under the last card */
+.is-phone .draft-layout {
+    padding: 8px var(--gutter) 24px;
+    gap: 16px;
+}
+.is-phone .draft-layout.has-dock {
+    padding-bottom: calc(var(--dock-total) + 76px);
+}
+.is-phone .draft-container {
+    padding: 4px 0;
+    gap: 12px 10px;
+}
+
+/* a card of the pool with its actions under it (a PC has them over the card, on hover) */
+.draft-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+.draft-tile .draft-card-wrap {
+    max-width: none;
+}
+.draft-tile-actions {
+    display: flex;
+    gap: 6px;
+}
+.tile-action {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 3px;
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.tile-action svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+.tile-action span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tile-action:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* the cost of a card's upgrade: tapping it opens the options in a sheet */
+.draft-xp-chip {
+    position: absolute;
+    top: 7%;
+    left: 1.5%;
+    z-index: 3;
+    min-width: 38px;
+    height: 18px;
+    padding: 0 6px;
+    border: 1.5px solid #1b1f3a;
+    border-radius: 999px;
+    background: var(--chip-color, var(--primary));
+    color: #1b1f3a;
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+@supports (width: 1cqw) {
+    .draft-xp-chip {
+        /* a little lower than the PC's pill: on a small card the cost digit is close to the pips */
+        top: 12.4cqw;
+        left: 1.4cqw;
+    }
+}
+/* the tap area is 44px tall */
+.draft-xp-chip::before {
+    content: "";
+    position: absolute;
+    inset: -13px -8px;
+}
+.modifier-scrim {
+    z-index: 1050;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.modifier-sheet {
+    width: 100%;
+    max-width: 520px;
+    max-height: 80vh;
+    max-height: 80dvh;
+    box-sizing: border-box;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-radius: 20px 20px 0 0;
+    background: var(--bg);
+    color: var(--text);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    text-align: left;
+}
+.modifier-sheet h2 {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    font-size: 18px;
+}
+.modifier-sheet-xp {
+    flex: none;
+    color: var(--primary);
+}
+.modifier-sheet-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 16px;
+}
+.modifier-sheet-body > div:not(.full-width) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    border-bottom: 1px solid var(--line);
+}
+.modifier-sheet .modifierleft,
+.modifier-sheet .modifierright {
+    width: auto;
+    height: auto;
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.3;
+    text-align: left;
+}
+.modifier-sheet .full-width {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+}
+.modifier-sheet .upgrade-header {
+    flex: 1 0 100%;
+    margin: 0;
+    font-size: 14px;
+}
+.modifier-sheet .upgradeselect {
+    flex: 1 0 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 32px 0 12px;
+    font-size: 16px;
+}
+.modifier-sheet .modifiercheckbox {
+    width: 24px;
+    height: 24px;
+    margin: 0;
+}
+
+/* confirming a pick: a strip above the dock that only exists while a card is selected, or just the Done button */
+.phone-confirm,
+.phone-done {
+    position: fixed;
+    bottom: calc(var(--dock-total) + 8px);
+    z-index: 930;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.phone-confirm {
+    left: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 56px;
+    box-sizing: border-box;
+    padding: 6px 6px 6px 16px;
+    border-radius: 16px;
+    background: var(--bar-bg);
+    color: var(--bar-text);
+}
+.phone-confirm-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 15px;
+    line-height: 1.3;
+}
+.phone-confirm .btn {
+    flex: none;
+    min-height: 44px;
+    padding: 0 16px;
+}
+.phone-confirm .btn-primary {
+    background: var(--bar-btn-bg);
+    border-color: var(--bar-btn-bg);
+    color: var(--bar-btn-text);
+}
+.phone-done {
+    right: 12px;
+    min-width: 88px;
+    background: var(--bar-bg);
+    border-color: var(--bar-bg);
+    color: var(--bar-text);
+}
+
+/* the dock */
+.phone-dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 940;
+    display: flex;
+    box-sizing: border-box;
+    height: var(--dock-total);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.18);
+}
+.dock-btn {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.dock-btn span {
+    max-width: 100%;
+    padding: 0 4px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dock-btn[aria-expanded="true"] {
+    color: var(--primary);
+}
+.dock-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.dock-btn:focus-visible {
+    outline-offset: -4px;
+}
+.dock-badge {
+    position: absolute;
+    top: 6px;
+    left: calc(50% + 6px);
+    min-width: 20px;
+    height: 20px;
+    box-sizing: border-box;
+    padding: 0 5px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: var(--primary-text);
+    font-size: 12px;
+    line-height: 20px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    animation: dock-bump 0.3s ease;
+}
+@keyframes dock-bump {
+    50% {
+        transform: scale(1.35);
+    }
+}
+
+/* the sheet with the investigator and the card lists */
+.sheet-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 960;
+    background: rgba(0, 0, 0, 0.55);
+}
+.deck-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 970;
+    height: 88vh;
+    height: 88dvh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px 20px 0 0;
+    background: var(--bg);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    visibility: hidden;
+    transform: translateY(102%);
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+}
+.deck-sheet.is-open {
+    visibility: visible;
+    transform: translateY(0);
+    transition: transform 0.25s ease;
+}
+.sheet-head {
+    flex: none;
+    padding: 0 12px 8px;
+    /* the swipe that closes the sheet starts here: it must not scroll the page */
+    touch-action: none;
+}
+.sheet-grab {
+    width: 40px;
+    height: 5px;
+    margin: 8px auto 6px;
+    border-radius: 3px;
+    background: var(--line-strong);
+    opacity: 0.6;
+}
+.sheet-tabs {
+    display: flex;
+    gap: 6px;
+}
+.sheet-tabs [role="tab"] {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 4px 8px;
+    overflow: hidden;
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.15;
+    text-wrap: balance;
+    cursor: pointer;
+}
+.sheet-tabs [role="tab"][aria-selected="true"] {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+}
+.sheet-close {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+.sheet-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 4px var(--gutter) calc(24px + env(safe-area-inset-bottom, 0px));
+}
+/* the two columns as the tabs of the sheet: the drawer rules (fixed, off screen) don't apply to them */
+.draft-layout:not(.is-complete) .draft-left.in-sheet,
+.draft-layout:not(.is-complete) .draft-aside.in-sheet {
+    position: static;
+    z-index: auto;
+    flex: none;
+    width: auto;
+    max-width: none;
+    padding: 0;
+    overflow: visible;
+    background: none;
+    box-shadow: none;
+    visibility: visible;
+    transform: none;
+    transition: none;
+}
+.in-sheet[hidden] {
+    display: none;
+}
+/* one list under the other, each a row at least 44px tall */
+.in-sheet .list-container {
+    flex-direction: column;
+    flex-wrap: nowrap;
+}
+.in-sheet .col1,
+.in-sheet .col2 {
+    flex: none;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    font-size: 15px;
+}
+
+/* the update notice stays above the dock and the bar at the bottom of the setup */
+.is-phone .update-notice {
+    bottom: calc(var(--dock-total) + 12px);
+}
+
+/* the setup wizard: one short bar on top (the step, a menu of the steps) and the next action in a bar at the bottom of the panel */
+.wizard-top-phone {
+    position: sticky;
+    top: 0;
+    z-index: 940;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    min-height: 56px;
+    padding: 0 0 4px 0;
+    background: var(--bg);
+    box-shadow: calc(-1 * var(--gutter)) 0 0 var(--bg), var(--gutter) 0 0 var(--bg);
+}
+.wizard-top-phone .app-header-controls {
+    order: 0;
+    flex: none;
+    margin: 0;
+}
+.wizard-top-phone .app-logo {
+    height: 36px;
+    width: auto;
+    border-radius: 6px;
+}
+.wizard-top-phone .app-logo-button {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+}
+.phone-step-title {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 8px;
+    align-items: center;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.phone-step-count {
+    grid-column: 1;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--muted);
+}
+.phone-step-name {
+    grid-column: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.phone-step-chevron {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    color: var(--muted);
+}
+.phone-step-title[aria-expanded="true"] .phone-step-chevron {
+    transform: rotate(180deg);
+}
+.phone-step-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    gap: 3px;
+    height: 4px;
+}
+.phone-step-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 950;
+    margin-top: 6px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+.phone-step-menu .breadcrumbs {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+}
+.phone-step-menu .breadcrumbs > li + li::before {
+    display: none;
+}
+.phone-step-menu .step-btn {
+    width: 100%;
+}
+.phone-step-menu .step-sub {
+    display: block;
+    max-width: none;
+    white-space: normal;
+}
+/* the header already says which step this is */
+.is-phone .wizard-main .eyebrow {
+    display: none;
+}
+.is-phone .wizard-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    flex-wrap: nowrap;
+    margin: 0 -20px -20px;
+    padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line);
+    border-radius: 0 0 20px 20px;
+    background: var(--surface);
+}
+.is-phone .wizard-actions .btn {
+    min-height: 52px;
+    font-size: 17px;
+}
+.is-phone .wizard-actions .btn-primary {
+    flex: 1;
+}
+
+/* the finished draft in one column: the lists first, then the export, then the investigator and the cost curve */
+.is-phone .draft-layout.is-complete {
+    display: flex;
+    flex-direction: column;
+    column-width: auto;
+    gap: 0;
+}
+.is-phone .draft-layout.is-complete .draft-aside > * {
+    order: 1;
+}
+.is-phone .draft-layout.is-complete .draft-main > * {
+    order: 2;
+}
+.is-phone .draft-layout.is-complete .draft-left > * {
+    order: 3;
+}
+
+/* touch screens: the rows of the lists are tapped to open the preview, so they are as tall as a finger */
+@media (hover: none) {
+    .cardlist-item,
+    .export-card {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        gap: 0 0.35em;
+    }
+}
+
+/* a phone held sideways: the dock is a column on the right, the sheet slides in from there, four cards in a row */
+@media (orientation: landscape) and (max-height: 520px) {
+    .is-phone {
+        --phone-top-h: 52px;
+        --dock-rail: 92px;
+        --dock-total: 0px;
+    }
+    .phone-top-row {
+        height: 48px;
+    }
+    .is-phone .draft-layout.has-dock {
+        padding-right: calc(var(--dock-rail) + var(--gutter));
+        padding-bottom: 80px;
+    }
+    .is-phone .draft-container {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .phone-dock {
+        left: auto;
+        top: var(--phone-top-h);
+        width: calc(var(--dock-rail) + env(safe-area-inset-right, 0px));
+        height: auto;
+        flex-direction: column;
+        padding: 0 env(safe-area-inset-right, 0px) 0 0;
+        border-top: 0;
+        border-left: 1px solid var(--line);
+        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.18);
+    }
+    .dock-badge {
+        top: 4px;
+    }
+    .phone-confirm,
+    .phone-done {
+        bottom: 8px;
+        right: calc(var(--dock-rail) + env(safe-area-inset-right, 0px) + 12px);
+    }
+    .phone-confirm {
+        left: calc(12px + env(safe-area-inset-left, 0px));
+    }
+    .deck-sheet {
+        left: auto;
+        top: 0;
+        width: min(400px, 70vw);
+        height: auto;
+        border-radius: 20px 0 0 20px;
+        transform: translateX(102%);
+    }
+    .deck-sheet.is-open {
+        transform: translateX(0);
+    }
+}
+
+/* the close button of a drawer is hidden on the finished draft, where the lists are in the page: the rule that lays these panels out would show it */
+.draft-layout.is-complete .drawer-close {
+    display: none;
+}
+
+/* the investigator draft on a phone: Redraw all at the top, each investigator with its actions under it, a strip to confirm the pick */
+.phone-pick-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0 12px;
+}
+.phone-pick-top span {
+    min-width: 0;
+    font-size: 15px;
+    color: var(--muted);
+}
+.phone-pick-top .btn {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.investigator-tile .draft-tile-actions {
+    margin-top: 2px;
+}
+/* a screen without the dock: the strip sits at the bottom of the screen */
+.phone-confirm.no-dock {
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+}
+.is-phone .draft-layout.has-strip {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+@media (orientation: landscape) and (max-height: 520px) {
+    .phone-confirm.no-dock {
+        right: calc(12px + env(safe-area-inset-right, 0px));
+    }
+}
+
+/* no sliding or bouncing for those who asked for less motion */
+@media (prefers-reduced-motion: reduce) {
+    .deck-sheet,
+    .deck-sheet.is-open {
+        transition: none;
+    }
+    .dock-badge {
+        animation: none;
+    }
+}
+
+/* a compact investigator on a phone: the name, the front of the card and the actions; the back (with the deckbuilding rules) and the cards that
+   always come with it are one tap away in the preview */
+.is-phone .investigator-tile-main > :nth-child(2),
+.is-phone .investigator-tile-main .required-thumbs {
+    display: none;
+}
+.is-phone .investigator-tile-name {
+    order: -1;
+}
+
+/* The older panels of the draft screens (Level 0 options, Versatile, bonus experience, the upgrade that was paused) have rows of fixed height and
+   text under 16px, which is too small to tap and makes iOS zoom the page when a field is focused. On a phone each row is a label and its
+   control, as tall as a finger. */
+.is-phone .draft-main .settingsDiv {
+    padding: 18px 16px 20px;
+}
+.is-phone .draft-main .fbsetting,
+.is-phone .draft-main .fblist {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(108px, 42%) auto;
+    align-items: center;
+    gap: 6px 12px;
+    margin: 0 0 10px;
+}
+.is-phone .draft-main .fblist {
+    grid-template-columns: auto minmax(0, 1fr);
+}
+.is-phone .draft-main .fblist .fblistright {
+    display: none;
+}
+.is-phone .draft-main .fbdraftsettingleft,
+.is-phone .draft-main .fbdraftsettingcenter,
+.is-phone .draft-main .fbdraftsettingright,
+.is-phone .draft-main .fbdraftsettingslider,
+.is-phone .draft-main .fbdraftsettingslidervalue,
+.is-phone .draft-main .fbphasesettingleft,
+.is-phone .draft-main .fbphasesettingcenter,
+.is-phone .draft-main .fbphasesettingright,
+.is-phone .draft-main .fbphasesettingslider,
+.is-phone .draft-main .fbphasesettingslidervalue,
+.is-phone .draft-main .fblistleft,
+.is-phone .draft-main .fblistcenter {
+    flex-basis: auto;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    line-height: 1.35;
+    text-align: left;
+    font-size: 15px;
+}
+.is-phone .draft-main .fbdraftsettingcenter,
+.is-phone .draft-main .fbdraftsettingslider,
+.is-phone .draft-main .fbphasesettingcenter,
+.is-phone .draft-main .fbphasesettingslider {
+    display: flex;
+    align-items: center;
+}
+.is-phone .draft-main .settingsDiv select,
+.is-phone .draft-main .settingsDiv input[type="text"],
+.is-phone .draft-main .settingsDiv input[type="number"] {
+    box-sizing: border-box;
+    width: 100%;
+    height: 44px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 28px 0 10px;
+    font-size: 16px;
+    line-height: normal;
+}
+.is-phone .draft-main .settingsDiv input[type="range"] {
+    width: 100%;
+    height: 44px;
+    margin: 0;
+}
+.is-phone .draft-main .settingsDiv input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    margin: 0;
+}
+.is-phone .draft-main .description {
+    width: auto;
+    margin: 10px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+}
+.is-phone .button-rect {
+    width: auto;
+    min-width: 120px;
+    height: auto;
+    min-height: 44px;
+    margin: 10px 0 4px;
+    padding: 0 22px;
+    font-size: 16px;
+}

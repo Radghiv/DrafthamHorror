@@ -96,3 +96,41 @@ export function SettingsIcon() {
         </svg>
     )
 }
+
+// The phone dock's icons: the investigator, the card lists and Undo
+export function PersonIcon() {
+    return (
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="7" r="3.6" />
+            <path d="M4 19c.6-3.8 3.4-5.6 7-5.6s6.4 1.8 7 5.6" />
+        </svg>
+    )
+}
+
+export function ListIcon() {
+    return (
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M8 5.5h11M8 11h11M8 16.5h11" />
+            <path d="M3.5 5.5h.01M3.5 11h.01M3.5 16.5h.01" />
+        </svg>
+    )
+}
+
+export function UndoIcon() {
+    return (
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 4.5 4 8.5l4 4" />
+            <path d="M4.5 8.5h8a5 5 0 0 1 0 10H9" />
+        </svg>
+    )
+}
+
+// A magnifying glass with a plus: shows a card larger
+export function ZoomIcon() {
+    return (
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="9.5" cy="9.5" r="5.5" />
+            <path d="m13.8 13.8 5 5M9.5 7.2v4.6M7.2 9.5h4.6" />
+        </svg>
+    )
+}

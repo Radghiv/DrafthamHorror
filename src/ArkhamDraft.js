@@ -20,7 +20,8 @@ import UpdateNotice from './components/UpdateNotice'
 import { newSeed } from './random'
 import InvestigatorPick from './components/InvestigatorPick'
 import CardPreview from './components/CardPreview'
-import { DeckLeftColumn, DeckRightColumn, DrawerControls } from './components/DeckSidebar'
+import { DeckLeftColumn, DeckRightColumn, DrawerControls, PhoneDock, DeckSheet } from './components/DeckSidebar'
+import usePhoneLayout from './components/usePhoneLayout'
 import DraftPanel from './components/DraftPanel'
 import ExportPanel from './components/ExportPanel'
 import UpgradeOptionsPanel from './components/UpgradeOptionsPanel'
@@ -55,8 +56,35 @@ function ArkhamDraft() {
 
     const dispatch = useDispatch()
 
-    // on narrow screens the side columns are drawers: 'left', 'right' or null
+    // a phone gets its own layout (dock, sheet, short top bar); everything else keeps the one of a PC
+    const phone = usePhoneLayout()
+
+    // on narrow screens the side columns are drawers (on a phone, the tabs of a sheet): 'left', 'right' or null
     const [drawer, setDrawer] = useState(null)
+    const drawerOpen = Boolean(drawer)
+
+    // the back gesture of a phone closes the open drawer instead of leaving the draft: opening it adds a history entry that the gesture
+    // (or closing it any other way) takes away again
+    useEffect(() => {
+        if (!drawerOpen) return undefined
+
+        let closedByBack = false
+
+        window.history.pushState({ draftDrawer: true }, '')
+
+        function handlePopState() {
+            closedByBack = true
+            setDrawer(null)
+        }
+
+        window.addEventListener('popstate', handlePopState)
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState)
+
+            if (!closedByBack && window.history.state && window.history.state.draftDrawer) window.history.back()
+        }
+    }, [drawerOpen])
 
     useEffect(() => {
         if (!drawer) return undefined
@@ -146,7 +174,7 @@ function ArkhamDraft() {
     }
     else if (investigatorDrafting) {
         contents =
-        <div className="draft-layout">
+        <div className={'draft-layout' + (phone ? ' has-strip' : '')}>
             <div className="draft-main">
                 <InvestigatorPick />
             </div>
@@ -154,13 +182,18 @@ function ArkhamDraft() {
     }
     else if (drafting) {
         contents =
-        <div className="draft-layout" ref={layoutRef}>
-            <DeckLeftColumn open={drawer === 'left'} onClose={() => setDrawer(null)} />
+        <div className={'draft-layout' + (phone ? ' has-dock' : '')} ref={layoutRef}>
+            {phone ? null : <DeckLeftColumn open={drawer === 'left'} onClose={() => setDrawer(null)} />}
             <div className="draft-main">
                 <DraftPanel />
             </div>
-            <DeckRightColumn alwaysShowDraftList={true} open={drawer === 'right'} onClose={() => setDrawer(null)} />
-            <DrawerControls drawer={drawer} onChange={setDrawer} />
+            {phone ? null : <DeckRightColumn alwaysShowDraftList={true} open={drawer === 'right'} onClose={() => setDrawer(null)} />}
+            {phone ?
+                <>
+                    <PhoneDock drawer={drawer} onChange={setDrawer} onUndo={undo} canUndo={canUndo} />
+                    <DeckSheet drawer={drawer} onChange={setDrawer} alwaysShowDraftList={true} />
+                </>
+                : <DrawerControls drawer={drawer} onChange={setDrawer} />}
         </div>
     }
     else if (draftComplete) {
@@ -179,26 +212,34 @@ function ArkhamDraft() {
     }
     else if (deckLoaded) {
         contents =
-        <div className="draft-layout" ref={layoutRef}>
-            <DeckLeftColumn open={drawer === 'left'} onClose={() => setDrawer(null)} />
+        <div className={'draft-layout' + (phone ? ' has-dock' : '')} ref={layoutRef}>
+            {phone ? null : <DeckLeftColumn open={drawer === 'left'} onClose={() => setDrawer(null)} />}
             <div className="draft-main">
                 <Level0UpgradePanel phase={DraftPhases.UpgradeLevel0SwapPhase} />
                 <Level0UpgradePanel phase={DraftPhases.UpgradeLevel0AddPhase} />
                 <VersatilePanel />
                 <UpgradeOptionsPanel />
             </div>
-            <DeckRightColumn open={drawer === 'right'} onClose={() => setDrawer(null)} />
-            <DrawerControls drawer={drawer} onChange={setDrawer} />
+            {phone ? null : <DeckRightColumn open={drawer === 'right'} onClose={() => setDrawer(null)} />}
+            {phone ?
+                <>
+                    <PhoneDock drawer={drawer} onChange={setDrawer} onUndo={undo} canUndo={canUndo} />
+                    <DeckSheet drawer={drawer} onChange={setDrawer} />
+                </>
+                : <DrawerControls drawer={drawer} onChange={setDrawer} />}
         </div>
     }
     else {
         contents = <><ResumeDraft /><SharedSetup /><SetupWizard /></>
     }
 
+    // the phone's dock is on the screens where a deck is being drafted (and holds Undo there)
+    const hasDock = phone && (drafting || (deckLoaded && !draftComplete && !investigatorDrafting))
+
     return (
-        <div className="App">
+        <div className={'App' + (phone ? ' is-phone' : '')}>
             <a className="skip-link" href="#main-content">{t('Skip to the content')}</a>
-            <AppHeader compact={inDraft} inWizard={inWizard} phaseText={headerText} showCardsPerRow={drafting} onRestart={inDraft ? () => dispatch(restartDraft) : null} onHome={inDraft ? goHome : null} onUndo={canUndo ? undo : null} />
+            <AppHeader compact={inDraft} inWizard={inWizard} phaseText={headerText} showCardsPerRow={drafting} onRestart={inDraft ? () => dispatch(restartDraft) : null} onHome={inDraft ? goHome : null} onUndo={canUndo ? undo : null} hasDock={hasDock} />
             <main id="main-content" tabIndex={-1}>
                 {contents}
             </main>

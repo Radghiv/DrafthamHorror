@@ -8,7 +8,8 @@ import { OfficialColorForClass } from '../data/ClassColors'
 import useCardOverlay from './OverlayImage'
 import CardImage from './CardImage'
 import RequiredThumbs from './RequiredThumbs'
-import { RedrawIcon } from './wizard/Icons'
+import { RedrawIcon, ZoomIcon } from './wizard/Icons'
+import usePhoneLayout from './usePhoneLayout'
 import CardLinkButton from './CardLinkButton'
 import { useT } from '../i18n'
 
@@ -43,6 +44,9 @@ function InvestigatorPick() {
 
     const dispatch = useDispatch()
 
+    const phone = usePhoneLayout()
+    const doCardOverlay = useCardOverlay()
+
     const [selected, setSelected] = useState(null)
 
     const entries = pool.map(entry => ({ entry: entry, card: findInvestigatorCard(entry, cardData) }))
@@ -69,6 +73,12 @@ function InvestigatorPick() {
 
     return (
         <>
+            {phone ?
+                <div className="phone-pick-top">
+                    <span aria-live="polite">{current ? '' : t('Select an investigator')}</span>
+                    <button type="button" className="btn btn-secondary" onClick={handleReroll}><RedrawIcon /> {t('Redraw all')}</button>
+                </div>
+                : null}
             <div className="investigator-pick-grid">
                 {entries.map(({ entry, card }, index) => {
                     const isSelected = current === entry
@@ -82,14 +92,31 @@ function InvestigatorPick() {
                                 <RequiredThumbs investigator={card} />
                                 <span className="investigator-tile-name">{entry}</span>
                             </button>
-                            <CardLinkButton card={card} />
-                            <button type="button" className="btn btn-secondary investigator-redraw" disabled={!canRedraw}
-                                aria-label={t('Redraw {name}', { name: entry })} title={t('Redraw')} onClick={() => dispatch(redrawInvestigator(index))}><RedrawIcon /></button>
+                            {phone ?
+                                <div className="draft-tile-actions">
+                                    <button type="button" className="tile-action" disabled={!canRedraw} aria-label={t('Redraw {name}', { name: entry })} onClick={() => dispatch(redrawInvestigator(index))}><RedrawIcon /><span>{t('Redraw')}</span></button>
+                                    <button type="button" className="tile-action" disabled={!card} aria-label={t('Zoom {name}', { name: t('{name} (front)', { name: entry }) })} onClick={event => doCardOverlay(card, event, 'front')}><ZoomIcon /><span>{t('Front')}</span></button>
+                                    <button type="button" className="tile-action" disabled={!card} aria-label={t('Zoom {name}', { name: t('{name} (back)', { name: entry }) })} onClick={event => doCardOverlay(card, event, 'back')}><ZoomIcon /><span>{t('Back side')}</span></button>
+                                </div>
+                                :
+                                <>
+                                    <CardLinkButton card={card} />
+                                    <button type="button" className="btn btn-secondary investigator-redraw" disabled={!canRedraw}
+                                        aria-label={t('Redraw {name}', { name: entry })} title={t('Redraw')} onClick={() => dispatch(redrawInvestigator(index))}><RedrawIcon /></button>
+                                </>}
                         </div>
                     )
                 })}
             </div>
 
+            {phone ?
+                (current ?
+                    <div className="phone-confirm no-dock" role="group">
+                        <span className="phone-confirm-text" aria-live="polite">{t('Draft {name}?', { name: current })}</span>
+                        <button type="button" className="btn btn-primary" onClick={() => dispatch(pickInvestigator(current))}>{t('Draft this investigator')}</button>
+                    </div>
+                    : null)
+                :
             <div className="confirm-bar">
                 <div className="bar-row">
                     <div className="confirm-bar-text" aria-live="polite">
@@ -101,7 +128,7 @@ function InvestigatorPick() {
                         <button type="button" className="btn btn-secondary" onClick={handleReroll}><RedrawIcon /> {t('Redraw all')}</button>
                     </div>
                 </div>
-            </div>
+            </div>}
         </>
     )
 }

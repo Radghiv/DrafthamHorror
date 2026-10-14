@@ -5,17 +5,20 @@ import AnimationSpeedSlider from './AnimationSpeedSlider'
 import AnimateTogetherToggle from './AnimateTogetherToggle'
 import LanguageSelect from './LanguageSelect'
 import ThemeToggle from './ThemeToggle'
+import { RestartDialog } from './RestartButton'
 import { SettingsIcon } from './wizard/Icons'
 import { useT } from '../i18n'
 
 // The settings button and the small panel it opens: language and theme everywhere, and on the drafting screen also the cards per row
 // and the animation options (draftOptions). The panel closes with a click outside, Escape or the button itself.
+// With onRestart (a phone, where the header has no room for a Restart button) the panel also holds Restart, which asks for confirmation.
 function SettingsMenu(props) {
-    const { draftOptions } = props
+    const { draftOptions, onRestart } = props
 
     const t = useT()
 
     const [open, setOpen] = useState(false)
+    const [restarting, setRestarting] = useState(false)
 
     const wrapperRef = useRef(null)
 
@@ -56,8 +59,12 @@ function SettingsMenu(props) {
                             <AnimateTogetherToggle />
                         </>
                         : null}
+                    {onRestart ?
+                        <button type="button" className="btn btn-secondary" aria-haspopup="dialog" onClick={() => { setOpen(false); setRestarting(true) }}>{t('Restart')}</button>
+                        : null}
                 </div>
                 : null}
+            {onRestart ? <RestartDialog open={restarting} onClose={() => setRestarting(false)} onRestart={onRestart} /> : null}
         </div>
     )
 }

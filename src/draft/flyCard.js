@@ -80,7 +80,7 @@ export default function startCardFlight(cardElement, speed) {
     }
 
     function land(cardKey) {
-        const tab = document.querySelector('.drawer-tab-right')
+        const tab = document.querySelector('.drawer-tab-right, [data-fly-target]')
         const tabVisible = tab && window.getComputedStyle(tab).display !== 'none'
 
         if (tabVisible) {

@@ -1,7 +1,8 @@
 import React from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 
 import { setHighlightCost } from '../features/settings/settingsSlice'
+import { isTouchScreen } from './OverlayImage'
 import { useT } from '../i18n'
 
 // the first column is for skills (they have no cost); then costs 0 to 4 and 5 or more
@@ -46,8 +47,17 @@ function CostCurve(props) {
     const total = totals.reduce((sum, count) => sum + count, 0)
     const max = Math.max(...totals, 1)
     const hasDeck = deckList.length > 0
+    const touch = isTouchScreen()
+
+    const highlighted = useSelector(state => state.settings.highlightCost)
 
     const highlight = bin => dispatch(setHighlightCost(bin))
+
+    // a finger has no hover: tapping a column keeps its cards highlighted (in the lists, which are in another drawer on a phone)
+    // until it is tapped again; the pointer events of a touch only flash it
+    const onEnter = (event, bin) => { if (event.pointerType !== 'touch') highlight(bin) }
+    const onLeave = event => { if (event.pointerType !== 'touch') highlight(null) }
+    const onTap = bin => { if (isTouchScreen()) highlight(highlighted === bin ? null : bin) }
 
     return (
         <div className="settingsDiv cost-curve">
@@ -56,7 +66,7 @@ function CostCurve(props) {
                 {totals.map((count, index) => (
                     <div className="cost-col" key={LABELS[index]} tabIndex={0}
                         aria-label={t('{label}: {count} card|{label}: {count} cards', { label: index === 0 ? t('Skills') : t('Cost {cost}', { cost: LABELS[index] }), count })}
-                        onPointerEnter={() => highlight(index)} onPointerLeave={() => highlight(null)}
+                        onPointerEnter={event => onEnter(event, index)} onPointerLeave={onLeave} onClick={() => onTap(index)}
                         onFocus={() => highlight(index)} onBlur={() => highlight(null)}>
                         <span className="cost-count">{count}</span>
                         <div className="cost-track">
@@ -76,8 +86,8 @@ function CostCurve(props) {
                 </div>
                 : null}
             <p className="cost-note">
-                {total === 0 ? t('Cards will show up here as you draft. Hover a column to highlight its cards in the lists.') :
-                    t('Hover a column to highlight its cards in the lists. Cards without a fixed cost (such as X-cost ones) are not counted.') + (hasDeck ? ' ' + t('Removed cards are subtracted from the existing deck.') : '')}
+                {total === 0 ? (touch ? t('Cards will show up here as you draft. Tap a column to highlight its cards in the lists.') : t('Cards will show up here as you draft. Hover a column to highlight its cards in the lists.')) :
+                    (touch ? t('Tap a column to highlight its cards in the lists. Cards without a fixed cost (such as X-cost ones) are not counted.') : t('Hover a column to highlight its cards in the lists. Cards without a fixed cost (such as X-cost ones) are not counted.')) + (hasDeck ? ' ' + t('Removed cards are subtracted from the existing deck.') : '')}
             </p>
         </div>
     )
