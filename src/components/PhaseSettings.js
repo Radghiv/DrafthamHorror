@@ -21,7 +21,7 @@ function PhaseSettings(props) {
             <div className="fblist">
                 <label className="fbphasesettingleft">{t('Cards to select from:')}</label>
                 <span className="fbphasesettingslider">
-                    <input type="range" min="1" max="15" value={settings.draftCount[phase-1]} name='DraftCount' onChange={handleChange}/>
+                    <input type="range" min="1" max="20" value={settings.draftCount[phase-1]} name='DraftCount' onChange={handleChange}/>
                 </span>
                 <span className="fbphasesettingslidervalue">{settings.draftCount[phase-1]}</span>
             </div>

@@ -64,7 +64,7 @@ function UpgradeDraftSettings(props) {
             <div className="fbsetting">
                 <label className="fbdraftsettingleft">{t('Cards to select from:')}</label>
                 <span className="fbdraftsettingslider">
-                    <input type="range" min="2" max="15" step="1" value={draftCount[phase-1]} name="DraftCount" onChange={handleCountChange}/>
+                    <input type="range" min="2" max="20" step="1" value={draftCount[phase-1]} name="DraftCount" onChange={handleCountChange}/>
                 </span>
                 <span className="fbdraftsettingslidervalue">{draftCount[phase-1]}</span>
             </div>

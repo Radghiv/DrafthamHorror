@@ -4149,16 +4149,18 @@ main:focus {
     margin: auto;
     max-width: 100%;
 }
+.pinnedRow {
+    --card-height: 78vh;
+}
+@supports (height: 100dvh) {
+    .pinnedRow {
+        --card-height: 78dvh;
+    }
+}
 .pinnedMain {
     position: relative;
     flex: none;
-    --card-height: 78vh;
     width: min(92vw, calc(var(--card-height) * var(--card-ratio)));
-}
-@supports (height: 100dvh) {
-    .pinnedMain {
-        --card-height: 78dvh;
-    }
 }
 .pinnedImage {
     display: block;
@@ -4167,20 +4169,50 @@ main:focus {
     border-radius: 4%;
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
 }
+/* an investigator whose picture is portrait, turned to show horizontally: the frame has the proportions of a landscape card */
+.overlayFrame,
+.pinnedFrame {
+    position: relative;
+    display: block;
+    flex: none;
+    aspect-ratio: 1.4;
+    overflow: hidden;
+    border-radius: 4%;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+}
+.overlayFrame {
+    width: min(calc(var(--preview-height) * 1.4), min(92vw, max(57.5vw, 525px)));
+}
+.floatingImageNear .overlayFrame {
+    max-width: 100%;
+}
+.pinnedFrame {
+    width: 100%;
+}
+.rotatedImage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: block;
+    width: 71.43%;
+    height: 140%;
+    max-width: none;
+}
+.rotatedImage.cw {
+    transform: translate(-50%, -50%) rotate(90deg);
+}
+.rotatedImage.ccw {
+    transform: translate(-50%, -50%) rotate(-90deg);
+}
 .pinnedBonded {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 10px;
-    --bonded-height: 52vh;
 }
-@supports (height: 100dvh) {
-    .pinnedBonded {
-        --bonded-height: 52dvh;
-    }
-}
+/* 80% of the size of a regular card in the preview, like on a PC */
 .pinnedBonded .overlayBonded {
-    width: min(44vw, 240px, calc(var(--bonded-height) * 0.72));
+    width: calc(min(92vw, var(--card-height) * 0.72) * 0.8);
 }
 .pinnedBonded .overlayBondedCount {
     right: 8px;

@@ -2,9 +2,10 @@ import { loadJSON, saveJSON } from './storage'
 
 const THEME_KEY = 'draftham.theme'
 const THEMES = ['light', 'dark', 'arkham']
+const DEFAULT_THEME = 'arkham'
 
 export function getTheme() {
-    return document.documentElement.getAttribute('data-theme') || 'light'
+    return document.documentElement.getAttribute('data-theme') || DEFAULT_THEME
 }
 
 export function setTheme(theme) {
@@ -12,10 +13,9 @@ export function setTheme(theme) {
     saveJSON(THEME_KEY, theme)
 }
 
-// Applies the stored theme, falling back to the OS preference. Called before the first render to avoid a flash.
+// Applies the stored theme, falling back to the Arkham theme. Called before the first render to avoid a flash.
 export function initTheme() {
     const stored = loadJSON(THEME_KEY, null)
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
 
-    document.documentElement.setAttribute('data-theme', THEMES.includes(stored) ? stored : (prefersDark ? 'dark' : 'light'))
+    document.documentElement.setAttribute('data-theme', THEMES.includes(stored) ? stored : DEFAULT_THEME)
 }

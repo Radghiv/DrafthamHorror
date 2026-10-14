@@ -97,7 +97,7 @@ function DraftRulesStep() {
             <div className="setting-row">
                 <label className="setting-label" htmlFor="draft-count"><strong>{t('Cards to select from')}</strong></label>
                 <div className="setting-control">
-                    <input id="draft-count" className="range" type="range" min="2" max="15" step="1" value={draftCount}
+                    <input id="draft-count" className="range" type="range" min="2" max="20" step="1" value={draftCount}
                         onChange={event => dispatch(changeSetting('DraftCount', { phase: phase, value: event.target.value }))} />
                     <span className="value-badge">{draftCount}</span>
                 </div>

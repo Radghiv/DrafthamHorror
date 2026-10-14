@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useSelector, useDispatch, useStore } from 'react-redux'
 
 import { updateImageOverlay } from '../features/settings/settingsSlice'
@@ -176,6 +176,21 @@ function fitHeight(room, fullHeight, mainRatio, bondedCount, withBonded, withCus
     return Math.floor(low)
 }
 
+// The picture of a card with the translated texts over it. An investigator whose picture is portrait is turned (see OverlayCardImage), and the
+// texts are placed over the frame it is turned in.
+function PreviewPicture(props) {
+    const { urls, card, side, imageClass, frameClass } = props
+
+    const [turned, setTurned] = useState(false)
+
+    return (
+        <>
+            <OverlayCardImage urls={urls} className={imageClass} rotate={card && card.type_code === 'investigator' ? side : null} frameClass={frameClass} onTurn={setTurned} />
+            <CardTextOverlay card={card} side={side} turned={turned} />
+        </>
+    )
+}
+
 // A preview opened by a tap or a long press (touch screens): the card as large as the screen allows, with its bonded cards and its
 // customizations under it (beside it when the screen is wide enough), in a layer that scrolls. Tapping anywhere closes it: the click
 // reaches the backdrop around it.
@@ -190,8 +205,7 @@ function PinnedPreview(props) {
         <div className="pinnedPreview">
             <div className="pinnedRow">
                 <div className="pinnedMain" style={{ '--card-ratio': mainRatio }}>
-                    <OverlayCardImage urls={urls} className="pinnedImage" />
-                    <CardTextOverlay card={card} side={side} />
+                    <PreviewPicture urls={urls} card={card} side={side} imageClass="pinnedImage" frameClass="pinnedFrame" />
                 </div>
                 {textInPanel ? <TextPanel name={cardName(card)} subname={cardSubname(card)} texts={texts} /> : null}
                 {bonded.length > 0 ?
@@ -323,8 +337,7 @@ function PreviewContents() {
 
     const content = (
         <div className={'previewRow' + (side === 'left' ? ' previewRowLeft' : '')}>
-            <OverlayCardImage urls={urls} />
-            <CardTextOverlay card={card} side={showingBack ? 'back' : 'front'} />
+            <PreviewPicture urls={urls} card={card} side={showingBack ? 'back' : 'front'} />
             {withText ? <TextPanel name={cardName(card)} subname={cardSubname(card)} texts={texts} /> : null}
             {withBonded && hasBonded ? <BondedCards cards={bonded} layout={bondedLayoutNow} /> : null}
             {withCustomizations ? <CustomizationsPanel text={customizations} /> : null}

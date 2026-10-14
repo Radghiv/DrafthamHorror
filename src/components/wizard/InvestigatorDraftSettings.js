@@ -50,7 +50,7 @@ function InvestigatorDraftSettings() {
             <div className="setting-row">
                 <label className="setting-label" htmlFor="investigator-count"><strong>{t('Investigators to select from')}</strong></label>
                 <div className="setting-control">
-                    <input id="investigator-count" className="range" type="range" min="2" max="8" step="1" value={options.count}
+                    <input id="investigator-count" className="range" type="range" min="2" max="20" step="1" value={options.count}
                         onChange={event => setOption('count', parseInt(event.target.value, 10))} />
                     <span className="value-badge">{options.count}</span>
                 </div>

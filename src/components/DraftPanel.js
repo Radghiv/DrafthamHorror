@@ -139,6 +139,9 @@ function DraftPanel(props) {
         if (requireConfirmation) dispatch(selectDraftCard(null))
 
         if (flight) requestAnimationFrame(() => flight.land(cardKey))
+
+        // on a phone the cards are in a long column: the next batch starts at the top
+        if (phone && window.scrollY > 0) window.scrollTo({ top: 0, behavior: speed === 0 ? 'auto' : 'smooth' })
     }
 
     // New cards arrive face down and are turned one after the other, each starting shortly after the previous one started (not when it is

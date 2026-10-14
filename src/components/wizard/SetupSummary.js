@@ -1,15 +1,21 @@
 import React from 'react'
+import { useSelector } from 'react-redux'
 
 import useStartDraft from './useStartDraft'
 import SetupInfo from './SetupInfo'
 import { DeckPreviewList } from './DeckPreview'
+import usePhoneLayout from '../usePhoneLayout'
 import { useT } from '../../i18n'
 
-// Right column of the setup: the Start button, the choices so far and, below them, the cards of the validated ArkhamDB deck
+// Right column of the setup: the Start button, the choices so far and, below them, the cards of the validated ArkhamDB deck.
+// On a phone the Review step already says all that, so the choices are left out there.
 function SetupSummary() {
     const t = useT()
 
     const { start, canStart, deckFetchError } = useStartDraft()
+
+    const phone = usePhoneLayout()
+    const step = useSelector(state => state.settings.setupStep)
 
     return (
         <aside className="panel wizard-summary" aria-label={t('Start')}>
@@ -19,7 +25,7 @@ function SetupSummary() {
             <button type="button" className="btn btn-primary btn-block" onClick={start} disabled={!canStart}>
                 {t('Start draft')}
             </button>
-            <SetupInfo />
+            {phone && step === 'review' ? null : <SetupInfo />}
             <DeckPreviewList />
         </aside>
     )

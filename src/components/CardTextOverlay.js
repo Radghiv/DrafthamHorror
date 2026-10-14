@@ -72,7 +72,7 @@ function fieldTexts(card, box, language, cardName, cardSubname) {
 // the language chosen goes in, as big as it can be while it still fits, and the name, subtitle and type get the same treatment. It is
 // placed over the picture that comes right before it (an img element, in the same parent), in whatever size the picture has.
 function OverlayBody(props) {
-    const { card, box, texts, back, fields } = props
+    const { card, box, texts, back, fields, turned } = props
 
     const containerRef = useRef(null)
     const textRef = useRef(null)
@@ -84,7 +84,10 @@ function OverlayBody(props) {
         const text = textRef.current
         const image = container ? container.previousElementSibling : null
 
-        if (!image || image.tagName !== 'IMG') return undefined
+        // the picture, or the frame of one that is turned (a portrait picture of an investigator): the frame has the proportions of the card
+        const inFrame = !!image && image.tagName !== 'IMG' && (image.classList.contains('overlayFrame') || image.classList.contains('pinnedFrame'))
+
+        if (!image || (image.tagName !== 'IMG' && !inFrame)) return undefined
 
         const landscape = card.type_code === 'investigator'
 
@@ -93,7 +96,7 @@ function OverlayBody(props) {
             const height = image.offsetHeight
 
             // not loaded yet, or turned to fit a frame (a portrait picture of an investigator): the layout isn't the one measured
-            if (!width || !height || !image.naturalWidth || (image.naturalWidth > image.naturalHeight) !== landscape) {
+            if (!width || !height || (!inFrame && (!image.naturalWidth || (image.naturalWidth > image.naturalHeight) !== landscape))) {
                 container.style.display = 'none'
                 return
             }
@@ -103,7 +106,7 @@ function OverlayBody(props) {
             let drawnWidth = width
             let drawnHeight = height
 
-            if (getComputedStyle(image).objectFit === 'contain') {
+            if (!inFrame && getComputedStyle(image).objectFit === 'contain') {
                 const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight)
 
                 drawnWidth = image.naturalWidth * scale
@@ -148,7 +151,7 @@ function OverlayBody(props) {
             image.removeEventListener('load', place)
             if (observer) observer.disconnect()
         }
-    }, [card, box, texts, back, fields])
+    }, [card, box, texts, back, fields, turned])
 
     const height = box.coverBottom - box.top
     const width = box.right - box.left
@@ -189,7 +192,7 @@ function OverlayBody(props) {
 // The translated text over the picture of a side of a card ('front', the default, or 'back'), placed right after the img of that picture.
 // Nothing when the language is English, the card has no translation or its layout isn't known (CardPreview shows its text beside it).
 function CardTextOverlay(props) {
-    const { card, side } = props
+    const { card, side, turned } = props
 
     const language = useSelector(state => state.settings.language)
     const { cardTexts, cardName, cardSubname } = useCardName()
@@ -201,7 +204,7 @@ function CardTextOverlay(props) {
 
     if (!box) return null
 
-    return <OverlayBody card={card} box={box} texts={texts} back={side === 'back'} fields={fields} />
+    return <OverlayBody card={card} box={box} texts={texts} back={side === 'back'} fields={fields} turned={turned} />
 }
 
 export default CardTextOverlay
