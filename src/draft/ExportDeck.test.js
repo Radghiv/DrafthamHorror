@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-import ExportDeck, { cardsMissingOctgnIds } from './ExportDeck'
+import ExportDeck, { cardsMissingOctgnIds, textImportIssues } from './ExportDeck'
 
 const roland = { code: '01001', name: 'Roland Banks', octgn_id: 'aaaa-1111' }
 const daniela = { code: '12001', name: 'Daniela Reyes' }
@@ -93,5 +93,29 @@ describe('the .o8d export', () => {
         expect(text).toMatch(/\r\nAsset\r\n\r\n/)
         expect(text).toMatch(/\r\nSkill\r\n\r\n/)
         expect(text).toMatch(/\r\nTreachery\r\n\r\n/)
+    })
+})
+
+describe('textImportIssues', () => {
+    const data = [
+        { code: '01', name: 'Dodge', type_code: 'event', pack_name: 'Core Set', xp: 0 },
+        { code: '02', name: 'Another Day, Another Dollar', type_code: 'asset', pack_name: 'In the Clutches of Chaos', xp: 3 },
+        { code: '03', name: 'The Moon • XVIII', subname: 'Message from Your Inner Self', type_code: 'asset', pack_name: 'The Circle Undone', xp: 1 },
+        { code: '04', name: 'Strange Solution', subname: 'Acidic Ichor', type_code: 'asset', pack_name: 'Where Doom Awaits', xp: 4 },
+        { code: '05', name: 'Unspeakable Oath', subname: 'Bloodthirst', type_code: 'treachery', pack_name: 'Return to the Path to Carcosa', xp: 0 },
+        { code: '06', name: 'Unspeakable Oath', subname: 'Curiosity', type_code: 'treachery', pack_name: 'Return to the Path to Carcosa', xp: 0 },
+        { code: '07', name: 'Lucky!', type_code: 'event', pack_name: 'Core Set', xp: 0 }
+    ]
+
+    it('finds the cards the import leaves out and the ones it mixes up', () => {
+        const result = textImportIssues(['01', '02', '03', '04', '05', '07', '99'], data)
+
+        expect(result.unreadable.map(card => card.code)).toEqual(['02', '03'])
+        expect(result.ambiguous.map(card => card.code)).toEqual(['05'])
+    })
+
+    it('finds nothing in a deck of plain cards, or without card data', () => {
+        expect(textImportIssues(['01', '04', '07'], data)).toEqual({ unreadable: [], ambiguous: [] })
+        expect(textImportIssues(['01'], null)).toEqual({ unreadable: [], ambiguous: [] })
     })
 })

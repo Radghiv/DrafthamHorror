@@ -5195,3 +5195,7 @@ html.theme-fade *::after {
 .missing-card:hover {
     text-decoration: underline dotted;
 }
+.missing-item {
+    padding: 3px 0;
+    font-weight: 700;
+}

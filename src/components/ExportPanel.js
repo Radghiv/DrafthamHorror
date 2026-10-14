@@ -1,13 +1,22 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux'
 
-import ExportDeck, { cardsMissingOctgnIds } from '../draft/ExportDeck'
+import ExportDeck, { cardsMissingOctgnIds, textImportIssues } from '../draft/ExportDeck'
 import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import CardLinkButton from './CardLinkButton'
 import useCardName from './useCardName'
 import { requiredQuantity, signatureGroups } from '../data/RequiredCards'
 import { CheckIcon, WarningIcon } from './wizard/Icons'
-import { useT } from '../i18n'
+import { useT, msg } from '../i18n'
+
+const CLASS_NAMES = {
+    guardian: msg('Guardian'),
+    seeker: msg('Seeker'),
+    rogue: msg('Rogue'),
+    mystic: msg('Mystic'),
+    survivor: msg('Survivor'),
+    neutral: msg('Neutral')
+}
 
 function SettingsExport(props) {
     const t = useT()
@@ -32,6 +41,10 @@ function SettingsExport(props) {
     const cardData = useSelector(state => state.data.cardData)
     const collection = useSelector(state => state.collection)
     const cardList = useSelector(state => state.draft.cardList)
+    const secondaryClass = useSelector(state => state.settings.secondaryClass)
+    const classChoices = useSelector(state => state.settings.classChoices)
+    const traitChoice = useSelector(state => state.settings.traitChoice)
+    const selectedDeckSize = useSelector(state => state.settings.selectedDeckSize)
 
     function handleInput(event) {
         changeDeckTitle(event.target.value)
@@ -160,6 +173,43 @@ function SettingsExport(props) {
     // when the .o8d can't carry every card, the text export is the one to use: it is the main button and comes first
     const preferText = missingIds.length > 0
 
+    // the cards ArkhamDB's text import leaves out or mixes up: the drafted ones, the signature cards that are shown and the weakness that was drawn
+    const textCodes = [...cardList.map(item => item.key), ...signatureCards.flat(), ...(basicWeakness[1] !== '01000' ? [basicWeakness[1]] : [])]
+    const textIssues = textImportIssues(textCodes, cardData)
+
+    // the choices made when the deck was created, which a file can't carry (ArkhamDB asks for them in its deck editor)
+    const className = code => CLASS_NAMES[code] ? t(CLASS_NAMES[code]) : code
+    const deckOptions = investigatorData.deck_options || []
+    const choices = []
+
+    if (deckOptions.some(option => option.name === 'Secondary Class')) choices.push(t('Secondary class') + ': ' + className(secondaryClass))
+    if (deckOptions.some(option => option.name === 'Class Choice' && option.id === 'faction_1')) choices.push(t('Class choice 1') + ': ' + className(classChoices.faction_1))
+    if (deckOptions.some(option => option.name === 'Class Choice' && option.id === 'faction_2')) choices.push(t('Class choice 2') + ': ' + className(classChoices.faction_2))
+    if (deckOptions.some(option => option.name === 'Deck Size')) choices.push(t('Deck size') + ': ' + (selectedDeckSize || deckSize))
+    if (deckOptions.some(option => option.name === 'Trait Choice')) choices.push(t('Trait choice') + ': ' + traitChoice)
+
+    // a warning with a list in it: the entries with a code are cards to hover or tap for a preview
+    function warningWithList(key, intro, entries, outro) {
+        return (
+            <div className="status status-warn" role="status" key={key}>
+                <WarningIcon />
+                <div className="status-body">
+                    <p>{intro}</p>
+                    <ul className="missing-list">
+                        {entries.map(entry => entry.code ?
+                            <li className="export-card missing-card" key={entry.code} data-code={entry.code} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard}>
+                                {entry.name}
+                                <CardLinkButton card={cardData.find(item => item.code === entry.code)} size="small" />
+                            </li>
+                            :
+                            <li className="missing-item" key={entry.name}>{entry.name}</li>)}
+                    </ul>
+                    {outro ? <p>{outro}</p> : null}
+                </div>
+            </div>
+        )
+    }
+
     const o8dButton = <button type="button" className={'btn btn-block ' + (preferText ? 'btn-secondary' : 'btn-primary')} onClick={() => { handleExportClick('OCTGN'); flashExported('OCTGN') }}>{exported === 'OCTGN' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as .o8d')}</button>
     const textButton = <button type="button" className={'btn btn-block ' + (preferText ? 'btn-primary' : 'btn-secondary')} onClick={() => { handleExportClick('TXT'); flashExported('TXT') }}>{exported === 'TXT' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as plain text (.txt)')}</button>
 
@@ -233,23 +283,10 @@ function SettingsExport(props) {
             </div>
 
             <div className="options-section">
-                {missingIds.length > 0 ?
-                    <div className="status status-warn" role="status">
-                        <WarningIcon />
-                        <div className="status-body">
-                            <p>{t("These cards have no OCTGN id in ArkhamDB yet, so ArkhamDB can't import them from an .o8d file, and the file leaves them out:")}</p>
-                            <ul className="missing-list">
-                                {missingIds.map(entry => (
-                                    <li className="export-card missing-card" key={entry.code} data-code={entry.code} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard}>
-                                        {entry.name}
-                                        <CardLinkButton card={cardData.find(item => item.code === entry.code)} size="small" />
-                                    </li>
-                                ))}
-                            </ul>
-                            <p>{t('The plain text export (Import Deck, then Text) has every card.')}</p>
-                        </div>
-                    </div>
-                    : null}
+                {missingIds.length > 0 ? warningWithList('ids', t("These cards have no OCTGN id in ArkhamDB yet, so ArkhamDB can't import them from an .o8d file, and the file leaves them out:"), missingIds, t('The plain text export (Import Deck, then Text) has every card.')) : null}
+                {textIssues.unreadable.length > 0 ? warningWithList('unreadable', t("ArkhamDB's text import can't read the names of these cards (it stops at a comma, a • or another special character), so it leaves them out. Add them by hand after importing:"), textIssues.unreadable) : null}
+                {textIssues.ambiguous.length > 0 ? warningWithList('ambiguous', t("ArkhamDB's text import can't tell these cards apart from others with the same name, so it may add another version of them. Check them after importing:"), textIssues.ambiguous) : null}
+                {choices.length > 0 ? warningWithList('choices', t("ArkhamDB can't take these choices from a file. After importing, set them in its deck editor:"), choices.map(name => ({ name: name }))) : null}
                 {preferText ? <>{textButton}{o8dButton}</> : <>{o8dButton}{textButton}</>}
                 <p className="field-hint">{t('Exports an OCTGN deck file. To import a downloaded .o8d deck into ArkhamDB, go to My Decks and click Import Deck, then File.')}</p>
             </div>

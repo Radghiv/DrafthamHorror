@@ -199,6 +199,42 @@ function textLine(item) {
     return item.count + 'x ' + item.name + subtitle + level + ' (' + (item.pack_name || PackData[item.pack]) + ')\r\n'
 }
 
+// The pattern of the lines that ArkhamDB's text import reads (BuilderController::parseTextImport): a quantity, then a name made only of letters,
+// digits, spaces and " - . ' ! (it stops at any other character, a comma for one), then an optional ":subtitle" and a "[level]". It looks the card
+// up by what it read, so a card whose line doesn't read back as its own name, subtitle and level is left out.
+const TEXT_IMPORT_PATTERN = /^\s*(\d)x?([\p{L}lu\p{N}"\-.'! ]+):?([^[(]*)(?:\[(\d)\])?/u
+
+// What ArkhamDB's text import does with the cards of a deck (given by code): { unreadable, ambiguous }, each a list of { code, name }.
+// Unreadable: the line doesn't read back as the card, so the card is left out. Ambiguous: a weakness whose subtitle (written in parentheses, which
+// the import skips) is what tells it from the other weaknesses of the same name, so the import can add any of them.
+export function textImportIssues(codes, cardData) {
+    const unreadable = []
+    const ambiguous = []
+
+    if (!cardData) return { unreadable: unreadable, ambiguous: ambiguous }
+
+    new Set(codes).forEach(code => {
+        const card = cardData.find(item => item.code === code)
+
+        if (!card) return
+
+        const match = textLine({ ...card, count: 1 }).match(TEXT_IMPORT_PATTERN)
+        const reads = Boolean(match) && match[2].trim() === card.name
+            && (card.type_code === 'treachery' || (match[3] || '').trim() === (card.subname || '').replace(/\s+/g, ' '))
+            && (match[4] || '') === (card.xp > 0 ? String(card.xp) : '')
+
+        if (!reads) {
+            unreadable.push({ code: card.code, name: labelOf(card) })
+        }
+        else if (card.type_code === 'treachery' && card.subname
+            && cardData.some(other => other.code !== card.code && other.name === card.name && !other.hidden && !other.duplicate_of_code && (other.xp || 0) === (card.xp || 0) && other.subname !== card.subname)) {
+            ambiguous.push({ code: card.code, name: labelOf(card) })
+        }
+    })
+
+    return { unreadable: unreadable, ambiguous: ambiguous }
+}
+
 function ExportTXT(props) {
     const deckTextData = []
 
