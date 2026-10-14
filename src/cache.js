@@ -65,6 +65,24 @@ export async function pruneCache(keep) {
     }
 }
 
+// Deletes one entry (the next visit fetches it again)
+export async function deleteCacheEntry(key) {
+    try {
+        const db = await openDatabase()
+
+        await new Promise(resolve => {
+            const transaction = db.transaction(STORE, 'readwrite')
+
+            transaction.objectStore(STORE).delete(key)
+            transaction.oncomplete = () => resolve()
+            transaction.onerror = () => resolve()
+        })
+    }
+    catch (e) {
+        // nothing to delete
+    }
+}
+
 // Deletes everything; the next visit fetches it all again
 export async function clearCache() {
     try {

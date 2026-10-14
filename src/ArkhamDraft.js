@@ -21,6 +21,7 @@ import AppHeader from './components/AppHeader'
 import SetupWizard from './components/SetupWizard'
 import ResumeDraft from './components/ResumeDraft'
 import SharedSetup from './components/SharedSetup'
+import InstallPrompt from './components/InstallPrompt'
 import UpdateNotice from './components/UpdateNotice'
 import { newSeed } from './random'
 import InvestigatorPick from './components/InvestigatorPick'
@@ -252,7 +253,7 @@ function ArkhamDraft() {
         </div>
     }
     else {
-        contents = <><ResumeDraft /><SharedSetup /><SetupWizard /></>
+        contents = <><ResumeDraft /><SharedSetup /><InstallPrompt /><SetupWizard /></>
     }
 
     // the phone's dock is on the screens where a deck is being drafted (and holds Undo there)

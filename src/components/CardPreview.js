@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useSelector, useDispatch, useStore } from 'react-redux'
 
 import { updateImageOverlay } from '../features/settings/settingsSlice'
@@ -124,9 +124,17 @@ function CustomizationsPanel(props) {
     )
 }
 
-// How the bonded cards are laid out next to a preview of the given height: side by side (two columns at most), each 80% of the size of
-// the previewed card, or smaller only when several rows would not fit in the height
+// How the bonded cards are laid out next to a preview of the given height: one or two of them side by side, each 80% of the size of the
+// previewed card. Three or more can't be that size in the height, so they go in one row that scrolls sideways (the strip): the room it
+// needs is just that of two cards, and it is as wide as the room allows up to the whole row (fullTotal).
 function bondedLayout(count, previewHeight) {
+    if (count > 2) {
+        const cardWidth = Math.floor(BONDED_SCALE * previewHeight * CARD_RATIO)
+        const full = count * cardWidth + (count - 1) * BONDED_GAP
+
+        return { strip: true, columns: count, width: cardWidth, total: Math.min(full, 2 * cardWidth + BONDED_GAP), fullTotal: full }
+    }
+
     const columns = Math.min(count, 2)
     const rows = Math.ceil(count / columns)
     const width = Math.floor(Math.min(BONDED_SCALE * previewHeight, (previewHeight - (rows - 1) * BONDED_GAP) / rows) * CARD_RATIO)
@@ -134,19 +142,83 @@ function bondedLayout(count, previewHeight) {
     return { columns: columns, width: width, total: columns * width + (columns - 1) * BONDED_GAP }
 }
 
+// One bonded card, with how many copies
+function BondedCard(props) {
+    const { card, count, width } = props
+
+    return (
+        <div className="overlayBondedItem">
+            <OverlayCardImage urls={cardImageUrls(card)} className="overlayBonded" style={{ width: width + 'px' }} />
+            <CardTextOverlay card={card} />
+            {count > 1 ? <span className="overlayBondedCount">×{count}</span> : null}
+        </div>
+    )
+}
+
+// The bonded cards in one row that scrolls sideways, when they are too many to be 80% of the card. The preview doesn't take the mouse (it
+// follows the pointer), so the wheel is listened to on the window: while the preview is shown, it scrolls the row (and not the page) as long
+// as the row doesn't fit. A thin bar under it shows where it is.
+function BondedStrip(props) {
+    const { cards, layout } = props
+
+    const stripRef = useRef(null)
+    const [view, setView] = useState(null)
+
+    // where the visible part is, as fractions of the whole row; null when the row fits
+    function measure() {
+        const strip = stripRef.current
+
+        if (!strip) return
+
+        const next = strip.scrollWidth <= strip.clientWidth + 1 ? null : { start: strip.scrollLeft / strip.scrollWidth, size: strip.clientWidth / strip.scrollWidth }
+
+        setView(previous => (previous === next || (previous && next && previous.start === next.start && previous.size === next.size)) ? previous : next)
+    }
+
+    // the room may change with every render
+    useLayoutEffect(measure)
+
+    useEffect(() => {
+        function handleWheel(event) {
+            const strip = stripRef.current
+
+            if (!strip || strip.scrollWidth <= strip.clientWidth + 1) return
+
+            const unit = event.deltaMode === 1 ? 32 : event.deltaMode === 2 ? strip.clientWidth : 1
+
+            event.preventDefault()
+            strip.scrollLeft += (event.deltaY + event.deltaX) * unit
+            measure()
+        }
+
+        window.addEventListener('wheel', handleWheel, { passive: false })
+
+        return () => window.removeEventListener('wheel', handleWheel)
+    }, [])
+
+    return (
+        <div className="overlayBondedBox" style={{ width: layout.fullTotal + 'px' }}>
+            <div className="overlayBondedStrip" ref={stripRef}>
+                {cards.map(({ card, count }) => <BondedCard card={card} count={count} width={layout.width} key={card.code} />)}
+            </div>
+            {view ?
+                <div className="overlayBondedBar" aria-hidden="true">
+                    <span style={{ left: (view.start * 100) + '%', width: (view.size * 100) + '%' }}></span>
+                </div>
+                : null}
+        </div>
+    )
+}
+
 // The cards bonded to the previewed one, with how many copies
 function BondedCards(props) {
     const { cards, layout } = props
 
+    if (layout.strip) return <BondedStrip cards={cards} layout={layout} />
+
     return (
         <div className="overlayBondedList" style={{ gridTemplateColumns: 'repeat(' + layout.columns + ', ' + layout.width + 'px)' }}>
-            {cards.map(({ card, count }) => (
-                <div className="overlayBondedItem" key={card.code}>
-                    <OverlayCardImage urls={cardImageUrls(card)} className="overlayBonded" style={{ width: layout.width + 'px' }} />
-                    <CardTextOverlay card={card} />
-                    {count > 1 ? <span className="overlayBondedCount">×{count}</span> : null}
-                </div>
-            ))}
+            {cards.map(({ card, count }) => <BondedCard card={card} count={count} width={layout.width} key={card.code} />)}
         </div>
     )
 }

@@ -17,7 +17,7 @@ export default defineConfig({
             includeAssets: ['favicon.ico', 'logo192.png', 'logo512.png', 'logo512-maskable.png'],
             manifest: {
                 name: 'Draftham Horror',
-                short_name: 'Draftham',
+                short_name: 'Draftham Horror',
                 description: 'Draft your investigator, deck cards and upgrades for Arkham Horror: The Card Game from the packs you own.',
                 start_url: './',
                 scope: './',
@@ -34,6 +34,13 @@ export default defineConfig({
                 globPatterns: ['**/*.{js,css,html,png,webp,ico,svg,webmanifest}'],
                 // the fonts of Google Fonts, fetched once and kept
                 runtimeCaching: [
+                    // the pictures of the cards (from ArkhamDB and arkham.build), kept once seen: the Cache Storage "card-images", which the cache
+                    // panel of the Collection step counts, empties and fills (the answers are opaque: the sites don't allow reading them)
+                    {
+                        urlPattern: /^https:\/\/(www\.arkhamdb\.com\/bundles\/cards\/|cdn\.arkham\.build\/).*\.(png|jpe?g|webp)$/i,
+                        handler: 'CacheFirst',
+                        options: { cacheName: 'card-images', cacheableResponse: { statuses: [0, 200] } }
+                    },
                     {
                         urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
                         handler: 'StaleWhileRevalidate',

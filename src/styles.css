@@ -920,6 +920,37 @@ input, select {
 .previewRow > * {
     flex: none;
 }
+/* the bonded cards in a row that scrolls sideways: it takes the width of the whole row but gives way when the room is short */
+.previewRow > .overlayBondedBox {
+    flex: 0 1 auto;
+    min-width: 0;
+}
+.overlayBondedBox {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.overlayBondedStrip {
+    display: flex;
+    gap: 8px;
+    overflow: hidden;
+}
+.overlayBondedStrip > .overlayBondedItem {
+    flex: none;
+}
+.overlayBondedBar {
+    position: relative;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.25);
+}
+.overlayBondedBar > span {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.85);
+}
 /* the translated text printed over the picture of a card: placed (in pixels) over the picture right before it by CardTextOverlay */
 /* the container is placed (in pixels) over the picture by CardTextOverlay; what is in it is placed in percentages of the picture */
 .cardOverlay {
@@ -5198,4 +5229,89 @@ html.theme-fade *::after {
 .missing-item {
     padding: 3px 0;
     font-weight: 700;
+}
+
+/* the offline storage panel of the Collection step */
+.cache-panel {
+    padding: 4px 14px 14px;
+    border-radius: 14px;
+    background: var(--surface-2);
+}
+.cache-panel:not(.is-open) {
+    padding-bottom: 4px;
+}
+.cache-panel:not(.is-open) .cycle-chevron {
+    transform: rotate(-90deg);
+}
+.cache-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: swap-in calc(0.2s * var(--motion-scale, 1)) ease-out;
+}
+.cache-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.cache-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--surface);
+}
+.cache-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.cache-info span {
+    font-size: 13px;
+    color: var(--muted);
+}
+.cache-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.cache-actions .btn {
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 14px;
+}
+.cache-progress {
+    flex: 1 1 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--line);
+    overflow: hidden;
+}
+.cache-progress > span {
+    display: block;
+    height: 100%;
+    background: var(--primary);
+    transition: width calc(0.2s * var(--motion-scale, 1));
+}
+.cache-group-title {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+@media (prefers-reduced-motion: reduce) {
+    .cache-body {
+        animation: none;
+    }
+    .cache-progress > span {
+        transition: none;
+    }
 }

@@ -12,6 +12,7 @@ import { cardImageUrls } from '../../data/CardImages'
 import { boxArtFor } from '../../data/BoxArt'
 import { CheckIcon, RedrawIcon, FoldAllIcon, UnfoldAllIcon, WarningIcon } from './Icons'
 import TabooField from './TabooField'
+import CachePanel from './CachePanel'
 import BanList from './BanList'
 
 export function countSelectedPacks(collection) {
@@ -149,6 +150,7 @@ function CollectionStep() {
                     <RedrawIcon /> {t('Refresh card data')}
                 </button>
             </div>
+            <CachePanel />
             <div className="field-grid">
                 <TabooField />
             </div>

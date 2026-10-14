@@ -8,10 +8,10 @@ import { registerPackNames, displayPackName } from '../../data/PackData'
 import { buildCollectionGroups } from '../../data/PackCatalog'
 import { registerPacks } from '../collection/collectionSlice'
 import { restoreDraftState } from '../draftState'
-import { readCache, writeCache, pruneCache } from '../../cache'
+import { readCache, writeCache, pruneCache, deleteCacheEntry } from '../../cache'
 import { saveJSON } from '../../storage'
-import { translationUrl } from '../../data/Languages'
-import { loadLocale, setCurrentLanguage } from '../../i18n'
+import { translationUrl, LANGUAGES } from '../../data/Languages'
+import { loadLocale, setCurrentLanguage, msg } from '../../i18n'
 import { listCardFromDBData } from '../../draft/DrawDraft'
 
 const initialState = {
@@ -217,6 +217,59 @@ export async function fetchTranslations(dispatch, getState) {
         // the choice may have changed while this was being fetched
         if (getState().settings.language === language) dispatch(updateTranslations({ language: language, cards: cardNames || {}, packs: packNames || {} }))
     })
+}
+
+// ---- The saved copies, for the cache panel of the Collection step: what each one is, and how to read, fill and delete it without touching the
+// state (the app keeps using what it has loaded until the page is loaded again).
+
+// One row of the panel: a title, and the copies behind it (a language has two: the names of the cards and the names of the packs). The first
+// copy is the one whose number of entries is shown.
+export function savedCopyRows() {
+    const entries = (name, url, transform) => ({ name: name, url: url, transform: transform, count: data => Array.isArray(data) ? data.length : Object.keys(data).length })
+
+    return [
+        { id: 'cards', title: msg('Cards'), copies: [entries('cards', 'https://arkhamdb.com/api/public/cards/')] },
+        { id: 'packs', title: msg('Packs'), copies: [entries('packs', 'https://arkhamdb.com/api/public/packs/')] },
+        { id: 'taboos', title: msg('Taboo lists'), copies: [entries('taboos', 'https://arkhamdb.com/api/public/taboos/')] },
+        ...LANGUAGES.filter(language => language.code !== 'en').map(language => ({
+            id: 'language-' + language.code,
+            title: language.label,
+            language: true,
+            copies: [
+                entries('names-' + language.code, translationUrl(language.code), namesOnly),
+                entries('pack-names-' + language.code, translationUrl(language.code, 'packs'), list => packNamesOnly(list, language.code))
+            ]
+        }))
+    ]
+}
+
+// What is saved for a copy: { savedAt, data } or null
+export function readSavedCopy(copy) {
+    return readCache(cacheKey(copy.name))
+}
+
+export function deleteSavedCopy(copy) {
+    return deleteCacheEntry(cacheKey(copy.name))
+}
+
+// Fetches a copy and saves it unless it is saved already; true when it is saved afterwards
+export async function saveCopy(copy) {
+    if (await readCache(cacheKey(copy.name))) return true
+
+    try {
+        const response = await fetch(copy.url)
+
+        if (!response.ok) return false
+
+        const data = await response.json()
+
+        await writeCache(cacheKey(copy.name), copy.transform ? copy.transform(data) : data)
+
+        return true
+    }
+    catch (e) {
+        return false
+    }
 }
 
 // Chooses the language of the interface and of the card names, and remembers it
