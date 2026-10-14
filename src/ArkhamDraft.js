@@ -9,7 +9,8 @@ import { useSelector, useDispatch } from 'react-redux'
 import { reset, changeSeed } from './features/settings/settingsSlice'
 import { fetchCards, fetchTaboo, fetchPacks, changeFetchError } from './features/data/dataSlice'
 import { undoLastPick } from './features/draftHistory'
-import { clearSavedDraft, clearUndo } from './features/draftState'
+import { clearUndo, clearSavedDraft } from './features/draftState'
+import { restartDraft } from './features/draftRestart'
 
 import AppHeader from './components/AppHeader'
 import SetupWizard from './components/SetupWizard'
@@ -85,10 +86,10 @@ function ArkhamDraft() {
         dispatch(fetchPacks)
     }
 
-    // Restart abandons the draft: nothing is left to undo or to resume later
-    function resetApp() {
+    // The logo leaves the draft for the setup screens. An unfinished draft keeps its save, so it can be resumed from there; a complete one has nothing to resume.
+    function goHome() {
         clearUndo()
-        clearSavedDraft()
+        if (draftComplete) clearSavedDraft()
         dispatch(reset())
         dispatch(changeSeed(newSeed()))
     }
@@ -100,6 +101,9 @@ function ArkhamDraft() {
     else if (drafting) headerText = phaseLabel(draftPhase, draftType, currentLevel0Name)
     else if (draftComplete) headerText = t('Draft complete')
     else if (deckLoaded) headerText = t('Upgrade draft paused')
+
+    // the setup wizard draws its own top row (logo, steps, controls); the header serves every other screen
+    const inWizard = !fetchError && Boolean(cardData) && Boolean(tabooData) && !inDraft
 
     const canUndo = undoDepth > 0 && (drafting || draftComplete || deckLoaded) && !investigatorDrafting
 
@@ -194,7 +198,7 @@ function ArkhamDraft() {
     return (
         <div className="App">
             <a className="skip-link" href="#main-content">{t('Skip to the content')}</a>
-            <AppHeader compact={inDraft} phaseText={headerText} showCardsPerRow={drafting} onRestart={inDraft ? resetApp : null} onUndo={canUndo ? undo : null} />
+            <AppHeader compact={inDraft} inWizard={inWizard} phaseText={headerText} showCardsPerRow={drafting} onRestart={inDraft ? () => dispatch(restartDraft) : null} onHome={inDraft ? goHome : null} onUndo={canUndo ? undo : null} />
             <main id="main-content" tabIndex={-1}>
                 {contents}
             </main>

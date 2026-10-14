@@ -76,6 +76,17 @@ export function RedrawIcon() {
     )
 }
 
+// External link: an arrow leaving a box, for the links that open ArkhamDB in a new tab
+export function ExternalLinkIcon() {
+    return (
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M13 3h6v6" />
+            <path d="M19 3l-8 8" />
+            <path d="M17 13v4.5a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 4 17.5v-10A1.5 1.5 0 0 1 5.5 6H9" />
+        </svg>
+    )
+}
+
 // A gear (a toothed wheel with a hole), for the settings button
 export function SettingsIcon() {
     return (

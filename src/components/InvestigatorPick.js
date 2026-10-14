@@ -9,6 +9,7 @@ import useCardOverlay from './OverlayImage'
 import CardImage from './CardImage'
 import RequiredThumbs from './RequiredThumbs'
 import { RedrawIcon } from './wizard/Icons'
+import CardLinkButton from './CardLinkButton'
 import { useT } from '../i18n'
 
 // One side of an investigator card. ArkhamDB images of some investigators are portrait, so those are turned (front clockwise,
@@ -81,6 +82,7 @@ function InvestigatorPick() {
                                 <RequiredThumbs investigator={card} />
                                 <span className="investigator-tile-name">{entry}</span>
                             </button>
+                            <CardLinkButton card={card} />
                             <button type="button" className="btn btn-secondary investigator-redraw" disabled={!canRedraw}
                                 aria-label={t('Redraw {name}', { name: entry })} title={t('Redraw')} onClick={() => dispatch(redrawInvestigator(index))}><RedrawIcon /></button>
                         </div>

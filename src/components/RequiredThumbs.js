@@ -4,13 +4,15 @@ import { useSelector } from 'react-redux'
 import useCardOverlay from './OverlayImage'
 import useCardName from './useCardName'
 import CardImage from './CardImage'
+import CardLinkButton from './CardLinkButton'
 import { requiredCards } from '../data/RequiredCards'
 import { useT } from '../i18n'
 
+// With withLinks, each one has a link to its ArkhamDB page (not where the thumbnails are inside a button, like the investigator draft).
 // The cards the deckbuilding instructions of an investigator put in the deck, as small pictures. Hovering one shows the big preview.
 // The deck size is only known for the investigator being drafted, so the quantity of a few cards is the default one for the others.
 function RequiredThumbs(props) {
-    const { investigator } = props
+    const { investigator, withLinks } = props
 
     const t = useT()
 
@@ -34,6 +36,7 @@ function RequiredThumbs(props) {
                 <span className="required-thumb" key={card.code} onPointerEnter={event => doCardOverlay(card, event)} onPointerLeave={() => doCardOverlay(null)}>
                     <CardImage card={card} className="required-thumb-image" alt={cardName(card)} fallback={<span className="required-thumb-missing">{cardName(card)}</span>} />
                     {count > 1 ? <span className="required-thumb-count">×{count}</span> : null}
+                    {withLinks ? <CardLinkButton card={card} size="small" /> : null}
                 </span>
             ))}
             {required.note ? <span className="required-thumbs-note">{required.note}</span> : null}

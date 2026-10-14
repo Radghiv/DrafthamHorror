@@ -10,7 +10,7 @@ const THEMES = [
     { key: 'arkham', label: msg('Arkham theme'), icon: <AutoFailIcon /> }
 ]
 
-// Day, night and Arkham (the colors of the game) themes
+// Day, night and Arkham (the colors of the game) themes, with its label for the settings panel
 function ThemeToggle() {
     const t = useT()
 
@@ -22,13 +22,16 @@ function ThemeToggle() {
     }
 
     return (
-        <div className="theme-switch" role="group" aria-label={t('Theme')}>
-            {THEMES.map(item => (
-                <button type="button" key={item.key} aria-pressed={theme === item.key} title={t(item.label)} aria-label={t(item.label)}
-                    onClick={() => handleClick(item.key)}>
-                    {item.icon}
-                </button>
-            ))}
+        <div className="cols-control">
+            <span className="cols-label">{t('Theme')}</span>
+            <div className="theme-switch" role="group" aria-label={t('Theme')}>
+                {THEMES.map(item => (
+                    <button type="button" key={item.key} aria-pressed={theme === item.key} title={t(item.label)} aria-label={t(item.label)}
+                        onClick={() => handleClick(item.key)}>
+                        {item.icon}
+                    </button>
+                ))}
+            </div>
         </div>
     )
 }

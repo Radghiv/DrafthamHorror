@@ -3,11 +3,10 @@ import { useSelector } from 'react-redux'
 
 import InvestigatorDraftPanel from '../InvestigatorDraftPanel'
 import describeSetup from './describeSetup'
-import SetupInfo from './SetupInfo'
 import { DeckPreviewCurve } from './DeckPreview'
 import { useT } from '../../i18n'
 
-// Left column of the setup: the chosen investigator, the choices so far and, when an ArkhamDB deck was validated, its cost curve
+// Left column of the setup: the chosen investigator and, when an ArkhamDB deck was validated, its cost curve
 function SetupLeftColumn() {
     // describeSetup translates its texts: this makes them follow the language
     useT()
@@ -27,7 +26,6 @@ function SetupLeftColumn() {
                 </div>
                 :
                 <InvestigatorDraftPanel title={info.investigatorName} subtitle={info.classLine} />}
-            <SetupInfo />
             <DeckPreviewCurve />
         </div>
     )

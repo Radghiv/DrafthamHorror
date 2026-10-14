@@ -219,6 +219,7 @@ p {
     margin: 0 40px 10px 40px
 }
 .investigator-div {
+    position: relative;
     width: 100%;
     height: 100%;
 }
@@ -815,6 +816,20 @@ input, select {
 .previewRowLeft {
     flex-direction: row-reverse;
 }
+/* the link of a preview opened with a long press (touch screens) */
+.previewLink {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1001;
+    width: 48px;
+    height: 48px;
+    box-sizing: border-box;
+    padding: 13px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.75);
+    color: #ffffff;
+}
 .overlayBondedList {
     display: grid;
     gap: 8px;
@@ -869,6 +884,148 @@ input, select {
 }
 .previewRow > * {
     flex: none;
+}
+/* the translated text printed over the picture of a card: placed (in pixels) over the picture right before it by CardTextOverlay */
+/* the container is placed (in pixels) over the picture by CardTextOverlay; what is in it is placed in percentages of the picture */
+.cardOverlay {
+    position: absolute;
+    pointer-events: none;
+}
+/* the one-line texts: name, subtitle, type, kind of weakness */
+.cardField {
+    position: absolute;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+    color: #1d1b17;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 600;
+    line-height: 1;
+}
+.cardField-subname {
+    font-weight: 400;
+}
+.cardField-type,
+.cardField-weakness {
+    font-size-adjust: none;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.cardTextOverlay {
+    position: absolute;
+    box-sizing: border-box;
+    background: linear-gradient(#eeece0, #f3f1e7);
+    color: #1d1b17;
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.2;
+    text-align: left;
+    pointer-events: none;
+}
+.cardTextOverlayText {
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 1.5% 3.5% 0;
+    display: flex;
+    flex-direction: column;
+}
+.cardTextOverlay p {
+    margin: 0 0 0.35em;
+    cursor: default;
+}
+/* the text goes around something (the photo on the back of an investigator): normal flow instead of a column */
+.cardTextOverlayText.wrapAround {
+    display: block;
+}
+.cardTextOverlayText.wrapAround .cardTextFlavor {
+    margin-top: 0.6em;
+}
+.cardTextSpacer {
+    float: left;
+}
+.cardTextOverlay .cardTextTraits {
+    text-align: center;
+    font-weight: 700;
+    font-style: italic;
+}
+.cardTextOverlay .cardTextFlavor {
+    margin: auto 0 0;
+    padding-top: 0.4em;
+    text-align: center;
+    font-style: italic;
+    color: #3a372f;
+}
+.cardTextOverlay .iconToken {
+    border-color: #8a8575;
+    background: rgba(0, 0, 0, 0.06);
+    color: #1d1b17;
+}
+/* the card's texts in the language chosen, beside the picture */
+.overlayText {
+    width: 320px;
+}
+.overlayText .overlayTextSub,
+.overlayText .overlayTextTraits,
+.overlayText .overlayTextFlavor {
+    font-style: italic;
+    color: var(--muted);
+}
+.overlayText .overlayTextSub {
+    margin-top: -4px;
+}
+.overlayText .overlayTextTraits {
+    font-weight: 700;
+    font-style: italic;
+    color: var(--text);
+}
+.overlayText .overlayTextBackTitle {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+}
+/* the icons of the game in the card texts: the font ArkhamDB uses (a file of its own, the site doesn't allow other sites to load it) */
+@font-face {
+    font-family: 'ArkhamIcons';
+    src: url('./assets/fonts/arkham-icons.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+.gameIcon {
+    display: inline-block;
+    margin: 0 0.06em;
+    font-family: 'ArkhamIcons';
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    vertical-align: -0.08em;
+    text-transform: none;
+}
+/* a class (guardian, seeker...) as a dot in its color */
+.classIcon {
+    display: inline-block;
+    width: 0.8em;
+    height: 0.8em;
+    margin: 0 0.1em;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    vertical-align: -0.05em;
+}
+/* an [icon] of a card text with no glyph: a small badge with its name */
+.iconToken {
+    display: inline-block;
+    margin: 0 1px;
+    padding: 0 5px;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: var(--surface-2);
+    font-size: 0.85em;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 1.35;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 /* one customization: the squares (its cost in experience) in a column of their own, big, then the text */
 .customizationLine {
@@ -1013,28 +1170,37 @@ a {
 .app-header {
     position: relative;
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 8px 24px;
     padding: 12px var(--gutter) 4px;
     box-sizing: border-box;
 }
 .app-logo {
     display: block;
-    height: clamp(140px, 20vw, 240px);
+    flex: none;
+    height: clamp(88px, 12vw, 176px);
     width: auto;
 }
+/* the logo as a button (back to the home screen): no button look, only the picture */
+.app-logo-button {
+    flex: none;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    cursor: pointer;
+}
+/* the draft bar: logo and phase on the left, in line with the content below */
 .app-header-compact {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 8px 24px;
+    justify-content: flex-start;
+    max-width: var(--content-max);
+    margin: 0 auto;
     padding-top: 8px;
     padding-bottom: 8px;
 }
 .app-header-compact .app-logo {
-    height: 84px;
+    height: clamp(72px, 8vw, 112px);
 }
 .app-phase {
     margin: 0;
@@ -1042,25 +1208,26 @@ a {
     font-size: 28px;
     line-height: 1.2;
 }
-/* the logo and the phase stay centered; on wide screens the controls sit at the far right, vertically centered */
-@media only screen and (min-width: 901px) {
-    .app-header-compact .app-header-controls {
-        top: 50%;
-        transform: translateY(-50%);
-    }
-}
 .app-header-controls {
     position: relative;
     z-index: 950;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 12px;
+    max-width: 100%;
+    margin-left: auto;
+}
+/* on wide screens the draft bar's controls float over the right edge, vertically centered; below that they wrap under the logo */
+.app-header-compact .app-header-controls {
+    margin-left: 0;
 }
 @media only screen and (min-width: 901px) {
-    .app-header-controls {
+    .app-header-compact .app-header-controls {
         position: absolute;
-        top: 20px;
+        top: 50%;
         right: var(--gutter);
+        transform: translateY(-50%);
     }
 }
 .theme-switch {
@@ -1446,12 +1613,41 @@ a {
     gap: 32px;
     max-width: var(--content-max);
     margin: 0 auto;
-    padding: 8px var(--gutter) 32px;
+    padding: 12px var(--gutter) 32px;
     box-sizing: border-box;
     text-align: left;
 }
-.wizard-crumbs {
+/* the logo sits left of the breadcrumbs; the steps drop below it when there is not enough width.
+   The language and theme controls sit in a thin line above on narrow screens and in the top right corner on wide ones. */
+.wizard-top {
+    position: relative;
     flex: 1 1 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 24px;
+}
+.wizard-top .app-header-controls {
+    order: -1;
+    flex: 1 1 100%;
+    justify-content: flex-end;
+}
+.wizard-crumbs {
+    flex: 1 1 480px;
+    min-width: 0;
+}
+/* wide enough for the logo, the four steps and the controls to share the row: the steps sit lower so the controls clear them */
+@media only screen and (min-width: 1360px) {
+    .wizard-top .app-header-controls {
+        position: absolute;
+        top: 0;
+        right: 0;
+        order: 0;
+        flex: none;
+    }
+    .wizard-crumbs {
+        margin-top: 56px;
+    }
 }
 .breadcrumbs {
     list-style: none;
@@ -2298,7 +2494,7 @@ a {
     }
 }
 
-/* "Your setup" in the left column: spacing between the title, the list and the status */
+/* "Your setup" below the Start button: spacing between the title, the list and the status */
 .setup-info {
     display: flex;
     flex-direction: column;
@@ -2504,6 +2700,95 @@ a {
     }
 }
 
+/* the ArkhamDB link of a card (CardLinkButton): the same round button as Redraw, in the top right corner of the card, shown on hover or
+   keyboard focus (always on touch screens) */
+.card-link-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 3;
+    width: 44px;
+    height: 44px;
+    min-height: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.investigator-tile .card-link-btn {
+    top: 20px;
+    right: 20px;
+}
+.draft-card-wrap:hover .card-link-btn,
+.draft-card-hit:focus-visible ~ .card-link-btn,
+.investigator-tile:hover .card-link-btn,
+.investigator-tile-main:focus-visible ~ .card-link-btn,
+.card-link-btn:focus-visible {
+    opacity: 1;
+}
+.draft-card-wrap.facedown .card-link-btn {
+    visibility: hidden;
+}
+@media (hover: none) {
+    .card-link-btn {
+        opacity: 1;
+    }
+}
+
+/* smaller ones: on the pictures of the sidebar (medium), and on thumbnails and rows of text (small); touch screens leave these to the link
+   of the long press preview */
+.card-link-medium {
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+}
+.card-link-medium svg {
+    width: 18px;
+    height: 18px;
+}
+.card-link-small {
+    width: 22px;
+    height: 22px;
+    border-width: 1px;
+    border-radius: 7px;
+    box-shadow: none;
+}
+.card-link-small svg {
+    width: 14px;
+    height: 14px;
+}
+.required-thumb .card-link-small {
+    top: 3px;
+    right: 3px;
+}
+.cardlist-item .card-link-small,
+.export-card .card-link-small {
+    position: static;
+    display: inline-flex;
+    vertical-align: middle;
+    margin: -4px 0 -4px 8px;
+}
+.investigator-div:hover .card-link-medium,
+.required-thumb:hover .card-link-small,
+.cardlist-item:hover .card-link-small,
+.export-card:hover .card-link-small {
+    opacity: 1;
+}
+@media (hover: none) {
+    .card-link-btn.card-link-medium,
+    .card-link-btn.card-link-small {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
 /* the "Redraw all" button: icon and text side by side */
 .confirm-bar .btn svg {
     flex: none;
@@ -2558,6 +2843,44 @@ a {
         right: 8px;
         width: auto;
     }
+}
+
+/* confirmation dialog (Restart) */
+.dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.55);
+}
+.dialog {
+    width: min(100%, 420px);
+    box-sizing: border-box;
+    padding: 22px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    text-align: left;
+}
+.dialog h2 {
+    margin: 0 0 10px;
+    padding: 0;
+    font-size: 18px;
+}
+.dialog p {
+    margin: 0 0 18px;
+    line-height: 1.5;
+}
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 /* the typewriter font of the Arkham theme has taller letters: give lines of text more room so they never touch */
@@ -2823,6 +3146,48 @@ main:focus {
     color: var(--text);
     font: inherit;
     font-size: 14px;
+}
+
+/* the arrow of the styled dropdowns is drawn here (the browser's sits against the edge); it takes the text color of the theme */
+.field select,
+.language-select select {
+    -webkit-appearance: none;
+    appearance: none;
+    padding-right: 36px;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+}
+
+/* the same dropdown in the smaller panels: the options of the Level 0 and Versatile panels, the upgrade choice on a card */
+.fbdraftsettingselect,
+.upgradeselect {
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 2px solid var(--line-strong);
+    border-radius: 8px;
+    background-color: var(--field-bg);
+    color: var(--text);
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 13px) 50%, calc(100% - 9px) 50%;
+    background-size: 4px 4px, 4px 4px;
+    background-repeat: no-repeat;
+    font-family: inherit;
+    text-overflow: ellipsis;
+}
+.fbdraftsettingselect {
+    height: 30px;
+    padding: 0 24px 0 8px;
+    font-size: 14px;
+}
+.upgradeselect {
+    padding: 2px 24px 2px 6px;
+}
+.fbdraftsettingcenter {
+    height: auto;
+    min-height: 22px;
 }
 
 /* a new version of the app is ready (service worker) */

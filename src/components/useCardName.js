@@ -6,7 +6,7 @@ import { useT } from '../i18n'
 
 // Returns a function giving the name of a card to show, in the language chosen (the card's own, English, name when there is no
 // translation). The name the logic works with stays English: this is for what the user reads. A card is an ArkhamDB card (code) or
-// one of the app's (key). The same goes for the subtitle and the customization text.
+// one of the app's (key). The same goes for the subtitle, the customization text and the card's texts.
 function useCardName() {
     const t = useT()
     const language = useSelector(state => state.settings.language)
@@ -39,6 +39,14 @@ function useCardName() {
         return found && found.custom ? found.custom : card.customization_text
     }, [translation])
 
+    // the rules text, traits, flavor text and back text of a card in the language chosen ({ text, traits, flavor, back, backFlavor }), or null when
+    // the card has no translation of them
+    const cardTexts = useCallback(card => {
+        const found = translation(card)
+
+        return found && found.text !== undefined ? found : null
+    }, [translation])
+
     // the name of a pack (by its code) to show; the second core set is not a pack of ArkhamDB
     const packName = useCallback(code => {
         if (code === 'core2') return t('Second core set')
@@ -48,7 +56,7 @@ function useCardName() {
         return (names && names[code]) || PackData[code]
     }, [translations, language, t])
 
-    return { cardName, cardSubname, compareNames, customizationText, packName, translated: translations !== null && translations.language === language }
+    return { cardName, cardSubname, compareNames, customizationText, cardTexts, packName, translated: translations !== null && translations.language === language }
 }
 
 export default useCardName

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { advanceDraft, updateUpgradeOption, changeIndex, revealDraftPoolCard, revealDraftPoolCards, expandModifiers, minimizeModifiers, holdModifiers, selectDraftCard, changeDraftPoolProperty } from '../features/draft/draftSlice'
+import { advanceDraft, updateUpgradeOption, changeIndex, hideDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, expandModifiers, minimizeModifiers, holdModifiers, selectDraftCard, changeDraftPoolProperty } from '../features/draft/draftSlice'
 
 import { draftCard, calculateDraftTarget, redrawDraftCard } from '../draft/DrawDraft'
 import { rememberUndoPoint } from '../features/draftHistory'
@@ -11,7 +11,9 @@ import ColorForClass from '../data/ClassColors'
 import useCardOverlay from './OverlayImage'
 import useCardName from './useCardName'
 import { cardImageUrls } from '../data/CardImages'
+import CardTextOverlay from './CardTextOverlay'
 import { RedrawIcon } from './wizard/Icons'
+import CardLinkButton from './CardLinkButton'
 import { PLAYER_CARD_BACK } from '../data/CardImages'
 import { ANIMATION_SPEEDS } from '../data/AnimationSpeed'
 import { useT } from '../i18n'
@@ -28,6 +30,9 @@ function DraftPanel(props) {
     // per card of the pool: whether its image loaded (true) or none could be loaded ('failed'), and which source is being tried
     const [imageLoaded, setImageLoaded] = useState([])
     const [imageSource, setImageSource] = useState([])
+
+    // keys of the cards being redrawn: face down with their old face, waiting to be replaced
+    const [redrawing, setRedrawing] = useState({})
 
     // what screen readers are told: the cards to choose from once they are all face up, and what was drafted
     const [announcement, setAnnouncement] = useState('')
@@ -107,6 +112,8 @@ function DraftPanel(props) {
         const flight = startCardFlight(document.querySelectorAll('.draft-container .draft-card-wrap')[index], speed)
         const cardKey = draftPool[index] ? draftPool[index].key : null
 
+        turnAtOnce.current = {}
+
         dispatch(changeIndex(index))
         dispatch(draftCard())
         setImageLoaded([])
@@ -120,12 +127,15 @@ function DraftPanel(props) {
     // done): a card waits for its image (a few seconds at most). Without motion they simply appear.
     const lastReveal = useRef(0)
     const shownAt = useRef({})
+    // indexes of redrawn cards, which skip the short pause face down
+    const turnAtOnce = useRef({})
 
     useEffect(() => {
         const pending = []
 
+        // a card being redrawn stays face down until it is replaced
         draftPool.forEach((card, index) => {
-            if (!card.revealed) pending.push(index)
+            if (!card.revealed && !redrawing[card.key]) pending.push(index)
         })
 
         if (pending.length === 0) return undefined
@@ -143,7 +153,11 @@ function DraftPanel(props) {
 
         // all together: once every image is in (or the wait limit is up) all the pending cards turn over at the same moment
         if (animateTogether && speed !== 0) {
-            const timer = setTimeout(() => dispatch(revealDraftPoolCards(pending)), pending.every(isReady) ? FIRST_CARD_DELAY / speed : IMAGE_WAIT_LIMIT)
+            const pause = pending.every(index => turnAtOnce.current[index]) ? 0 : FIRST_CARD_DELAY / speed
+            const timer = setTimeout(() => {
+                pending.forEach(index => delete turnAtOnce.current[index])
+                dispatch(revealDraftPoolCards(pending))
+            }, pending.every(isReady) ? pause : IMAGE_WAIT_LIMIT)
 
             return () => clearTimeout(timer)
         }
@@ -152,18 +166,20 @@ function DraftPanel(props) {
 
         const wait = speed === 0 ? 0
             : !isReady(index) ? IMAGE_WAIT_LIMIT
+            : turnAtOnce.current[index] ? 0
             : Math.max(0,
                 lastReveal.current + CARD_FLIP_STAGGER / speed - now,
                 shownAt.current[seenKey(index)] + FIRST_CARD_DELAY / speed - now)
 
         const timer = setTimeout(() => {
+            delete turnAtOnce.current[index]
             lastReveal.current = Date.now()
             delete shownAt.current[seenKey(index)]
             dispatch(revealDraftPoolCard(index))
         }, wait)
 
         return () => clearTimeout(timer)
-    }, [draftPool, imageLoaded, speed, animateTogether, dispatch])
+    }, [draftPool, imageLoaded, redrawing, speed, animateTogether, dispatch])
 
     const allRevealed = draftPool.length > 0 && draftPool.every(card => card.revealed)
     const poolSignature = draftPool.map(card => card.key).join('|')
@@ -232,8 +248,13 @@ function DraftPanel(props) {
         dispatch(changeDraftPoolProperty('shrewdAnalysis', panelIndex, event.target.checked))
     }
 
-    // redraws one card of the pool; its image state starts over
+    // Redraws one card of the pool: the card turns face down still showing its old face, and is replaced once it is hidden
+    // (the new card then turns over like any other); its image state starts over
     function handleRedraw(index) {
+        const card = draftPool[index]
+
+        if (!card || redrawing[card.key]) return
+
         const reset = previous => {
             const copy = [...previous]
             delete copy[index]
@@ -241,9 +262,29 @@ function DraftPanel(props) {
         }
 
         doCardOverlay(null)
-        setImageLoaded(reset)
-        setImageSource(reset)
-        dispatch(redrawDraftCard(index))
+
+        const replace = () => {
+            if (dispatch(redrawDraftCard(index, card.key))) {
+                // the card is already face down, it turns as soon as its image is in
+                turnAtOnce.current[index] = true
+                setImageLoaded(reset)
+                setImageSource(reset)
+            }
+            setRedrawing(previous => {
+                const copy = { ...previous }
+                delete copy[card.key]
+                return copy
+            })
+        }
+
+        if (speed === 0) {
+            replace()
+            return
+        }
+
+        setRedrawing(previous => ({ ...previous, [card.key]: true }))
+        dispatch(hideDraftPoolCard(index))
+        setTimeout(replace, 600 / speed)
     }
 
     // this address failed: try the next source, or give up when there is none left
@@ -408,7 +449,7 @@ function DraftPanel(props) {
         const levelStr = draftPool[i].xp && draftPool[i].xp > 0 ? <span className='xpDots'>{' ' + '●'.repeat(draftPool[i].xp)}</span> : null
 
         const cardFace = isLoaded ?
-            <img className="draft-image" src={imageSrc} alt="" /> :
+            <><img className="draft-image" src={imageSrc} alt="" /><CardTextOverlay card={draftPool[i]} /></> :
             <span className="draft-card-loading" style={{backgroundColor: classColor, display: 'block'}}>
                 <span className="cardName" style={{display: 'block', fontSize: '1.17em', fontWeight: 'bold', padding: '10px 10px 0 10px'}}>{cardName(draftPool[i])}</span>
                 <span className="cardXP" style={{display: 'block'}}>{levelStr}</span>
@@ -439,6 +480,7 @@ function DraftPanel(props) {
                 {draftType === 'draft' ?
                     <button type="button" className="btn btn-secondary draft-card-redraw" aria-label={t('Redraw {name}', { name: cardName(draftPool[i]) })} title={t('Redraw')} onClick={() => handleRedraw(i)}><RedrawIcon /></button>
                     : null}
+                {isLoaded ? <CardLinkButton card={draftPool[i]} /> : null}
                 {!isLoaded ? <p className="draft-card-link"><a href={draftPool[i].url} target="_blank" rel="noreferrer noopener">{t('View on ArkhamDB')}</a></p> : null}
                 {modifierPanel}
             </div>

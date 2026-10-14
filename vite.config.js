@@ -31,7 +31,7 @@ export default defineConfig({
                 ]
             },
             workbox: {
-                globPatterns: ['**/*.{js,css,html,png,ico,svg,webmanifest}'],
+                globPatterns: ['**/*.{js,css,html,png,webp,ico,svg,webmanifest}'],
                 // the fonts of Google Fonts, fetched once and kept
                 runtimeCaching: [
                     {

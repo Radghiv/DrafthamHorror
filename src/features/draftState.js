@@ -48,8 +48,15 @@ export function takeSnapshot(state) {
 const MAX_UNDO = 50
 let undoStack = []
 
+// The draft as it was before the first pick (kept even when the oldest undo points are dropped): what Restart goes back to
+let startSnapshot = null
+
 export function rememberForUndo(state) {
-    undoStack.push(takeSnapshot(state))
+    const snapshot = takeSnapshot(state)
+
+    if (!startSnapshot) startSnapshot = snapshot
+
+    undoStack.push(snapshot)
 
     if (undoStack.length > MAX_UNDO) undoStack.shift()
 
@@ -64,6 +71,15 @@ export function popUndo() {
 
 export function clearUndo() {
     undoStack = []
+    startSnapshot = null
+}
+
+export function getStartSnapshot() {
+    return startSnapshot
+}
+
+export function setStartSnapshot(snapshot) {
+    startSnapshot = snapshot
 }
 
 // ---- saved draft: the latest snapshot in localStorage, to carry on after closing the page
@@ -71,10 +87,10 @@ export function clearUndo() {
 export const SAVED_DRAFT_KEY = 'draftham.savedDraft'
 
 // bumped when the shape of the state changes, so an old save is ignored instead of breaking the app
-const SAVED_DRAFT_VERSION = 1
+const SAVED_DRAFT_VERSION = 2
 
-export function saveDraft(state, label) {
-    saveJSON(SAVED_DRAFT_KEY, { version: SAVED_DRAFT_VERSION, savedAt: Date.now(), label: label, snapshot: takeSnapshot(state) })
+export function saveDraft(state, label, start) {
+    saveJSON(SAVED_DRAFT_KEY, { version: SAVED_DRAFT_VERSION, savedAt: Date.now(), label: label, snapshot: takeSnapshot(state), start: start || null })
 }
 
 export function loadSavedDraft() {

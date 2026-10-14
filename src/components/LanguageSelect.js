@@ -13,8 +13,8 @@ function LanguageSelect() {
     const dispatch = useDispatch()
 
     return (
-        <label className="language-select" title={t('Language of the interface and of the card names (the card pictures stay English)')}>
-            <span className="sr-only">{t('Language')}</span>
+        <label className="cols-control language-select" title={t('Language of the interface and of the card names (the card pictures stay English)')}>
+            <span className="cols-label">{t('Language')}</span>
             <select value={language} onChange={event => dispatch(changeLanguage(event.target.value))}>
                 {LANGUAGES.map(item => <option key={item.code} value={item.code}>{item.label}</option>)}
             </select>

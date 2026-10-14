@@ -106,7 +106,7 @@ const dataSlice = createSlice({
 // The data from ArkhamDB is kept in the cache for good: a saved copy is always used, and the user can fetch it all again (the Collection
 // step has a button). When new content comes out, raise this number: the copies saved by an older version are no longer looked at (and are
 // deleted), so everybody gets the new data the next time the page loads.
-export const CACHE_VERSION = 1
+export const CACHE_VERSION = 3
 
 const cacheKey = name => name + ':v' + CACHE_VERSION
 const isCurrentKey = key => String(key).endsWith(':v' + CACHE_VERSION)
@@ -163,13 +163,26 @@ export async function fetchPacks(dispatch, getState) {
     })
 }
 
-// The names of the cards in the chosen language, from ArkhamDB's translated site; only what is shown is kept. When they can't be had the
-// names stay English.
+// The names and texts of the cards in the chosen language, from ArkhamDB's translated site; only what is shown is kept. The texts are
+// kept only for the cards that have a translation (the site gives the English text for the others). When they can't be had the names
+// stay English.
 function namesOnly(cards) {
     const names = {}
 
     cards.forEach(card => {
-        if (card.name || card.subname) names[card.code] = { name: card.name || '', subname: card.subname || '', custom: card.customization_text || '' }
+        if (!card.name && !card.subname) return
+
+        const entry = { name: card.name || '', subname: card.subname || '', custom: card.customization_text || '' }
+
+        if ((card.text && card.text !== card.real_text) || (card.name && card.name !== card.real_name)) {
+            entry.text = card.text || ''
+            entry.traits = card.traits || ''
+            entry.flavor = card.flavor || ''
+            entry.back = card.back_text || ''
+            entry.backFlavor = card.back_flavor || ''
+        }
+
+        names[card.code] = entry
     })
 
     return names

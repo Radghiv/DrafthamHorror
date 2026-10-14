@@ -66,6 +66,10 @@ const draftSlice = createSlice({
                 if (state.draftPool[index]) state.draftPool[index].revealed = true
             })
         },
+        // turns a card of the pool face down again (it keeps its face until it is replaced)
+        hideDraftPoolCard(state, action) {
+            if (state.draftPool[action.payload]) state.draftPool[action.payload].revealed = false
+        },
         replaceDraftPoolCard(state, action) {
             state.draftPool[action.payload.index] = action.payload.card
         },
@@ -796,7 +800,7 @@ function updateUpgradeOption(index, value) {
     }
 }
 
-export const { changePhase, addToDraftPool, clearDraftPool, replaceDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, addToCardList, clearCardList, addToRemovedList,
+export const { changePhase, addToDraftPool, clearDraftPool, replaceDraftPoolCard, hideDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, addToCardList, clearCardList, addToRemovedList,
     removeFromRemovedList, setDeckList, changeDeckName, setInsufficientOptions, changeShowDeckOptions,
     changeProgress, changeUpgradeProgress, changeIndex, addToBuildXPList, clearBuildXPList, changeLevel0, addLevel0,
     draftVersatile, draftLevel0, setLevel0Requirements, updateCurrentLevel0Name, setDeckModifiers, changeUpgradeOption, selectDraftCard, changeLimit, expandModifiers, minimizeModifiers, holdModifiers, changeDraftPoolProperty } = draftSlice.actions

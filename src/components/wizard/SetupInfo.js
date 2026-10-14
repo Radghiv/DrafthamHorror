@@ -5,7 +5,7 @@ import describeSetup from './describeSetup'
 import StartStatus from './StartStatus'
 import { useT } from '../../i18n'
 
-// The choices made so far and whether they leave enough cards to draft (left column of the setup)
+// The choices made so far and whether they leave enough cards to draft (right column of the setup, below the Start button)
 function SetupInfo() {
     const t = useT()
     const settings = useSelector(state => state.settings)

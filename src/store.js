@@ -6,7 +6,7 @@ import dataReducer from './features/data/dataSlice'
 import collectionReducer, { COLLECTION_STORAGE_KEY } from './features/collection/collectionSlice'
 import { COLLECTION_CONFIRMED_KEY, BANNED_CARDS_KEY } from './features/settings/settingsSlice'
 import { saveJSON } from './storage'
-import { saveDraft, draftSettings } from './features/draftState'
+import { saveDraft, draftSettings, getStartSnapshot } from './features/draftState'
 import phaseLabel from './data/PhaseLabel'
 import { t } from './i18n'
 
@@ -29,7 +29,7 @@ let savedConfirmed = store.getState().settings.collectionConfirmed
 let savedBans = store.getState().settings.bannedCards
 
 // The draft in progress is saved too (a moment after the last change), so closing the page doesn't lose it. Setup screens never overwrite
-// it: only Restart clears it, and starting another draft replaces it.
+// it: only Discard (or leaving a complete draft through the logo) clears it, and starting another draft replaces it.
 let savedDraft = null
 let savedSettings = null
 let saveTimer = null
@@ -61,8 +61,12 @@ function autosaveDraft(state) {
     savedDraft = state.draft
     savedSettings = settings
 
+    // the state (and start of the draft) that is saved are the ones that scheduled the save, so leaving the draft within the delay
+    // (the logo) doesn't save the reset state
+    const start = getStartSnapshot()
+
     clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => saveDraft(store.getState(), describeDraft(store.getState())), 400)
+    saveTimer = setTimeout(() => saveDraft(state, describeDraft(state), start), 400)
 }
 
 store.subscribe(() => {

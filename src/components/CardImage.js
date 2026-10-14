@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 
+import CardTextOverlay from './CardTextOverlay'
 import { cardImageUrls } from '../data/CardImages'
 
-// An image of a card side. If an address fails (or ArkhamDB has none) the next source is tried; when every one fails the
-// fallback is shown instead.
+// An image of a card side, with the text of the language chosen over its English text. If an address fails (or ArkhamDB has none) the next
+// source is tried; when every one fails the fallback is shown instead.
 function CardImage(props) {
     const { card, side, className, alt, onLoad, fallback } = props
 
@@ -18,8 +19,11 @@ function CardImage(props) {
     if (urls.length === 0 || index >= urls.length) return fallback || null
 
     return (
-        <img className={className} src={urls[index]} alt={alt} onLoad={onLoad}
-            onError={() => setAttempt({ first: firstUrl, index: index + 1 })} />
+        <>
+            <img className={className} src={urls[index]} alt={alt} onLoad={onLoad}
+                onError={() => setAttempt({ first: firstUrl, index: index + 1 })} />
+            <CardTextOverlay card={card} side={side} />
+        </>
     )
 }
 

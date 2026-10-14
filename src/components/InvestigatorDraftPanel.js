@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
 
 import ColorForClass from '../data/ClassColors'
 import useCardOverlay from './OverlayImage'
 import CardImage from './CardImage'
 import RequiredThumbs from './RequiredThumbs'
+import CardLinkButton from './CardLinkButton'
 import { useT } from '../i18n'
 
 function InvestigatorPanel(props) {
@@ -15,19 +16,18 @@ function InvestigatorPanel(props) {
 
     const doCardOverlay = useCardOverlay()
 
+    // ArkhamDB images of some investigators are portrait (a landscape card saved turned): those are rotated back. Kept in state
+    // and set on every load, so the panel showing another investigator never keeps the rotation of the previous one.
+    const [rotated, setRotated] = useState({ front: false, back: false })
+
+    function imageDidLoad(side, event) {
+        const isPortrait = event.target.naturalHeight > event.target.naturalWidth
+
+        setRotated(current => current[side] === isPortrait ? current : { ...current, [side]: isPortrait })
+    }
+
     let investigatorCardImage = null
     let investigatorCardImageBack = null
-    
-    // handle weirdly rotated ArkhamDB images
-    function imageDidLoad(props)
-    {
-        const { index, event } = props;
-
-        if (event.target.naturalHeight > event.target.naturalWidth) {
-            if ( index === 0) event.target.className = 'investigator-image rotatecw'
-            else event.target.className = 'investigator-image rotateccw'
-        }
-    }
 
     if (cardData) {
         const factionCode = investigatorData.faction_code;
@@ -38,14 +38,16 @@ function InvestigatorPanel(props) {
 
         investigatorCardImage =
             <div className="investigator-div" style={{backgroundColor: classColor}} onPointerEnter={event => doCardOverlay(investigatorData, event, 'front')} onPointerLeave={() => doCardOverlay(null)}>
-                <CardImage card={investigatorData} side="front" className="investigator-image" alt={investigator}
-                    onLoad={event => imageDidLoad({index: 0, event: event})} fallback={placeholder(investigator)} />
+                <CardImage card={investigatorData} side="front" className={'investigator-image' + (rotated.front ? ' rotatecw' : '')} alt={investigator}
+                    onLoad={event => imageDidLoad('front', event)} fallback={placeholder(investigator)} />
+                <CardLinkButton card={investigatorData} size="medium" />
             </div>
 
         investigatorCardImageBack =
             <div className="investigator-div" style={{backgroundColor: classColor}} onPointerEnter={event => doCardOverlay(investigatorData, event, 'back')} onPointerLeave={() => doCardOverlay(null)}>
-                <CardImage card={investigatorData} side="back" className="investigator-image" alt={t('{name} (back)', { name: investigator })}
-                    onLoad={event => imageDidLoad({index: 1, event: event})} fallback={placeholder(t('{name} (Back)', { name: investigator }))} />
+                <CardImage card={investigatorData} side="back" className={'investigator-image' + (rotated.back ? ' rotateccw' : '')} alt={t('{name} (back)', { name: investigator })}
+                    onLoad={event => imageDidLoad('back', event)} fallback={placeholder(t('{name} (Back)', { name: investigator }))} />
+                <CardLinkButton card={investigatorData} size="medium" />
             </div>
     }
 
@@ -57,7 +59,7 @@ function InvestigatorPanel(props) {
                 {investigatorCardImage}
                 {investigatorCardImageBack}
             </div>
-            <RequiredThumbs investigator={investigatorData} />
+            <RequiredThumbs investigator={investigatorData} withLinks />
         </div>
     )
 }

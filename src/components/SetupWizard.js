@@ -9,6 +9,8 @@ import ReviewStep from './wizard/ReviewStep'
 import SetupSummary from './wizard/SetupSummary'
 import SetupLeftColumn from './wizard/SetupLeftColumn'
 import InvestigatorPanel from './InvestigatorPanel'
+import AppLogo from './AppLogo'
+import SettingsMenu from './SettingsMenu'
 import describeSetup from './wizard/describeSetup'
 import { CheckIcon } from './wizard/Icons'
 import { useT, msg } from '../i18n'
@@ -73,27 +75,33 @@ function SetupWizard() {
 
     return (
         <div className="wizard">
-            <nav className="wizard-crumbs" aria-label={t('Setup steps')}>
-                <ol className="breadcrumbs">
-                    {STEPS.map((step, index) => {
-                        const isCurrent = index === currentIndex
-                        const isDone = !isCurrent && (index < currentIndex || (step.key === 'collection' && settings.collectionConfirmed))
+            <div className="wizard-top">
+                <AppLogo onClick={() => dispatch(setSetupStep(settings.collectionConfirmed ? 'investigator' : 'collection'))} />
+                <nav className="wizard-crumbs" aria-label={t('Setup steps')}>
+                    <ol className="breadcrumbs">
+                        {STEPS.map((step, index) => {
+                            const isCurrent = index === currentIndex
+                            const isDone = !isCurrent && (index < currentIndex || (step.key === 'collection' && settings.collectionConfirmed))
 
-                        return (
-                            <li key={step.key}>
-                                <button type="button" className={'step-btn' + (isDone ? ' step-done' : '')} aria-current={isCurrent ? 'step' : undefined}
-                                    onClick={() => goTo(step.key)}>
-                                    <span className="step-num">{isDone ? <CheckIcon size={14} /> : index + 1}</span>
-                                    <span className="step-text">
-                                        <span className="step-title">{t(step.title)}</span>
-                                        {subtitles[step.key] ? <span className="step-sub">{subtitles[step.key]}</span> : null}
-                                    </span>
-                                </button>
-                            </li>
-                        )
-                    })}
-                </ol>
-            </nav>
+                            return (
+                                <li key={step.key}>
+                                    <button type="button" className={'step-btn' + (isDone ? ' step-done' : '')} aria-current={isCurrent ? 'step' : undefined}
+                                        onClick={() => goTo(step.key)}>
+                                        <span className="step-num">{isDone ? <CheckIcon size={14} /> : index + 1}</span>
+                                        <span className="step-text">
+                                            <span className="step-title">{t(step.title)}</span>
+                                            {subtitles[step.key] ? <span className="step-sub">{subtitles[step.key]}</span> : null}
+                                        </span>
+                                    </button>
+                                </li>
+                            )
+                        })}
+                    </ol>
+                </nav>
+                <div className="app-header-controls">
+                    <SettingsMenu />
+                </div>
+            </div>
 
             <SetupLeftColumn />
 

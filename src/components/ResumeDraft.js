@@ -5,7 +5,7 @@ import { resumeSavedDraft } from '../features/draftHistory'
 import { loadSavedDraft, clearSavedDraft } from '../features/draftState'
 import { useT, useFormatDate } from '../i18n'
 
-// Offered on the setup screens when the browser holds a draft that wasn't finished with Restart: carry on where it was left, or drop it
+// Offered on the setup screens when the browser holds a draft that was left unfinished: carry on where it was left, or drop it
 function ResumeDraft() {
     const t = useT()
     const formatDate = useFormatDate()

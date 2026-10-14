@@ -1,5 +1,5 @@
 import { setUndoDepth } from './settings/settingsSlice'
-import { restoreDraftState, rememberForUndo, popUndo, clearUndo, loadSavedDraft } from './draftState'
+import { restoreDraftState, rememberForUndo, popUndo, clearUndo, setStartSnapshot, loadSavedDraft } from './draftState'
 import { setRandomState } from '../random'
 
 // Remembers the draft as it is now, so the next pick (or "Done") can be undone
@@ -25,6 +25,7 @@ export function resumeSavedDraft(dispatch) {
     if (!saved) return
 
     clearUndo()
+    setStartSnapshot(saved.start || null)
     dispatch(setUndoDepth(0))
     setRandomState(saved.snapshot.random)
     dispatch(restoreDraftState({ ...saved.snapshot, resumed: true }))

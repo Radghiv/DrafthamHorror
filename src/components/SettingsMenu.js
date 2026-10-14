@@ -3,12 +3,16 @@ import React, { useState, useEffect, useRef } from 'react'
 import CardsPerRowSlider from './CardsPerRowSlider'
 import AnimationSpeedSlider from './AnimationSpeedSlider'
 import AnimateTogetherToggle from './AnimateTogetherToggle'
+import LanguageSelect from './LanguageSelect'
+import ThemeToggle from './ThemeToggle'
 import { SettingsIcon } from './wizard/Icons'
 import { useT } from '../i18n'
 
-// The settings button of the draft screens and the small panel it opens: cards per row and the animation options. The panel closes
-// with a click outside, Escape or the button itself.
-function SettingsMenu() {
+// The settings button and the small panel it opens: language and theme everywhere, and on the drafting screen also the cards per row
+// and the animation options (draftOptions). The panel closes with a click outside, Escape or the button itself.
+function SettingsMenu(props) {
+    const { draftOptions } = props
+
     const t = useT()
 
     const [open, setOpen] = useState(false)
@@ -43,9 +47,15 @@ function SettingsMenu() {
             {open ?
                 <div className="settings-popover" id="settings-popover" role="group" aria-label={t('Settings')}>
                     <h2>{t('Settings')}</h2>
-                    <CardsPerRowSlider />
-                    <AnimationSpeedSlider />
-                    <AnimateTogetherToggle />
+                    <LanguageSelect />
+                    <ThemeToggle />
+                    {draftOptions ?
+                        <>
+                            <CardsPerRowSlider />
+                            <AnimationSpeedSlider />
+                            <AnimateTogetherToggle />
+                        </>
+                        : null}
                 </div>
                 : null}
         </div>

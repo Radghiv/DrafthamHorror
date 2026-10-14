@@ -271,20 +271,21 @@ function SimpleDraft(dispatch, getState) {
     }
 }
 
-// Redraws one card of the pool: another legal card, not already in the pool, takes its place
-export function redrawDraftCard(index) {
+// Redraws one card of the pool: another legal card, not already in the pool, takes its place. With a key, only if that card
+// is still at the index. Returns whether the card was replaced.
+export function redrawDraftCard(index, key) {
     return function redrawDraftCardThunk(dispatch, getState) {
         const state = getState()
         const pool = state.draft.draftPool
 
-        if (!pool[index]) return
+        if (!pool[index] || (key !== undefined && pool[index].key !== key)) return false
 
         const { filteredData, draftTarget, draftProgress } = draftContext(state)
 
         const card = DrawCard(filteredData, state.draft.phase, state.draft.mergedList, state.draft.deckModifiers, pool, draftProgress, draftTarget, state.settings.investigator, state.settings.parallel)
 
         // nothing else to offer: the card stays
-        if (!card || pool.some(item => item.key === card.key)) return
+        if (!card || pool.some(item => item.key === card.key)) return false
 
         card.imageLoaded = false
         card.expandedModifiers = 0
@@ -292,6 +293,8 @@ export function redrawDraftCard(index) {
         dispatch(replaceDraftPoolCard({ index: index, card: card }))
 
         if (state.draft.selectedDraftCard === index) dispatch(selectDraftCard(null))
+
+        return true
     }
 }
 

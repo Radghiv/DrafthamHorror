@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux'
 
 import ExportDeck from '../draft/ExportDeck'
 import useCardOverlay from './OverlayImage'
+import CardLinkButton from './CardLinkButton'
 import useCardName from './useCardName'
 import { requiredQuantity, signatureGroups } from '../data/RequiredCards'
 import { useT } from '../i18n'
@@ -157,7 +158,7 @@ function SettingsExport(props) {
                         }
                         
                     return (
-                        <p className="export-card" id={cardData[signatureID].code} key={cardData[signatureID].code} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard}>{cardName + quantityText}</p>)
+                        <p className="export-card" id={cardData[signatureID].code} key={cardData[signatureID].code} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard}>{cardName + quantityText}<CardLinkButton card={cardData[signatureID]} size="small" /></p>)
                     })
 
                     return (useCheckbox ?
