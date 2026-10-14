@@ -8,17 +8,17 @@ import PackData from '../data/PackData'
 const hasOctgnId = item => Boolean(item.octgn_id)
 const labelOf = item => item.name + (item.subname ? ': ' + item.subname : '')
 
-// The names of the cards of the deck (and its investigator) that an .o8d file can't carry
+// The cards of the deck (and its investigator) that an .o8d file can't carry, as { code, name }
 export function cardsMissingOctgnIds(cardList, cardData, investigatorData) {
     const names = []
 
-    if (investigatorData && !investigatorData.octgn_id) names.push(investigatorData.name)
+    if (investigatorData && !investigatorData.octgn_id) names.push({ code: investigatorData.code, name: investigatorData.name })
 
     if (cardData) {
         cardList.forEach(listItem => {
             const card = cardData.find(dataItem => dataItem.code === listItem.key)
 
-            if (card && !card.octgn_id) names.push(labelOf(card))
+            if (card && !card.octgn_id) names.push({ code: card.code, name: labelOf(card) })
         })
     }
 
@@ -43,11 +43,14 @@ function ExportDeck(props) {
         })[0]
 
         let dataObject = {
+            code: card.code,
             name: listItem.name,
             subname: card.subname,
             count: listItem.count,
             xp: card.xp,
+            type_code: card.type_code,
             pack: card.pack_code,
+            pack_name: card.pack_name,
             octgn_id: (card.octgn_id ? card.octgn_id : '')
         }
 
@@ -72,9 +75,9 @@ function ExportDeck(props) {
     })
 
     if (fileType === 'OCTGN') {
-        const omitted = [asset, event, skill, treachery, enemy, other].flatMap(list => list.filter(item => !hasOctgnId(item)).map(labelOf))
+        const omitted = [asset, event, skill, treachery, enemy, other].flatMap(list => list.filter(item => !hasOctgnId(item)).map(item => ({ code: item.code, name: labelOf(item) })))
 
-        if (!investigatorData.octgn_id) omitted.unshift(investigatorData.name)
+        if (!investigatorData.octgn_id) omitted.unshift({ code: investigatorData.code, name: investigatorData.name })
 
         ExportO8D({
             deckTitle: (deckTitle.length > 0 ? deckTitle : 'Deck'),
@@ -186,90 +189,39 @@ function ExportO8D(props) {
     document.body.removeChild(element)
 }
 
+// A line of the plain text export, written like the plain text export of ArkhamDB itself (its template plain.txt.twig), which is what its text
+// import reads: "2x Name :Subtitle [level] (Pack)", with the subtitle of a treachery in parentheses instead: "1x Name (Subtitle) (Pack)".
+// The import looks the card up by name, subtitle and level; the pack is only there for the reader.
+function textLine(item) {
+    const subtitle = item.subname ? (item.type_code === 'treachery' ? ' (' + item.subname + ')' : ' :' + item.subname) : ''
+    const level = item.xp ? ' [' + item.xp + ']' : ''
+
+    return item.count + 'x ' + item.name + subtitle + level + ' (' + (item.pack_name || PackData[item.pack]) + ')\r\n'
+}
+
 function ExportTXT(props) {
-    var deckTextData = []
-    
+    const deckTextData = []
+
     deckTextData.push(props.deckTitle + '\r\n\r\n')
     deckTextData.push(props.investigator.name + '\r\n\r\n')
 
-    if (props.assets.length > 0) {
-        deckTextData.push('Assets\r\n')
+    // each kind of card with its name in the singular for one card and in the plural for more (as ArkhamDB does)
+    const sections = [
+        [props.assets, 'Asset', 'Assets'],
+        [props.events, 'Event', 'Events'],
+        [props.skills, 'Skill', 'Skills'],
+        [props.treacheries, 'Treachery', 'Treacheries'],
+        [props.enemies, 'Enemy', 'Enemies'],
+        [props.others, 'Other', 'Other']
+    ]
 
-        props.assets.forEach( item => {
-            const subtitle = (item.subname !== undefined) ? ':' + item.subname : ''
-            const level = (item.xp !== undefined && item.xp > 0) ? ' [' + item.xp + '] ' : ' '
+    sections.forEach(([list, singular, plural]) => {
+        if (list.length === 0) return
 
-            deckTextData.push(item.count + 'x ' + item.name + subtitle + level + '(' + PackData[item.pack] + ')\r\n')
-        })    
-
+        deckTextData.push((list.length > 1 ? plural : singular) + '\r\n\r\n')
+        list.forEach(item => { deckTextData.push(textLine(item)) })
         deckTextData.push('\r\n')
-    }
-
-    if (props.events.length > 0) {
-        deckTextData.push('Events\r\n')
-
-        props.events.forEach( item => {
-            const subtitle = (item.subname !== undefined) ? ':' + item.subname : ''
-            const level = (item.xp !== undefined && item.xp > 0) ? ' [' + item.xp + '] ' : ' '
-
-            deckTextData.push(item.count + 'x ' + item.name + subtitle + level + '(' + PackData[item.pack] + ')\r\n')
-        })    
-
-        deckTextData.push('\r\n')
-    }
-
-    if (props.skills.length > 0) {
-        deckTextData.push('Skills\r\n')
-
-        props.skills.forEach( item => {
-            const subtitle = (item.subname !== undefined) ? ':' + item.subname : ''
-            const level = (item.xp !== undefined && item.xp > 0) ? ' [' + item.xp + '] ' : ' '
-
-            deckTextData.push(item.count + 'x ' + item.name + subtitle + level + '(' + PackData[item.pack] + ')\r\n')
-        })    
-
-        deckTextData.push('\r\n')
-    }
-
-    if (props.treacheries.length > 0) {
-        deckTextData.push('Treachery\r\n')
-
-        props.treacheries.forEach( item => {
-            const subtitle = (item.subname !== undefined) ? ':' + item.subname : ''
-            const level = (item.xp !== undefined && item.xp > 0) ? ' [' + item.xp + '] ' : ' '
-
-            deckTextData.push(item.count + 'x ' + item.name + subtitle + level + '(' + PackData[item.pack] + ')\r\n')
-        })    
-
-        deckTextData.push('\r\n')
-    }
-
-
-    if (props.enemies.length > 0) {
-        deckTextData.push('Enemy\r\n')
-
-        props.enemies.forEach( item => {
-            const subtitle = (item.subname !== undefined) ? ':' + item.subname : ''
-            const level = (item.xp !== undefined && item.xp > 0) ? ' [' + item.xp + '] ' : ' '
-
-            deckTextData.push(item.count + 'x ' + item.name + subtitle + level + '(' + PackData[item.pack] + ')\r\n')
-        })    
-
-        deckTextData.push('\r\n')
-    }
-
-    if (props.others.length > 0) {
-        deckTextData.push('Other\r\n')
-
-        props.others.forEach( item => {
-            const subtitle = (item.subname !== undefined) ? ':' + item.subname : ''
-            const level = (item.xp !== undefined && item.xp > 0) ? ' [' + item.xp + '] ' : ' '
-
-            deckTextData.push(item.count + 'x ' + item.name + subtitle + level + '(' + PackData[item.pack] + ')\r\n')
-        })    
-
-        deckTextData.push('\r\n')
-    }
+    })
 
     const element = document.createElement("a")
     const file = new Blob(deckTextData, {type: 'text/plain'})

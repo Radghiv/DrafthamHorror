@@ -6,7 +6,7 @@ import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import CardLinkButton from './CardLinkButton'
 import useCardName from './useCardName'
 import { requiredQuantity, signatureGroups } from '../data/RequiredCards'
-import { CheckIcon } from './wizard/Icons'
+import { CheckIcon, WarningIcon } from './wizard/Icons'
 import { useT } from '../i18n'
 
 function SettingsExport(props) {
@@ -54,10 +54,12 @@ function SettingsExport(props) {
     const { cardName: localName, cardSubname } = useCardName()
 
     function previewCard(event) {
-        // basic weakness
-        if (event.currentTarget.id === '01000') return
+        const code = event.currentTarget.dataset.code || event.currentTarget.id
 
-        const card = cardData.find(item => item.code === event.currentTarget.id)
+        // basic weakness
+        if (code === '01000') return
+
+        const card = cardData.find(item => item.code === code)
 
         if (card) doCardOverlay(card, event)
     }
@@ -154,7 +156,12 @@ function SettingsExport(props) {
     // the cards an .o8d file can't carry: those of the last export (it knows the signature cards and the weakness too), or before the first one
     // the drafted cards and the investigator
     const missingIds = omitted || cardsMissingOctgnIds(cardList, cardData, investigatorData)
-    const shownMissing = missingIds.length > 8 ? missingIds.slice(0, 8).join(', ') + '…' : missingIds.join(', ')
+
+    // when the .o8d can't carry every card, the text export is the one to use: it is the main button and comes first
+    const preferText = missingIds.length > 0
+
+    const o8dButton = <button type="button" className={'btn btn-block ' + (preferText ? 'btn-secondary' : 'btn-primary')} onClick={() => { handleExportClick('OCTGN'); flashExported('OCTGN') }}>{exported === 'OCTGN' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as .o8d')}</button>
+    const textButton = <button type="button" className={'btn btn-block ' + (preferText ? 'btn-primary' : 'btn-secondary')} onClick={() => { handleExportClick('TXT'); flashExported('TXT') }}>{exported === 'TXT' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as plain text (.txt)')}</button>
 
     // make sure it's selected in the collection too
     var weaknessCards = cardData.filter( card => {
@@ -227,10 +234,23 @@ function SettingsExport(props) {
 
             <div className="options-section">
                 {missingIds.length > 0 ?
-                    <p className="notice" role="status">{t("These cards have no OCTGN id in ArkhamDB yet, so ArkhamDB can't import them from an .o8d file and the file leaves them out: {names}. The plain text export (Import Deck, then Text) has every card.", { names: shownMissing })}</p>
+                    <div className="status status-warn" role="status">
+                        <WarningIcon />
+                        <div className="status-body">
+                            <p>{t("These cards have no OCTGN id in ArkhamDB yet, so ArkhamDB can't import them from an .o8d file, and the file leaves them out:")}</p>
+                            <ul className="missing-list">
+                                {missingIds.map(entry => (
+                                    <li className="export-card missing-card" key={entry.code} data-code={entry.code} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard}>
+                                        {entry.name}
+                                        <CardLinkButton card={cardData.find(item => item.code === entry.code)} size="small" />
+                                    </li>
+                                ))}
+                            </ul>
+                            <p>{t('The plain text export (Import Deck, then Text) has every card.')}</p>
+                        </div>
+                    </div>
                     : null}
-                <button type="button" className="btn btn-primary btn-block" onClick={() => { handleExportClick('OCTGN'); flashExported('OCTGN') }}>{exported === 'OCTGN' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as .o8d')}</button>
-                <button type="button" className="btn btn-secondary btn-block" onClick={() => { handleExportClick('TXT'); flashExported('TXT') }}>{exported === 'TXT' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as plain text (.txt)')}</button>
+                {preferText ? <>{textButton}{o8dButton}</> : <>{o8dButton}{textButton}</>}
                 <p className="field-hint">{t('Exports an OCTGN deck file. To import a downloaded .o8d deck into ArkhamDB, go to My Decks and click Import Deck, then File.')}</p>
             </div>
         </div>

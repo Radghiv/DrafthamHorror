@@ -39,7 +39,7 @@ beforeEach(() => {
 
 describe('cardsMissingOctgnIds', () => {
     it('lists the investigator and the cards without an OCTGN id', () => {
-        expect(cardsMissingOctgnIds(cardList, cardData, daniela)).toEqual(['Daniela Reyes', "Daniela's Wrench", "Detective's Intuition: Hunch"])
+        expect(cardsMissingOctgnIds(cardList, cardData, daniela)).toEqual([{ code: '12001', name: 'Daniela Reyes' }, { code: '12002', name: "Daniela's Wrench" }, { code: '12005', name: "Detective's Intuition: Hunch" }])
         expect(cardsMissingOctgnIds(cardList.filter(item => item.key !== '12002' && item.key !== '12005'), cardData, roland)).toEqual([])
     })
 })
@@ -49,7 +49,7 @@ describe('the .o8d export', () => {
         const result = ExportDeck({ fileType: 'OCTGN', deckTitle: 'Test', investigatorData: roland, cardList: cardList, specialCards: [], cardData: cardData })
         const text = await read(files[0])
 
-        expect(result.omitted).toEqual(["Daniela's Wrench", "Detective's Intuition: Hunch"])
+        expect(result.omitted).toEqual([{ code: '12002', name: "Daniela's Wrench" }, { code: '12005', name: "Detective's Intuition: Hunch" }])
         expect(text).toContain('id="bbbb-2222"')
         expect(text).toContain('id="cccc-3333"')
         expect(text).not.toContain('id=""')
@@ -60,7 +60,7 @@ describe('the .o8d export', () => {
         const result = ExportDeck({ fileType: 'OCTGN', deckTitle: 'Test', investigatorData: daniela, cardList: cardList, specialCards: [], cardData: cardData })
         const text = await read(files[0])
 
-        expect(result.omitted[0]).toBe('Daniela Reyes')
+        expect(result.omitted[0]).toEqual({ code: '12001', name: 'Daniela Reyes' })
         expect(text).toContain('<section name="Investigator"')
         expect(text).not.toContain('Daniela Reyes')
     })
@@ -70,7 +70,28 @@ describe('the .o8d export', () => {
         const text = await read(files[0])
 
         expect(result).toBeUndefined()
-        expect(text).toContain("1x Daniela's Wrench")
-        expect(text).toContain("Detective's Intuition:Hunch [2] (Core Set (2026))")
+        expect(text).toContain("1x Daniela's Wrench (Core Set (2026))")
+        expect(text).toContain("2x Detective's Intuition :Hunch [2] (Core Set (2026))")
+    })
+
+    it('writes the lines like ArkhamDB does, so its text import reads them', async () => {
+        const data = [
+            ...cardData.map(card => card.code === '01006' ? { ...card, pack_name: 'Core Set' } : card),
+            { code: '07197', name: 'Signum Crucis', type_code: 'skill', pack_code: 'hhg', pack_name: 'Horror in High Gear', xp: 2, octgn_id: 'dddd-4444' },
+            { code: '03009', name: 'Sophie', subname: 'Her Pet', type_code: 'treachery', pack_code: 'ptc', pack_name: 'The Path to Carcosa', xp: 0 }
+        ]
+        const list = [{ key: '07197', name: 'Signum Crucis', count: 1 }, { key: '01006', name: '.38 Special', count: 2 }, { key: '03009', name: 'Sophie', count: 1 }]
+
+        ExportDeck({ fileType: 'TXT', deckTitle: 'Test', investigatorData: roland, cardList: list, specialCards: [], cardData: data })
+
+        const text = await read(files[0])
+
+        expect(text).toContain('1x Signum Crucis [2] (Horror in High Gear)')
+        expect(text).toContain('2x .38 Special (Core Set)')
+        expect(text).toContain('1x Sophie (Her Pet) (The Path to Carcosa)')
+        // one asset: its heading is in the singular
+        expect(text).toMatch(/\r\nAsset\r\n\r\n/)
+        expect(text).toMatch(/\r\nSkill\r\n\r\n/)
+        expect(text).toMatch(/\r\nTreachery\r\n\r\n/)
     })
 })

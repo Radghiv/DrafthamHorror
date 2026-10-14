@@ -2450,6 +2450,9 @@ a {
     margin: 0;
     box-sizing: border-box;
 }
+.draft-layout.is-complete .draft-main > .export-panel {
+    display: flex;
+}
 .draft-layout.is-complete .draft-aside > * {
     display: block;
     flex: 1 1 320px;
@@ -5160,4 +5163,35 @@ html.theme-fade *::after {
         flex: 1 1 100%;
         min-width: 0;
     }
+}
+
+/* a message with a list in it: the icon stays at the top, and the cards that can't be imported are a list to hover or tap */
+.status-warn {
+    align-items: flex-start;
+}
+.status-warn > svg {
+    margin-top: 1px;
+}
+.status-body {
+    min-width: 0;
+}
+.status-body p {
+    margin: 0;
+    line-height: 1.45;
+}
+.missing-list {
+    max-height: 13em;
+    margin: 8px 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+.missing-card {
+    position: relative;
+    margin: 0;
+    padding: 3px 0;
+    font-weight: 700;
+}
+.missing-card:hover {
+    text-decoration: underline dotted;
 }
