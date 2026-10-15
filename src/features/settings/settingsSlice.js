@@ -197,6 +197,9 @@ const settingsSlice = createSlice({
                     case 'SealedCount':
                         state.sealedCount = Math.min(SEALED_MAX_POOL, Math.max(0, parseInt(action.payload.value, 10) || 0))
                         break
+                    case 'SealedDuplicates':
+                        state.sealedDuplicates = Boolean(action.payload.value)
+                        break
                     case 'SealedCopies':
                         state.sealedCopies = Boolean(action.payload.value)
                         break

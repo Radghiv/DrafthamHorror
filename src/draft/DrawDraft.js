@@ -2,12 +2,12 @@ import { changeSetting } from '../features/settings/settingsSlice'
 import { rememberUndoPoint } from '../features/draftHistory'
 import { random } from '../random'
 import { addToBuildXPList, changePhase, addLevel0, draftVersatile, draftLevel0, advanceDraft, addDeckModifier,
-    addToCardList, removeFromCardList, removeFromBuildXPList, removeLevel0, changeProgress, addToDraftPool, clearDraftPool, setSealedPool, setDraftPool, replaceDraftPoolCard, selectDraftCard, setInsufficientOptions, addToRemovedList,
+    addToCardList, removeFromCardList, removeFromBuildXPList, removeLevel0, changeProgress, addToDraftPool, clearDraftPool, setSealedPool, setSealedTaken, setDraftPool, replaceDraftPoolCard, selectDraftCard, setInsufficientOptions, addToRemovedList,
     calculateNeededExileCheckboxes, updateDeckRequirements } from '../features/draft/draftSlice'
 
 import FilterCards from '../data/CardFilter'
 import { addModifiers, updateDraftModifiers, availableUpgrades, fillCardModifiers } from './Modifiers'
-import { isSealedDraft, sealedMaxCopies, sealedCardRemovable, compareSealedCards } from './Sealed'
+import { isSealedDraft, sealedMaxCopies, sealedCardRemovable, sealedEntryId, compareSealedCards } from './Sealed'
 import DraftPhases, { isUpgrade, isLevel0Build, isLevel0Upgrade } from '../data/DraftPhases'
 import ResearchLogs from '../data/ResearchLogs'
 
@@ -120,6 +120,11 @@ export function draftCard() {
             })
 
             DraftCard(dispatch, getState, draftPool[draftIndex], filteredData, draftTarget)
+
+            // a sealed pool with duplicates: the card that was picked is out of the pool
+            if (isSealedDraft(state.settings.deckbuilding, state.draft.phase) && state.settings.sealedDuplicates) {
+                dispatch(setSealedTaken([...(state.draft.sealedTaken || []), sealedEntryId(draftPool[draftIndex])]))
+            }
 
             state = getState()
 
@@ -281,35 +286,62 @@ function SimpleDraft(dispatch, getState) {
     }
 }
 
-// Deals the sealed pool: a random selection of the legal cards (each at most once), shown by class. Every card is face up from the start.
+// Deals the sealed pool: a random selection of the legal cards (each at most once, or with duplicates), shown by class. Every card is face up from the start.
 function SealedDraft(dispatch, getState) {
     const state = getState()
 
     const { filteredData, draftTarget, draftProgress } = draftContext(state)
 
-    const size = Math.min(state.settings.sealedCount, filteredData.length)
+    let picks = []
 
-    // a partial shuffle: the first cards of the list are a random selection without repeats
-    const cards = filteredData.slice()
+    if (state.settings.sealedDuplicates) {
+        // drawn with replacement: a card can come up again, up to the copies the deck can take
+        const candidates = filteredData.slice()
+        const dealtCount = {}
 
-    for (let i = 0; i < size; i++) {
-        const j = i + Math.floor(random() * (cards.length - i))
-        const swapped = cards[i]
+        while (picks.length < state.settings.sealedCount && candidates.length > 0) {
+            const j = Math.floor(random() * candidates.length)
+            const card = candidates[j]
 
-        cards[i] = cards[j]
-        cards[j] = swapped
+            picks.push(card)
+            dealtCount[card.code] = (dealtCount[card.code] || 0) + 1
+
+            if (dealtCount[card.code] >= sealedMaxCopies(card, true)) {
+                candidates[j] = candidates[candidates.length - 1]
+                candidates.pop()
+            }
+        }
+    }
+    else {
+        const size = Math.min(state.settings.sealedCount, filteredData.length)
+
+        // a partial shuffle: the first cards of the list are a random selection without repeats
+        const cards = filteredData.slice()
+
+        for (let i = 0; i < size; i++) {
+            const j = i + Math.floor(random() * (cards.length - i))
+            const swapped = cards[i]
+
+            cards[i] = cards[j]
+            cards[j] = swapped
+        }
+
+        picks = cards.slice(0, size)
     }
 
-    const pool = cards.slice(0, size).map(card => {
+    const pool = picks.map((card, index) => {
         const poolCard = addModifiers(card, state.draft.phase, state.draft.deckModifiers, state.draft.mergedList, draftTarget - draftProgress, state.settings.investigator, state.settings.parallel)
 
         poolCard.imageLoaded = false
         poolCard.expandedModifiers = 0
         poolCard.revealed = true
+        // what tells it from another copy of the card in the pool
+        poolCard.poolId = index
 
         return poolCard
     }).sort(compareSealedCards)
 
+    dispatch(setSealedTaken([]))
     dispatch(setSealedPool(pool))
     dispatch(setDraftPool(pool))
     dispatch(setInsufficientOptions(pool.length < 1))
@@ -329,9 +361,15 @@ function trimSealedPool(dispatch, getState) {
 
     // (a draft saved before the pool was kept has only what was left of it)
     const dealt = state.draft.sealedPool && state.draft.sealedPool.length > 0 ? state.draft.sealedPool : state.draft.draftPool
-    const current = new Map(state.draft.draftPool.map(card => [card.key, card]))
+    const current = new Map(state.draft.draftPool.map(card => [sealedEntryId(card), card]))
 
-    const pool = dealt.filter(card => legal.has(card.key) && inDeck(card.key) < sealedMaxCopies(card, state.settings.sealedCopies)).map(card => current.get(card.key) || card)
+    // with duplicates every card of the pool is a card of its own, gone when it is picked, and the deck takes two copies of a card
+    const duplicates = state.settings.sealedDuplicates
+    const taken = new Set(duplicates ? state.draft.sealedTaken || [] : [])
+
+    const pool = dealt
+        .filter(card => !taken.has(sealedEntryId(card)) && legal.has(card.key) && inDeck(card.key) < sealedMaxCopies(card, state.settings.sealedCopies || duplicates))
+        .map(card => current.get(sealedEntryId(card)) || card)
 
     const unchanged = pool.length === state.draft.draftPool.length && pool.every((card, index) => card === state.draft.draftPool[index])
 
@@ -381,6 +419,17 @@ export function removeSealedCard(key) {
             level0Swaps: after.draft.level0Swaps,
             level0Adds: after.draft.level0Adds
         })))
+
+        // with duplicates, a card of the pool that was picked comes back (the last one of this card)
+        if (after.settings.sealedDuplicates) {
+            const taken = after.draft.sealedTaken || []
+            const keyOf = id => (after.draft.sealedPool.find(card => sealedEntryId(card) === id) || {}).key
+            let index = -1
+
+            taken.forEach((id, position) => { if (keyOf(id) === key) index = position })
+
+            if (index >= 0) dispatch(setSealedTaken(taken.filter((id, position) => position !== index)))
+        }
 
         trimSealedPool(dispatch, getState)
 

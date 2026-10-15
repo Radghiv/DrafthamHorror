@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest'
 
 import DraftPhases from '../data/DraftPhases'
-import { isSealedDraft, sealedMaxCopies, sealedPoolFillsDeck, compareSealedCards } from './Sealed'
+import { isSealedDraft, sealedMaxCopies, sealedPoolFillsDeck, sealedEntryId, compareSealedCards } from './Sealed'
 import { restoreSettings } from '../features/draftState'
 
 describe('sealed', () => {
@@ -25,6 +25,17 @@ describe('sealed', () => {
         expect(sealedPoolFillsDeck(15, true, 200, 30)).toBe(true)
         // the pool can't hold more cards than there are legal ones
         expect(sealedPoolFillsDeck(100, false, 20, 30)).toBe(false)
+    })
+
+    test('a pool with duplicates holds at most two of each card', () => {
+        expect(sealedPoolFillsDeck(60, false, 20, 30, true)).toBe(true)
+        expect(sealedPoolFillsDeck(60, false, 10, 30, true)).toBe(false)
+        expect(sealedPoolFillsDeck(20, false, 200, 30, true)).toBe(false)
+    })
+
+    test('the entries of a pool are told apart by where they were dealt', () => {
+        expect(sealedEntryId({ key: '01016', poolId: 7 })).toBe(7)
+        expect(sealedEntryId({ key: '01016' })).toBe('01016')
     })
 
     test('shows the pool by class, then by name', () => {

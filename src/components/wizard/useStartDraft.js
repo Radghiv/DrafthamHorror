@@ -33,6 +33,7 @@ function useStartDraft() {
     const deckbuilding = useSelector(state => state.settings.deckbuilding)
     const sealedCount = useSelector(state => state.settings.sealedCount)
     const sealedCopies = useSelector(state => state.settings.sealedCopies)
+    const sealedDuplicates = useSelector(state => state.settings.sealedDuplicates)
 
     const dispatch = useDispatch()
 
@@ -45,7 +46,7 @@ function useStartDraft() {
     // approximate: assume 2 copies of each card, want at least 2 extra. A drafted investigator isn't known yet, so it can't be checked.
     // (a sealed pool is checked on its own: it is the cards of the pool that have to fill the deck)
     const enoughCards = investigatorMode === 'draft' || isUpgradeTab || sealed || (filteredCount - 2) * 2 > deckSize
-    const poolTooSmall = sealed && investigatorMode !== 'draft' && !sealedPoolFillsDeck(sealedCount, sealedCopies, filteredCount, deckSize)
+    const poolTooSmall = sealed && investigatorMode !== 'draft' && !sealedPoolFillsDeck(sealedCount, sealedCopies, filteredCount, deckSize, sealedDuplicates)
 
     // an investigator draft whose options leave no investigator to choose from can't start
     const eligibleCount = useMemo(() => investigatorMode === 'draft' ? eligibleInvestigators(investigatorEntryList, cardData, investigatorDraftOptions).length : 0,

@@ -26,7 +26,8 @@ const SLOT_NAMES = {
     Accessory: msg('Accessory'),
     Body: msg('Body'),
     Ally: msg('Ally'),
-    Tarot: msg('Tarot')
+    Tarot: msg('Tarot'),
+    None: msg('No slot')
 }
 
 const ICON_NAMES = {

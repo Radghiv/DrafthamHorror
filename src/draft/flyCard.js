@@ -168,10 +168,10 @@ export default function startCardFlight(cardElement, speed) {
         text.removeAttribute('id')
         // plain inline flow, like the real row (a flex container would change how the name and the XP dots are laid out)
         Object.assign(text.style, {
-            position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', margin: '0', padding: '0', boxSizing: 'border-box',
+            position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', margin: '0', padding: style.padding, boxSizing: 'border-box',
             display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', pointerEvents: 'none',
             fontFamily: style.fontFamily, fontSize: style.fontSize, fontWeight: style.fontWeight, letterSpacing: style.letterSpacing,
-            lineHeight: now.height + 'px', color: style.color, opacity: '0',
+            lineHeight: (now.height - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)) + 'px', color: style.color, opacity: '0',
             backgroundColor: window.getComputedStyle(list).backgroundColor
         })
         flying.appendChild(text)

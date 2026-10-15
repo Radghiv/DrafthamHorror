@@ -49,10 +49,10 @@ export function prepareCardReturn(speed, key) {
 
         text.removeAttribute('id')
         Object.assign(text.style, {
-            position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', margin: '0', padding: '0', boxSizing: 'border-box',
+            position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', margin: '0', padding: style.padding, boxSizing: 'border-box',
             display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', pointerEvents: 'none',
             fontFamily: style.fontFamily, fontSize: style.fontSize, fontWeight: style.fontWeight, letterSpacing: style.letterSpacing,
-            lineHeight: from.height + 'px', color: style.color, backgroundColor: window.getComputedStyle(list).backgroundColor
+            lineHeight: (from.height - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)) + 'px', color: style.color, backgroundColor: window.getComputedStyle(list).backgroundColor
         })
 
         // the picture of the card, the first source of the draft (the one it was shown from), under the text

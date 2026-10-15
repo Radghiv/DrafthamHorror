@@ -150,7 +150,7 @@ function CardListPanel(props) {
         const place = fresh[item.key]
         const entering = place !== undefined
 
-        return <p className={rowClass(item) + (entering ? ' row-enter' : '')} style={entering ? { '--row': Math.min(place, 14) } : undefined} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={item.key || index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" />{removable && sealedCardRemovable(item) ?
+        return <p className={rowClass(item) + (entering ? ' row-enter' : '') + (removable && sealedCardRemovable(item) ? ' is-removable' : '')} style={entering ? { '--row': Math.min(place, 14) } : undefined} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={item.key || index}><span className="cardlist-name">{cardName(item)}{levelStr}{countStr}</span><CardLinkButton card={item} size="small" />{removable && sealedCardRemovable(item) ?
             <button type="button" className="cardlist-remove" aria-label={t('Remove {name}', { name: cardName(item) })} title={t('Remove {name}', { name: cardName(item) })} onClick={event => removeCard(event, item)}>
                 <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
             </button> : null}</p>

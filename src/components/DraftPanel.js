@@ -5,7 +5,7 @@ import { useSelector, useDispatch, useStore } from 'react-redux'
 import { advanceDraft, updateUpgradeOption, changeIndex, hideDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, expandModifiers, minimizeModifiers, holdModifiers, selectDraftCard, changeDraftPoolProperty } from '../features/draft/draftSlice'
 
 import { draftCard, redrawDraftCard } from '../draft/DrawDraft'
-import { isSealedDraft } from '../draft/Sealed'
+import { isSealedDraft, sealedEntryId } from '../draft/Sealed'
 import { EMPTY_FILTERS, hasFilters, matchesFilters } from '../draft/SealedFilters'
 import SealedFilterBar from './SealedFilterBar'
 import useDraftProgress from '../draft/useDraftProgress'
@@ -260,15 +260,15 @@ function DraftPanel(props) {
     useEffect(() => () => clearTimeout(leavingTimer.current), [])
 
     const allRevealed = draftPool.length > 0 && draftPool.every(card => card.revealed)
-    const poolSignature = draftPool.map(card => card.key).join('|')
+    const poolSignature = draftPool.map(card => card.key + (card.poolId !== undefined ? '#' + card.poolId : '')).join('|')
 
     // The state of the pictures is kept by the place of the card in the pool. When the cards of a sealed pool leave or come back (a pick, a card
     // taken out of the Draft List, an undo) the others change place, and their state goes with them.
-    const poolKeys = useRef(draftPool.map(card => card.key))
+    const poolKeys = useRef(draftPool.map(sealedEntryId))
 
     useLayoutEffect(() => {
         const before = poolKeys.current
-        const after = draftPool.map(card => card.key)
+        const after = draftPool.map(sealedEntryId)
 
         poolKeys.current = after
 

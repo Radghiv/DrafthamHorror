@@ -17,6 +17,8 @@ const initialState = {
     draftPool: [],
     // the sealed pool as it was dealt (draftPool is what is left of it)
     sealedPool: [],
+    // the entries (by the place they were dealt in) of the sealed pool that were picked, when it has duplicates
+    sealedTaken: [],
     deckName: '',
     // the deck from ArkhamDB that is being upgraded, as ArkhamDB gave it (an export to arkham.build starts from it)
     sourceDeck: null,
@@ -64,6 +66,9 @@ const draftSlice = createSlice({
         // the sealed pool: dealt whole, and what is left of it after a pick
         setSealedPool(state, action) {
             state.sealedPool = action.payload
+        },
+        setSealedTaken(state, action) {
+            state.sealedTaken = action.payload
         },
         setDraftPool(state, action) {
             state.draftPool = action.payload
@@ -858,7 +863,7 @@ function updateUpgradeOption(index, value) {
     }
 }
 
-export const { changePhase, addToDraftPool, clearDraftPool, setSealedPool, setDraftPool, replaceDraftPoolCard, hideDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, addToCardList, removeFromCardList, clearCardList, addToRemovedList,
+export const { changePhase, addToDraftPool, clearDraftPool, setSealedPool, setSealedTaken, setDraftPool, replaceDraftPoolCard, hideDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, addToCardList, removeFromCardList, clearCardList, addToRemovedList,
     removeFromRemovedList, setDeckList, changeDeckName, setSourceDeck, setInsufficientOptions, changeShowDeckOptions,
     changeProgress, changeUpgradeProgress, changeIndex, addToBuildXPList, removeFromBuildXPList, clearBuildXPList, changeLevel0, addLevel0, removeLevel0,
     draftVersatile, draftLevel0, setLevel0Requirements, updateCurrentLevel0Name, setDeckModifiers, changeUpgradeOption, selectDraftCard, changeLimit, expandModifiers, minimizeModifiers, holdModifiers, changeDraftPoolProperty } = draftSlice.actions

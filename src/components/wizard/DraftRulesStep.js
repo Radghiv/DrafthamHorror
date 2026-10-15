@@ -129,12 +129,21 @@ function DraftRulesStep() {
                 </div>
 
                 <div className="setting-row">
-                    <span className="setting-label"><strong>{t('Allow two copies')}</strong><span>{t('A card stays in the pool after it is picked, until the deck has two copies of it')}</span></span>
+                    <span className="setting-label"><strong>{t('Duplicates in the pool')}</strong><span>{t('The same card can be dealt more than once, each as a card of its own. The deck can take two copies of a card.')}</span></span>
                     <div className="setting-control">
-                        <Switch checked={settings.sealedCopies} label={t('Allow two copies')}
-                            onChange={value => dispatch(changeSetting('SealedCopies', value))} />
+                        <Switch checked={settings.sealedDuplicates} label={t('Duplicates in the pool')}
+                            onChange={value => dispatch(changeSetting('SealedDuplicates', value))} />
                     </div>
                 </div>
+
+                {settings.sealedDuplicates ? null :
+                    <div className="setting-row">
+                        <span className="setting-label"><strong>{t('Allow two copies')}</strong><span>{t('A card stays in the pool after it is picked, until the deck has two copies of it')}</span></span>
+                        <div className="setting-control">
+                            <Switch checked={settings.sealedCopies} label={t('Allow two copies')}
+                                onChange={value => dispatch(changeSetting('SealedCopies', value))} />
+                        </div>
+                    </div>}
 
                 {confirmRow}
             </div>

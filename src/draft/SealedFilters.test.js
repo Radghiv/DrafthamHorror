@@ -28,6 +28,16 @@ describe('sealed filters', () => {
         expect(matchesFilters(card, info, 'Machete', withFilters({ types: ['asset'], slots: ['Hand'], costs: [3] }))).toBe(true)
     })
 
+    test('"None" is the cards that take no slot', () => {
+        const event = { ...card, type_code: 'event', slot: undefined }
+
+        expect(matchesFilters(event, info, 'Event', withFilters({ slots: ['None'] }))).toBe(true)
+        expect(matchesFilters(card, info, 'Machete', withFilters({ slots: ['None'] }))).toBe(false)
+        expect(matchesFilters(event, info, 'Event', withFilters({ slots: ['Hand'] }))).toBe(false)
+        expect(matchesFilters(event, info, 'Event', withFilters({ slots: ['Hand', 'None'] }))).toBe(true)
+        expect(matchesFilters(card, info, 'Machete', withFilters({ slots: ['Hand', 'None'] }))).toBe(true)
+    })
+
     test('a multiclass card has each of its classes', () => {
         expect(matchesFilters({ ...card, faction2_code: 'rogue' }, info, 'Machete', withFilters({ classes: ['rogue'] }))).toBe(true)
     })

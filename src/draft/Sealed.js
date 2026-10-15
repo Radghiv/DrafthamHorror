@@ -13,7 +13,10 @@ export const SEALED_SETTINGS = {
     // cards dealt into the pool
     sealedCount: 60,
     // a card that was picked stays in the pool until the deck has two copies of it
-    sealedCopies: false
+    sealedCopies: false,
+    // the same card can be dealt into the pool more than once: each is a card of its own, taken out of the pool when it is picked, and the deck
+    // can have two copies of a card (so the copies above don't apply)
+    sealedDuplicates: false
 }
 
 // Whether the cards to choose from are a sealed pool: the mode is chosen and the phase is the build of the deck
@@ -26,9 +29,18 @@ export function sealedMaxCopies(card, copiesAllowed) {
     return copiesAllowed ? Math.max(1, Math.min(2, card.deck_limit || 1)) : 1
 }
 
-// Whether the pool can hold a deck: every card of the pool, once or twice, has to be enough for the cards the deck is made of
-export function sealedPoolFillsDeck(sealedCount, copiesAllowed, legalCount, deckSize) {
+// Whether the pool can hold a deck: every card of the pool, once or twice, has to be enough for the cards the deck is made of. With duplicates the
+// pool can be as big as asked, but holds at most two of each card.
+export function sealedPoolFillsDeck(sealedCount, copiesAllowed, legalCount, deckSize, duplicates) {
+    if (duplicates) return Math.min(sealedCount, legalCount * 2) >= deckSize
+
     return Math.min(sealedCount, legalCount) * (copiesAllowed ? 2 : 1) >= deckSize
+}
+
+// What tells the cards of the pool apart: the place they were dealt in (a card can be in the pool more than once), or the card for a pool
+// saved before that
+export function sealedEntryId(card) {
+    return card.poolId !== undefined ? card.poolId : card.key
 }
 
 // Cards whose pick changes the rules of the deck in ways that can't be taken back one card at a time (they remove other cards, or

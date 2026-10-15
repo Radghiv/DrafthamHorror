@@ -56,6 +56,7 @@ export function buildShareLink(state) {
         deckbuilding: settings.deckbuilding,
         sealedCount: settings.sealedCount,
         sealedCopies: settings.sealedCopies,
+        sealedDuplicates: settings.sealedDuplicates,
         draftWeighting: settings.draftWeighting,
         draftXP: settings.draftXP,
         draftCount: settings.draftCount,
@@ -133,6 +134,7 @@ export function applySharedSetup(payload) {
         dispatch(changeSetting('Deckbuilding', payload.deckbuilding === 'sealed' ? 'sealed' : 'draft'))
         if (payload.sealedCount !== undefined) dispatch(changeSetting('SealedCount', payload.sealedCount))
         dispatch(changeSetting('SealedCopies', payload.sealedCopies === true))
+        dispatch(changeSetting('SealedDuplicates', payload.sealedDuplicates === true))
         dispatch(changeSetting('DraftWeighting', payload.draftWeighting))
         dispatch(changeSetting('DraftXP', payload.draftXP))
         dispatch(changeSetting('ExcludeNormalVersatile', payload.excludeNormalVersatile))

@@ -5,7 +5,8 @@ export const EMPTY_FILTERS = { text: '', classes: [], types: [], slots: [], cost
 
 export const CLASS_FILTERS = ['guardian', 'seeker', 'rogue', 'mystic', 'survivor', 'neutral']
 export const TYPE_FILTERS = ['asset', 'event', 'skill']
-export const SLOT_FILTERS = ['Hand', 'Arcane', 'Accessory', 'Body', 'Ally', 'Tarot']
+// ('None' is the cards that take no slot: events, skills and the assets without one)
+export const SLOT_FILTERS = ['Hand', 'Arcane', 'Accessory', 'Body', 'Ally', 'Tarot', 'None']
 // 5 is "5 or more"
 export const COST_FILTERS = [0, 1, 2, 3, 4, 5]
 export const ICON_FILTERS = ['willpower', 'intellect', 'combat', 'agility', 'wild']
@@ -34,7 +35,11 @@ function factionsOf(card) {
 export function matchesFilters(card, info, name, filters) {
     if (filters.classes.length > 0 && !factionsOf(card).some(faction => filters.classes.includes(faction))) return false
     if (filters.types.length > 0 && !filters.types.includes(card.type_code)) return false
-    if (filters.slots.length > 0 && !slotsOf(card).some(slot => filters.slots.includes(slot))) return false
+    if (filters.slots.length > 0) {
+        const slots = slotsOf(card)
+
+        if (!(slots.length === 0 ? filters.slots.includes('None') : slots.some(slot => filters.slots.includes(slot)))) return false
+    }
     if (filters.costs.length > 0 && !(typeof card.cost === 'number' && filters.costs.includes(Math.min(5, card.cost)))) return false
     if (filters.icons.length > 0 && !filters.icons.some(icon => info && info['skill_' + icon] > 0)) return false
     if (filters.trait !== '' && !traitsOf(card).includes(filters.trait)) return false
