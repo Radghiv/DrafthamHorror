@@ -6,6 +6,42 @@ import { cardImageUrls } from '../data/CardImages'
 // How long a finger has to stay on a card to open its preview
 const LONG_PRESS = 450
 
+// A preview opened by hovering needs a pointer that really moves. A card that comes up under a resting pointer (a new screen, a redraw, a pick)
+// makes the browser say the pointer entered it, but nobody pointed at it: the preview then waits until the pointer has moved a few pixels
+// over the card.
+const MOVED_RECENTLY = 120
+const MOVE_TO_OPEN = 4
+
+let lastPointerMove = 0
+let pendingHover = null
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('pointermove', event => {
+        if (event.pointerType !== 'touch') lastPointerMove = performance.now()
+    }, true)
+}
+
+function cancelPendingHover() {
+    if (pendingHover) {
+        document.removeEventListener('pointermove', pendingHover, true)
+        pendingHover = null
+    }
+}
+
+// Calls open (once) with the first movement of the pointer that goes a few pixels from where it was
+function whenPointerMoves(startX, startY, open) {
+    cancelPendingHover()
+
+    pendingHover = event => {
+        if (Math.hypot(event.clientX - startX, event.clientY - startY) < MOVE_TO_OPEN) return
+
+        cancelPendingHover()
+        open(event)
+    }
+
+    document.addEventListener('pointermove', pendingHover, true)
+}
+
 let longPressTimer = null
 
 function cancelLongPress() {
@@ -63,8 +99,17 @@ function useCardOverlay() {
         }
     }
 
+    function anchorFor(element, clientY) {
+        if (!element || !element.getBoundingClientRect) return null
+
+        const rect = element.getBoundingClientRect()
+
+        return { left: rect.left, right: rect.right, y: typeof clientY === 'number' ? clientY : rect.top + rect.height / 2 }
+    }
+
     return function(card, event, side) {
         cancelLongPress()
+        cancelPendingHover()
 
         if (!card) {
             // lifting the finger doesn't close a preview opened by a long press
@@ -91,15 +136,16 @@ function useCardOverlay() {
 
         const element = event && event.currentTarget
 
-        let anchor = null
+        // the pointer entered without moving: the preview comes when it does (and is still over the card)
+        if (event && event.type === 'pointerenter' && element && element.matches && performance.now() - lastPointerMove > MOVED_RECENTLY) {
+            whenPointerMoves(event.clientX, event.clientY, moveEvent => {
+                if (element.isConnected && element.matches(':hover')) show(card, side, anchorFor(element, moveEvent.clientY), false)
+            })
 
-        if (element && element.getBoundingClientRect) {
-            const rect = element.getBoundingClientRect()
-
-            anchor = { left: rect.left, right: rect.right, y: typeof event.clientY === 'number' ? event.clientY : rect.top + rect.height / 2 }
+            return
         }
 
-        show(card, side, anchor, false)
+        show(card, side, anchorFor(element, event && event.clientY), false)
     }
 }
 
