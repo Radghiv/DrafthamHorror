@@ -38,6 +38,8 @@ const initialState = {
     draftType: "draft",
     // how a deck is built: drafted, or from a sealed pool (see draft/Sealed.js)
     ...SEALED_SETTINGS,
+    // investigators that can add only some cards of other classes (or traits) get them in proportion to that limit in the cards dealt
+    proportionalLimits: true,
     draftWeighting: 'medium',
     draftXP: 1,
     draftCount: [5, 5, 5, 5, 5, 5, 5, 5],
@@ -196,6 +198,9 @@ const settingsSlice = createSlice({
                         break
                     case 'SealedCount':
                         state.sealedCount = Math.min(SEALED_MAX_POOL, Math.max(0, parseInt(action.payload.value, 10) || 0))
+                        break
+                    case 'ProportionalLimits':
+                        state.proportionalLimits = Boolean(action.payload.value)
                         break
                     case 'SealedDuplicates':
                         state.sealedDuplicates = Boolean(action.payload.value)

@@ -136,6 +136,10 @@ function FilterCards(props) {
     }
 
 //    var firstLoop = true
+    // for the cards that are legal only through an option with a limit ("up to 5 cards of another class"): the index of that option, so the
+    // draft can deal them in proportion to the limit (cards legal without a limit have none)
+    const limitCategories = new Map()
+
     const filteredData = cardData.filter(card => {
         if (card.type_code === 'investigator') return false
         if (card.type_code === 'story') return false
@@ -240,6 +244,8 @@ function FilterCards(props) {
         // this isn't right for upgrades yet
         let legal = false
         let rejected = false
+        let limitedIndex = null
+        let unlimitedLegal = false
 
         for (let i = 0; i < deckOptions.length; i++) {
             if (deckOptions[i].requirement) continue
@@ -267,7 +273,18 @@ function FilterCards(props) {
                 }
             }
 
-            if (optionLegal) legal = true
+            if (optionLegal) {
+                legal = true
+
+                if (!deckOptions[i].not) {
+                    if (deckOptions[i].limit) {
+                        if (limitedIndex === null) limitedIndex = i
+                    }
+                    else {
+                        unlimitedLegal = true
+                    }
+                }
+            }
         }
 
         if (phase === DraftPhases.VersatilePhase) {
@@ -391,6 +408,8 @@ function FilterCards(props) {
         
 //        firstLoop = false
 //console.log('Accept: ' + card.name + ' (' + card.code + ')')
+        limitCategories.set(card.code, unlimitedLegal ? null : limitedIndex)
+
         return true
     }).map(card => {    // return new items with only necessary fields so we can add to it
         var restrictions = undefined
@@ -428,7 +447,8 @@ function FilterCards(props) {
             restrictions: restrictions,
             imagesrc: card.imagesrc,
             octgn_id: card.octgn_id,
-            url: card.url
+            url: card.url,
+            limitCategory: limitCategories.get(card.code)
         }
     })
 

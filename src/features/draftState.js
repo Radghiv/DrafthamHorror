@@ -32,7 +32,8 @@ export function draftSettings(settings) {
 // The settings after restoring a snapshot: the snapshot's draft settings and the current preferences
 export function restoreSettings(current, restored) {
     // a snapshot from before the sealed mode has none of its settings: it was a draft, whatever the setup screens say now
-    const next = { ...current, ...SEALED_SETTINGS, ...restored }
+    // (and from before the proportions of the limited classes: the cards were dealt evenly)
+    const next = { ...current, ...SEALED_SETTINGS, proportionalLimits: false, ...restored }
 
     PREFERENCE_KEYS.forEach(key => {
         if (key in current) next[key] = current[key]

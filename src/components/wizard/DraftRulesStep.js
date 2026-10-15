@@ -108,6 +108,16 @@ function DraftRulesStep() {
             </div>
         </div>
 
+    // for a new deck, drafted or sealed: the cards of the classes the investigator can only add a few of come in proportion
+    const proportionRow =
+        <div className="setting-row">
+            <span className="setting-label"><strong>{t('Proportional limits')}</strong><span>{t('An investigator who can add only a few cards of other classes or traits gets them in proportion: 5 cards in a deck of 30 means 5 in 30 of the cards dealt.')}</span></span>
+            <div className="setting-control">
+                <Switch checked={settings.proportionalLimits} label={t('Proportional limits')}
+                    onChange={value => dispatch(changeSetting('ProportionalLimits', value))} />
+            </div>
+        </div>
+
     if (!isUpgradeTab && settings.deckbuilding === 'sealed') {
         return (
             <div className="stack">
@@ -144,6 +154,8 @@ function DraftRulesStep() {
                                 onChange={value => dispatch(changeSetting('SealedCopies', value))} />
                         </div>
                     </div>}
+
+                {proportionRow}
 
                 {confirmRow}
             </div>
@@ -208,6 +220,8 @@ function DraftRulesStep() {
                     </div>
                 </div>
             }
+
+            {isUpgradeTab ? null : proportionRow}
 
             {confirmRow}
 

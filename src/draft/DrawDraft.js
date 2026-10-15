@@ -256,14 +256,14 @@ function draftContext(state) {
         level0Adds: state.draft.level0Adds
     })
 
-    return { filteredData: filteredData, draftTarget: draftTarget, draftProgress: draftProgress }
+    return { filteredData: filteredData, draftTarget: draftTarget, draftProgress: draftProgress, proportion: proportionContext(state) }
 }
 
 function SimpleDraft(dispatch, getState) {
     let state = getState()
 
 // generates draft cards
-    const { filteredData, draftTarget, draftProgress } = draftContext(state)
+    const { filteredData, draftTarget, draftProgress, proportion } = draftContext(state)
 
     dispatch(clearDraftPool())
 
@@ -277,7 +277,7 @@ function SimpleDraft(dispatch, getState) {
     for (let i = 0; i < numToDraw; i++) {
         state = getState()
 
-        const card = DrawCard(filteredData, state.draft.phase, state.draft.mergedList, state.draft.deckModifiers, state.draft.draftPool, draftProgress, draftTarget, state.settings.investigator, state.settings.parallel)
+        const card = DrawCard(filteredData, state.draft.phase, state.draft.mergedList, state.draft.deckModifiers, state.draft.draftPool, draftProgress, draftTarget, state.settings.investigator, state.settings.parallel, proportion)
 
         card.imageLoaded = false
         card.expandedModifiers = 0
@@ -286,48 +286,143 @@ function SimpleDraft(dispatch, getState) {
     }
 }
 
+// The limits that the draft deals cards in proportion to, or null: the investigator can add only a few cards through some deck options (up to 5
+// cards of another class, 10 events and skills of the secondary class...). Each such option is a category of the legal cards (see limitCategory in
+// the filter), and a card dealt is of it with the probability limit ÷ size of the deck, the rest being of the cards that are legal without a limit.
+// Only for the level 0 cards of a new deck, and when the setting is on.
+export function proportionContext(state) {
+    const { settings, draft } = state
+
+    if (!settings.proportionalLimits || !isLevel0Build(draft.phase) || !settings.investigatorData) return null
+
+    const deckSize = Number(settings.deckSize)
+
+    if (!(deckSize > 0)) return null
+
+    const limits = {}
+
+    ;(settings.investigatorData.deck_options || []).forEach((option, index) => {
+        if (option.limit && !option.not) limits[index] = option.limit
+    })
+
+    return Object.keys(limits).length > 0 ? { limits: limits, deckSize: deckSize } : null
+}
+
+// The cards of the list by category: Map of the index of the option (null for the cards that are legal without a limit) to its cards
+function groupByCategory(cards) {
+    const groups = new Map()
+
+    cards.forEach(card => {
+        const category = card.limitCategory === undefined ? null : card.limitCategory
+
+        if (!groups.has(category)) groups.set(category, [])
+        groups.get(category).push(card)
+    })
+
+    return groups
+}
+
+// The share of a category in what is dealt: the limit of its option over the size of the deck, up to all of it
+const categoryShare = (proportion, category) => Math.min(1, (proportion.limits[category] || 0) / proportion.deckSize)
+
+// A random card for a draft where the cards of a limited category come in proportion to its limit: the category is drawn first (a category
+// with no cards left is skipped, and what it leaves goes to the cards that are legal without a limit), then a card of it
+export function categoryDraw(cardData, proportion) {
+    const groups = groupByCategory(cardData)
+    const normal = groups.get(null) || []
+
+    const entries = []
+    let limitedShare = 0
+
+    groups.forEach((cards, category) => {
+        if (category === null) return
+
+        const share = categoryShare(proportion, category)
+
+        entries.push({ cards: cards, share: share })
+        limitedShare += share
+    })
+
+    if (normal.length > 0) entries.push({ cards: normal, share: Math.max(0, 1 - limitedShare) })
+
+    const total = entries.reduce((sum, entry) => sum + entry.share, 0)
+
+    // (no share at all: any card)
+    if (total <= 0) return cardData[Math.floor(random() * cardData.length)]
+
+    let roll = random() * total
+
+    for (let i = 0; i < entries.length; i++) {
+        roll -= entries[i].share
+
+        if (roll < 0 || i === entries.length - 1) return entries[i].cards[Math.floor(random() * entries[i].cards.length)]
+    }
+
+    return cardData[0]
+}
+
+// Draws count cards from a list of cards. Each card can be drawn as many times as its cap says (once for a pool of different cards); counts holds
+// how many times each was drawn so far, and is kept for the next draw.
+function drawCards(cards, count, caps, counts) {
+    const picks = []
+    const candidates = cards.filter(card => (counts[card.code] || 0) < caps(card))
+
+    while (picks.length < count && candidates.length > 0) {
+        const j = Math.floor(random() * candidates.length)
+        const card = candidates[j]
+
+        picks.push(card)
+        counts[card.code] = (counts[card.code] || 0) + 1
+
+        if (counts[card.code] >= caps(card)) {
+            candidates[j] = candidates[candidates.length - 1]
+            candidates.pop()
+        }
+    }
+
+    return picks
+}
+
+// How many cards of each category the sealed pool has: for the limited ones the share of the size of the pool (10 of 60 for 5 in a deck of 30),
+// for the rest what is left
+function categoryPlan(filteredData, size, proportion) {
+    const groups = groupByCategory(filteredData)
+    const plan = []
+    let limitedCount = 0
+
+    groups.forEach((cards, category) => {
+        if (category === null) return
+
+        const count = Math.round(size * categoryShare(proportion, category))
+
+        plan.push({ cards: cards, count: count })
+        limitedCount += count
+    })
+
+    if (groups.has(null)) plan.push({ cards: groups.get(null), count: Math.max(0, size - limitedCount) })
+
+    return plan
+}
+
 // Deals the sealed pool: a random selection of the legal cards (each at most once, or with duplicates), shown by class. Every card is face up from the start.
 function SealedDraft(dispatch, getState) {
     const state = getState()
 
     const { filteredData, draftTarget, draftProgress } = draftContext(state)
 
-    let picks = []
+    // each card is dealt once, or up to the copies the deck can take when the pool has duplicates
+    const caps = card => state.settings.sealedDuplicates ? sealedMaxCopies(card, true) : 1
+    const counts = {}
+    const size = state.settings.sealedCount
+    const proportion = proportionContext(state)
+    const picks = []
 
-    if (state.settings.sealedDuplicates) {
-        // drawn with replacement: a card can come up again, up to the copies the deck can take
-        const candidates = filteredData.slice()
-        const dealtCount = {}
+    // with limited categories the pool has the cards of each in proportion to its limit; what a category can't give is dealt from all the cards
+    const plan = proportion ? categoryPlan(filteredData, size, proportion) : [{ cards: filteredData, count: size }]
 
-        while (picks.length < state.settings.sealedCount && candidates.length > 0) {
-            const j = Math.floor(random() * candidates.length)
-            const card = candidates[j]
+    plan.forEach(part => picks.push(...drawCards(part.cards, part.count, caps, counts)))
 
-            picks.push(card)
-            dealtCount[card.code] = (dealtCount[card.code] || 0) + 1
-
-            if (dealtCount[card.code] >= sealedMaxCopies(card, true)) {
-                candidates[j] = candidates[candidates.length - 1]
-                candidates.pop()
-            }
-        }
-    }
-    else {
-        const size = Math.min(state.settings.sealedCount, filteredData.length)
-
-        // a partial shuffle: the first cards of the list are a random selection without repeats
-        const cards = filteredData.slice()
-
-        for (let i = 0; i < size; i++) {
-            const j = i + Math.floor(random() * (cards.length - i))
-            const swapped = cards[i]
-
-            cards[i] = cards[j]
-            cards[j] = swapped
-        }
-
-        picks = cards.slice(0, size)
-    }
+    if (picks.length < size) picks.push(...drawCards(filteredData, size - picks.length, caps, counts))
 
     const pool = picks.map((card, index) => {
         const poolCard = addModifiers(card, state.draft.phase, state.draft.deckModifiers, state.draft.mergedList, draftTarget - draftProgress, state.settings.investigator, state.settings.parallel)
@@ -449,9 +544,9 @@ export function redrawDraftCard(index, key) {
 
         if (!pool[index] || (key !== undefined && pool[index].key !== key)) return false
 
-        const { filteredData, draftTarget, draftProgress } = draftContext(state)
+        const { filteredData, draftTarget, draftProgress, proportion } = draftContext(state)
 
-        const card = DrawCard(filteredData, state.draft.phase, state.draft.mergedList, state.draft.deckModifiers, pool, draftProgress, draftTarget, state.settings.investigator, state.settings.parallel)
+        const card = DrawCard(filteredData, state.draft.phase, state.draft.mergedList, state.draft.deckModifiers, pool, draftProgress, draftTarget, state.settings.investigator, state.settings.parallel, proportion)
 
         // nothing else to offer: the card stays
         if (!card || pool.some(item => item.key === card.key)) return false
@@ -467,7 +562,7 @@ export function redrawDraftCard(index, key) {
     }
 }
 
-function DrawCard(cardData, phase, mergedList, deckModifiers, draftPool, draftProgress, draftTarget, investigator, parallel) {
+function DrawCard(cardData, phase, mergedList, deckModifiers, draftPool, draftProgress, draftTarget, investigator, parallel, proportion) {
     let legal = false
     let randomCard = null
 
@@ -475,7 +570,7 @@ function DrawCard(cardData, phase, mergedList, deckModifiers, draftPool, draftPr
 
     var tries = 0
     while (!legal && tries < 100) {
-        randomCard = weightedCardDraw(cardData)
+        randomCard = proportion ? categoryDraw(cardData, proportion) : weightedCardDraw(cardData)
 
         const randomCode = randomCard.code
         const existingIndex = (draftPool && draftPool.length > 0) ? draftPool.findIndex(item => item.key === randomCode) : -1

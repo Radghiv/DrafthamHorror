@@ -6,9 +6,12 @@ import { cardImageUrls } from '../data/CardImages'
 // How long a finger has to stay on a card to open its preview
 const LONG_PRESS = 450
 
-// A preview opened by hovering needs a pointer that really moves. A card that comes up under a resting pointer (a new screen, a redraw, a pick)
-// makes the browser say the pointer entered it, but nobody pointed at it: the preview then waits until the pointer has moved a few pixels
-// over the card.
+// A preview opened by hovering waits for the pointer to settle: it opens when the pointer has stayed on the card for HOVER_DELAY, and every
+// movement of more than a few pixels starts the wait again, so sweeping over the cards doesn't flash their previews.
+// It also needs a pointer that really moves. A card that comes up under a resting pointer (a new screen, a redraw, a pick) makes the browser
+// say the pointer entered it, but nobody pointed at it: the wait then starts when the pointer has moved a few pixels over the card.
+const HOVER_DELAY = 200
+const SETTLE_MOVE = 3
 const MOVED_RECENTLY = 120
 const MOVE_TO_OPEN = 4
 
@@ -23,23 +26,60 @@ if (typeof document !== 'undefined') {
 
 function cancelPendingHover() {
     if (pendingHover) {
-        document.removeEventListener('pointermove', pendingHover, true)
+        pendingHover()
         pendingHover = null
     }
 }
 
-// Calls open (once) with the first movement of the pointer that goes a few pixels from where it was
-function whenPointerMoves(startX, startY, open) {
+// Calls open (once) when the pointer has settled: HOVER_DELAY after it stopped moving, with the height it stopped at. With needsMove the wait
+// only starts at the first movement that goes a few pixels from where the pointer was (it was resting there).
+function whenPointerSettles(startX, startY, needsMove, open) {
     cancelPendingHover()
 
-    pendingHover = event => {
-        if (Math.hypot(event.clientX - startX, event.clientY - startY) < MOVE_TO_OPEN) return
+    let x = startX
+    let y = startY
+    let armed = !needsMove
+    let timer = null
 
-        cancelPendingHover()
-        open(event)
+    function stop() {
+        clearTimeout(timer)
+        document.removeEventListener('pointermove', handleMove, true)
     }
 
-    document.addEventListener('pointermove', pendingHover, true)
+    function arm() {
+        clearTimeout(timer)
+        timer = setTimeout(() => {
+            cancelPendingHover()
+            open(y)
+        }, HOVER_DELAY)
+    }
+
+    function handleMove(event) {
+        if (event.pointerType === 'touch') return
+
+        const distance = Math.hypot(event.clientX - x, event.clientY - y)
+
+        if (!armed) {
+            if (distance < MOVE_TO_OPEN) return
+
+            armed = true
+        }
+        else if (distance < SETTLE_MOVE) {
+            // a tremble of the hand: the wait goes on
+            y = event.clientY
+
+            return
+        }
+
+        x = event.clientX
+        y = event.clientY
+        arm()
+    }
+
+    pendingHover = stop
+    document.addEventListener('pointermove', handleMove, true)
+
+    if (armed) arm()
 }
 
 let longPressTimer = null
@@ -136,10 +176,13 @@ function useCardOverlay() {
 
         const element = event && event.currentTarget
 
-        // the pointer entered without moving: the preview comes when it does (and is still over the card)
-        if (event && event.type === 'pointerenter' && element && element.matches && performance.now() - lastPointerMove > MOVED_RECENTLY) {
-            whenPointerMoves(event.clientX, event.clientY, moveEvent => {
-                if (element.isConnected && element.matches(':hover')) show(card, side, anchorFor(element, moveEvent.clientY), false)
+        // the pointer came onto the card: the preview opens when it has settled there (leaving the card cancels it). A pointer that entered without
+        // moving (the card came up under it) is waited for to move first.
+        if (event && event.type === 'pointerenter' && element && element.matches) {
+            const resting = performance.now() - lastPointerMove > MOVED_RECENTLY
+
+            whenPointerSettles(event.clientX, event.clientY, resting, y => {
+                if (element.isConnected) show(card, side, anchorFor(element, y), false)
             })
 
             return

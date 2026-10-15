@@ -13,6 +13,11 @@ window.IS_REACT_ACT_ENVIRONMENT = true
 
 const card = { code: '01001', name: 'Roland Banks', imagesrc: '/bundles/cards/01001.png' }
 
+// a little longer than the delay of the preview
+const SETTLED = 260
+
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+
 function Probe() {
     const overlay = useCardOverlay()
 
@@ -33,19 +38,58 @@ function setup() {
 }
 
 function pointer(type, target, init) {
-    const event = new MouseEvent(type, { bubbles: type !== 'pointerenter', clientX: 10, clientY: 10, ...init })
+    const event = new MouseEvent(type, { bubbles: type !== 'pointerenter' && type !== 'pointerleave', clientX: 10, clientY: 10, ...init })
 
     Object.defineProperty(event, 'pointerType', { value: 'mouse' })
     act(() => { target.dispatchEvent(event) })
 }
 
 describe('the hover preview', () => {
-    it('opens when the pointer comes in while it is moving', () => {
+    it('opens once the pointer has settled on the card', async () => {
         const { store, probe } = setup()
 
         pointer('pointermove', document.body)
         pointer('pointerover', probe)
         pointer('pointerenter', probe)
+
+        // not at once
+        expect(store.getState().settings.imagesrc).toBe(null)
+
+        await wait(SETTLED)
+
+        expect(store.getState().settings.imagesrc).not.toBe(null)
+    })
+
+    it('does not open for a pointer that only passes over the card', async () => {
+        const { store, probe } = setup()
+
+        pointer('pointermove', document.body)
+        pointer('pointerover', probe)
+        pointer('pointerenter', probe)
+        await wait(60)
+        // (React turns a pointerout to another place into the pointer leaving)
+        pointer('pointerout', probe, { relatedTarget: document.body })
+
+        await wait(SETTLED)
+
+        expect(store.getState().settings.imagesrc).toBe(null)
+    })
+
+    it('waits for the pointer to stop while it moves over the card', async () => {
+        const { store, probe } = setup()
+
+        pointer('pointermove', document.body)
+        pointer('pointerover', probe)
+        pointer('pointerenter', probe)
+
+        // moving on the card, with less than the delay between the movements: it keeps waiting
+        for (let step = 1; step <= 4; step++) {
+            await wait(100)
+            pointer('pointermove', probe, { clientX: 10 + step * 20 })
+            expect(store.getState().settings.imagesrc).toBe(null)
+        }
+
+        await wait(SETTLED)
 
         expect(store.getState().settings.imagesrc).not.toBe(null)
     })
@@ -53,10 +97,19 @@ describe('the hover preview', () => {
     it('waits when the card comes up under a pointer that is not moving', async () => {
         const { store, probe } = setup()
 
-        await new Promise(resolve => setTimeout(resolve, 200))
+        await wait(200)
         pointer('pointerover', probe)
         pointer('pointerenter', probe)
 
+        await wait(SETTLED)
+
         expect(store.getState().settings.imagesrc).toBe(null)
+
+        // the pointer moves: now it counts, and the preview comes when it has settled
+        pointer('pointermove', probe, { clientX: 30 })
+
+        await wait(SETTLED)
+
+        expect(store.getState().settings.imagesrc).not.toBe(null)
     })
 })
