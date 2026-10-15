@@ -47,7 +47,7 @@ function ReviewStep() {
         info.isUpgradeTab ?
             { label: t('Experience'), edit: t('Edit experience'), value: info.deckSizeLabel, step: 'rules' } :
             { label: t('Deck size'), edit: t('Edit deck size'), value: info.deckSizeLabel, step: 'investigator' },
-        { label: t('Draft rules'), edit: t('Edit draft rules'), value: t('{rules}, {confirm}', { rules: info.draftRules, confirm: info.confirmPhrase }), step: 'rules' }
+        { label: t('Deckbuilding rules'), edit: t('Edit deckbuilding rules'), value: t('{rules}, {confirm}', { rules: info.draftRules, confirm: info.confirmPhrase }), step: 'rules' }
     ]
 
     return (

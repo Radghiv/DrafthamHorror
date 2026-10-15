@@ -8,6 +8,7 @@ import { startInvestigatorDraft, eligibleInvestigators } from '../../features/se
 import useInvestigatorEntries from '../useInvestigatorEntries'
 import { pendingLevel0Count } from '../../draft/Level0'
 import DraftPhases from '../../data/DraftPhases'
+import { sealedPoolFillsDeck } from '../../draft/Sealed'
 import { seedRandom } from '../../random'
 import { startSetupFlight } from '../../draft/flyInvestigator'
 
@@ -29,16 +30,22 @@ function useStartDraft() {
     const level0Swaps = useSelector(state => state.draft.level0Swaps)
     const level0Adds = useSelector(state => state.draft.level0Adds)
     const animationSpeed = useSelector(state => state.settings.animationSpeed)
+    const deckbuilding = useSelector(state => state.settings.deckbuilding)
+    const sealedCount = useSelector(state => state.settings.sealedCount)
+    const sealedCopies = useSelector(state => state.settings.sealedCopies)
 
     const dispatch = useDispatch()
 
     const isUpgradeTab = draftTab === 'Upgrade'
+    const sealed = !isUpgradeTab && deckbuilding === 'sealed'
 
     // taking the investigator from an ArkhamDB deck needs the deck to have been validated
     const needsDeck = investigatorMode === 'arkhamdb' && !(deckValidation.status === 'valid' && deckValidation.id === deckID.trim())
 
     // approximate: assume 2 copies of each card, want at least 2 extra. A drafted investigator isn't known yet, so it can't be checked.
-    const enoughCards = investigatorMode === 'draft' || isUpgradeTab || (filteredCount - 2) * 2 > deckSize
+    // (a sealed pool is checked on its own: it is the cards of the pool that have to fill the deck)
+    const enoughCards = investigatorMode === 'draft' || isUpgradeTab || sealed || (filteredCount - 2) * 2 > deckSize
+    const poolTooSmall = sealed && investigatorMode !== 'draft' && !sealedPoolFillsDeck(sealedCount, sealedCopies, filteredCount, deckSize)
 
     // an investigator draft whose options leave no investigator to choose from can't start
     const eligibleCount = useMemo(() => investigatorMode === 'draft' ? eligibleInvestigators(investigatorEntryList, cardData, investigatorDraftOptions).length : 0,
@@ -48,7 +55,7 @@ function useStartDraft() {
     // choosing the investigator from the list: one has to be chosen
     const needsInvestigator = investigatorMode === 'list' && !investigatorData
 
-    const canStart = enoughCards && !needsDeck && !noInvestigators && !needsInvestigator
+    const canStart = enoughCards && !poolTooSmall && !needsDeck && !noInvestigators && !needsInvestigator
 
     function start() {
         // the setup fades away and the investigator's card flies to the draft screen (copies are made before the screen changes)
@@ -84,7 +91,7 @@ function useStartDraft() {
         if (flight) requestAnimationFrame(flight.land)
     }
 
-    return { start, enoughCards, needsDeck, needsInvestigator, noInvestigators, eligibleCount, canStart, deckFetchError }
+    return { start, enoughCards, poolTooSmall, needsDeck, needsInvestigator, noInvestigators, eligibleCount, canStart, deckFetchError }
 }
 
 export default useStartDraft

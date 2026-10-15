@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { changeSetting } from '../../features/settings/settingsSlice'
 import { enabledDraftModes, isDraftTypeEnabled } from '../../data/DraftModes'
 import DraftPhases from '../../data/DraftPhases'
+import { SEALED_MAX_POOL } from '../../draft/Sealed'
 import { useT, msg } from '../../i18n'
 
 import BuildTab from '../BuildTab'
@@ -18,6 +19,10 @@ const WEIGHTING_OPTIONS = [
     { value: 'high', label: msg('Prefer high XP') }
 ]
 const MYRIAD_OPTIONS = [1, 2, 3]
+const METHOD_OPTIONS = [
+    { value: 'draft', label: msg('Draft') },
+    { value: 'sealed', label: msg('Sealed') }
+]
 
 export function Switch(props) {
     const { checked, onChange, label } = props
@@ -81,6 +86,61 @@ function DraftRulesStep() {
         )
     }
 
+    // how a new deck is built (the upgrades are always drafted)
+    const methodPicker = !isUpgradeTab ?
+        <div className="field">
+            <span className="field-label" id="deckbuilding-label">{t('Method')}</span>
+            <div className="segmented" role="group" aria-labelledby="deckbuilding-label">
+                {METHOD_OPTIONS.map(option => (
+                    <button type="button" key={option.value} aria-pressed={settings.deckbuilding === option.value}
+                        onClick={() => dispatch(changeSetting('Deckbuilding', option.value))}>{t(option.label)}</button>
+                ))}
+            </div>
+        </div>
+        : null
+
+    const confirmRow =
+        <div className="setting-row">
+            <span className="setting-label"><strong>{t('Confirm each pick')}</strong><span>{t('Select a card first, then click it again (or press Enter) to draft it')}</span></span>
+            <div className="setting-control">
+                <Switch checked={settings.confirmDraft} label={t('Confirm each pick')}
+                    onChange={value => dispatch(changeSetting('ConfirmDraft', value))} />
+            </div>
+        </div>
+
+    if (!isUpgradeTab && settings.deckbuilding === 'sealed') {
+        return (
+            <div className="stack">
+                <ModeStep />
+
+                {modePicker}
+
+                {methodPicker}
+
+                <p className="notice">{t('A pool of random cards is dealt face up, all at once. Click a card to add it to the deck: it leaves the pool, unless the deck can take another copy of it.')}</p>
+
+                <div className="setting-row">
+                    <label className="setting-label" htmlFor="sealed-count"><strong>{t('Cards in the pool')}</strong></label>
+                    <div className="setting-control">
+                        <SegmentedRange id="sealed-count" className="range" min="0" max={SEALED_MAX_POOL} step="1" value={settings.sealedCount}
+                            onChange={event => dispatch(changeSetting('SealedCount', event.target.value))} />
+                        <span className="value-badge">{settings.sealedCount}</span>
+                    </div>
+                </div>
+
+                <div className="setting-row">
+                    <span className="setting-label"><strong>{t('Allow two copies')}</strong><span>{t('A card stays in the pool after it is picked, until the deck has two copies of it')}</span></span>
+                    <div className="setting-control">
+                        <Switch checked={settings.sealedCopies} label={t('Allow two copies')}
+                            onChange={value => dispatch(changeSetting('SealedCopies', value))} />
+                    </div>
+                </div>
+
+                {confirmRow}
+            </div>
+        )
+    }
+
     const draftCount = settings.draftCount[phase - 1]
 
     const description = isUpgradeTab ?
@@ -92,6 +152,8 @@ function DraftRulesStep() {
             <ModeStep />
 
             {modePicker}
+
+            {methodPicker}
 
             <p className="notice">{description}</p>
 
@@ -138,13 +200,7 @@ function DraftRulesStep() {
                 </div>
             }
 
-            <div className="setting-row">
-                <span className="setting-label"><strong>{t('Confirm each pick')}</strong><span>{t('Select a card first, then click it again (or press Enter) to draft it')}</span></span>
-                <div className="setting-control">
-                    <Switch checked={settings.confirmDraft} label={t('Confirm each pick')}
-                        onChange={value => dispatch(changeSetting('ConfirmDraft', value))} />
-                </div>
-            </div>
+            {confirmRow}
 
             {deckInSetup ? <DeckOptionsPanel /> : null}
 

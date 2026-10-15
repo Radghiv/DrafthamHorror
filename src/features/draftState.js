@@ -2,6 +2,7 @@ import { createAction } from '@reduxjs/toolkit'
 
 import { loadJSON, saveJSON, removeJSON } from '../storage'
 import { getRandomState } from '../random'
+import { SEALED_SETTINGS } from '../draft/Sealed'
 
 // Undo and "resume later" both work on a snapshot of the draft: the draft slice as it is, and the settings that belong to the draft
 // (investigator, classes, draft rules, exile choices...). Replacing the slices with a snapshot takes the draft back to that moment.
@@ -30,7 +31,8 @@ export function draftSettings(settings) {
 
 // The settings after restoring a snapshot: the snapshot's draft settings and the current preferences
 export function restoreSettings(current, restored) {
-    const next = { ...current, ...restored }
+    // a snapshot from before the sealed mode has none of its settings: it was a draft, whatever the setup screens say now
+    const next = { ...current, ...SEALED_SETTINGS, ...restored }
 
     PREFERENCE_KEYS.forEach(key => {
         if (key in current) next[key] = current[key]

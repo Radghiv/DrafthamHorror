@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux'
 
 import ExportDeck, { cardsMissingOctgnIds, textImportIssues } from '../draft/ExportDeck'
+import { arkhamBuildDeck, downloadArkhamBuildDeck } from '../draft/ExportArkhamBuild'
 import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import CardLinkButton from './CardLinkButton'
 import useCardName from './useCardName'
@@ -30,6 +31,10 @@ function SettingsExport(props) {
     // the cards that the last .o8d export had to leave out (null before one)
     const [omitted, setOmitted] = useState(null)
 
+    // the ArkhamDB formats are folded away (arkham.build is the recommended one), and so is the detail of each notice about them
+    const [dbOpen, setDbOpen] = useState(false)
+    const [openNotices, setOpenNotices] = useState({})
+
     function flashExported(fileType) {
         setExported(fileType)
         setTimeout(() => setExported(current => current === fileType ? null : current), 2200)
@@ -45,6 +50,10 @@ function SettingsExport(props) {
     const classChoices = useSelector(state => state.settings.classChoices)
     const traitChoice = useSelector(state => state.settings.traitChoice)
     const selectedDeckSize = useSelector(state => state.settings.selectedDeckSize)
+    const parallel = useSelector(state => state.settings.parallel)
+    const selectedTaboo = useSelector(state => state.settings.selectedTaboo)
+    const seed = useSelector(state => state.settings.seed)
+    const deckbuilding = useSelector(state => state.settings.deckbuilding)
 
     function handleInput(event) {
         changeDeckTitle(event.target.value)
@@ -109,7 +118,8 @@ function SettingsExport(props) {
         }
     }
 
-    function handleExportClick(fileType) {
+    // the cards that come with the deck besides the drafted ones: the signature cards that are chosen and the basic weakness
+    function specialCardsOfDeck() {
         var specialCards = []
         let burdenOfDestinyAdded =  false
 
@@ -152,6 +162,27 @@ function SettingsExport(props) {
 
         specialCards.push({name: weaknessCard.name, key: weaknessCard.code, type_code: weaknessCard.type_code, count: 1 })
 
+        return specialCards
+    }
+
+    // the file for arkham.build: it takes the choices of the creation of the deck too
+    function handleArkhamBuildClick() {
+        const title = deckTitle.length > 0 ? deckTitle : 'Deck'
+
+        downloadArkhamBuildDeck(arkhamBuildDeck({
+            title: title,
+            investigatorData: investigatorData,
+            parallel: parallel,
+            cards: [...cardList, ...specialCardsOfDeck()],
+            choices: { secondaryClass: secondaryClass, classChoices: classChoices, traitChoice: traitChoice, selectedDeckSize: selectedDeckSize, deckSize: deckSize },
+            tabooId: selectedTaboo,
+            description: 'Drafted with Draftham Horror (' + (deckbuilding === 'sealed' ? 'sealed' : 'draft') + ', seed ' + seed + ').'
+        }), title)
+    }
+
+    function handleExportClick(fileType) {
+        const specialCards = specialCardsOfDeck()
+
         const result = ExportDeck({
             fileType: fileType,
             deckTitle: deckTitle,
@@ -170,7 +201,7 @@ function SettingsExport(props) {
     // the drafted cards and the investigator
     const missingIds = omitted || cardsMissingOctgnIds(cardList, cardData, investigatorData)
 
-    // when the .o8d can't carry every card, the text export is the one to use: it is the main button and comes first
+    // when the .o8d can't carry every card, the text export comes before it (arkham.build's file is the recommended one, and comes before both)
     const preferText = missingIds.length > 0
 
     // the cards ArkhamDB's text import leaves out or mixes up: the drafted ones, the signature cards that are shown and the weakness that was drawn
@@ -188,30 +219,45 @@ function SettingsExport(props) {
     if (deckOptions.some(option => option.name === 'Deck Size')) choices.push(t('Deck size') + ': ' + (selectedDeckSize || deckSize))
     if (deckOptions.some(option => option.name === 'Trait Choice')) choices.push(t('Trait choice') + ': ' + traitChoice)
 
-    // a warning with a list in it: the entries with a code are cards to hover or tap for a preview
-    function warningWithList(key, intro, entries, outro) {
+    // A notice about what a file of ArkhamDB can't carry: one line with how many cards (or choices), and a button that opens the list. The entries
+    // with a code are cards to hover or tap for a preview; outro is advice shown with the list.
+    function exportNotice(key, summary, entries, outro) {
+        const open = Boolean(openNotices[key])
+
         return (
-            <div className="status status-warn" role="status" key={key}>
+            <div className="status status-warn export-notice" role="status" key={key}>
                 <WarningIcon />
                 <div className="status-body">
-                    <p>{intro}</p>
-                    <ul className="missing-list">
-                        {entries.map(entry => entry.code ?
-                            <li className="export-card missing-card" key={entry.code} data-code={entry.code} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard}>
-                                {entry.name}
-                                <CardLinkButton card={cardData.find(item => item.code === entry.code)} size="small" />
-                            </li>
-                            :
-                            <li className="missing-item" key={entry.name}>{entry.name}</li>)}
-                    </ul>
-                    {outro ? <p>{outro}</p> : null}
+                    <p>
+                        {summary}{' '}
+                        <button type="button" className="link-btn" aria-expanded={open} onClick={() => setOpenNotices(current => ({ ...current, [key]: !current[key] }))}>{open ? t('Hide details') : t('Show details')}</button>
+                    </p>
+                    {open ?
+                        <>
+                            <ul className="missing-list">
+                                {entries.map(entry => entry.code ?
+                                    <li className="export-card missing-card" key={entry.code} data-code={entry.code} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard}>
+                                        {entry.name}
+                                        <CardLinkButton card={cardData.find(item => item.code === entry.code)} size="small" />
+                                    </li>
+                                    :
+                                    <li className="missing-item" key={entry.name}>{entry.name}</li>)}
+                            </ul>
+                            {outro ? <p>{outro}</p> : null}
+                        </>
+                        : null}
                 </div>
             </div>
         )
     }
 
-    const o8dButton = <button type="button" className={'btn btn-block ' + (preferText ? 'btn-secondary' : 'btn-primary')} onClick={() => { handleExportClick('OCTGN'); flashExported('OCTGN') }}>{exported === 'OCTGN' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as .o8d')}</button>
-    const textButton = <button type="button" className={'btn btn-block ' + (preferText ? 'btn-primary' : 'btn-secondary')} onClick={() => { handleExportClick('TXT'); flashExported('TXT') }}>{exported === 'TXT' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as plain text (.txt)')}</button>
+    // how many notices the ArkhamDB formats have (shown on the folded section)
+    const noticeCount = (missingIds.length > 0 ? 1 : 0) + (textIssues.unreadable.length > 0 ? 1 : 0) + (textIssues.ambiguous.length > 0 ? 1 : 0) + (choices.length > 0 ? 1 : 0)
+
+    const o8dButton = <button type="button" className="btn btn-block btn-secondary" onClick={() => { handleExportClick('OCTGN'); flashExported('OCTGN') }}>{exported === 'OCTGN' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as .o8d')}</button>
+    const textButton = <button type="button" className="btn btn-block btn-secondary" onClick={() => { handleExportClick('TXT'); flashExported('TXT') }}>{exported === 'TXT' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export as plain text (.txt)')}</button>
+
+    const arkhamBuildButton = <button type="button" className="btn btn-block btn-primary" onClick={() => { handleArkhamBuildClick(); flashExported('ARKHAMBUILD') }}>{exported === 'ARKHAMBUILD' ? <span className="pop-check"><CheckIcon size={16} /></span> : null} {t('Export for arkham.build (.json)')}</button>
 
     // make sure it's selected in the collection too
     var weaknessCards = cardData.filter( card => {
@@ -283,12 +329,43 @@ function SettingsExport(props) {
             </div>
 
             <div className="options-section">
-                {missingIds.length > 0 ? warningWithList('ids', t("These cards have no OCTGN id in ArkhamDB yet, so ArkhamDB can't import them from an .o8d file, and the file leaves them out:"), missingIds, t('The plain text export (Import Deck, then Text) has every card.')) : null}
-                {textIssues.unreadable.length > 0 ? warningWithList('unreadable', t("ArkhamDB's text import can't read the names of these cards (it stops at a comma, a • or another special character), so it leaves them out. Add them by hand after importing:"), textIssues.unreadable) : null}
-                {textIssues.ambiguous.length > 0 ? warningWithList('ambiguous', t("ArkhamDB's text import can't tell these cards apart from others with the same name, so it may add another version of them. Check them after importing:"), textIssues.ambiguous) : null}
-                {choices.length > 0 ? warningWithList('choices', t("ArkhamDB can't take these choices from a file. After importing, set them in its deck editor:"), choices.map(name => ({ name: name }))) : null}
-                {preferText ? <>{textButton}{o8dButton}</> : <>{o8dButton}{textButton}</>}
-                <p className="field-hint">{t('Exports an OCTGN deck file. To import a downloaded .o8d deck into ArkhamDB, go to My Decks and click Import Deck, then File.')}</p>
+                <h4>arkham.build</h4>
+                <div className="export-format">
+                    {arkhamBuildButton}
+                    <p className="field-hint">{t('In arkham.build: deck list, then Import from JSON files. It has every card and the choices of the deck.')}</p>
+                </div>
+            </div>
+
+            <div className="options-section export-db">
+                <button type="button" className="export-section-toggle" aria-expanded={dbOpen} aria-controls="export-db-body" onClick={() => setDbOpen(!dbOpen)}>
+                    <svg className="export-chevron" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="m3 5 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    <h4>ArkhamDB</h4>
+                    {noticeCount > 0 ? <span className="export-notice-flag" role="img" title={t('Notices: {count}', { count: noticeCount })} aria-label={t('Notices: {count}', { count: noticeCount })}><WarningIcon /></span> : null}
+                </button>
+                {dbOpen ?
+                    <div className="export-db-body" id="export-db-body">
+                        {preferText ? <>{<div className="export-format" key="txt">
+                                {textButton}
+                                <p className="field-hint">{t('Names only, so it has every card. In ArkhamDB: Import Deck, then Text.')}</p>
+                                {textIssues.unreadable.length > 0 ? exportNotice('unreadable', t("Names the text import can't read, left out: {count}", { count: textIssues.unreadable.length }), textIssues.unreadable, t('Add them by hand after importing.')) : null}
+                                {textIssues.ambiguous.length > 0 ? exportNotice('ambiguous', t('Weaknesses the text import may mix up: {count}', { count: textIssues.ambiguous.length }), textIssues.ambiguous, t('Check them after importing.')) : null}
+                            </div>}{<div className="export-format" key="o8d">
+                                {o8dButton}
+                                <p className="field-hint">{t('Exports an OCTGN deck file. To import a downloaded .o8d deck into ArkhamDB, go to My Decks and click Import Deck, then File.')}</p>
+                                {missingIds.length > 0 ? exportNotice('ids', t('No OCTGN id in ArkhamDB yet, left out of the .o8d: {count}', { count: missingIds.length }), missingIds, t('The plain text export (Import Deck, then Text) has every card.')) : null}
+                            </div>}</> : <>{<div className="export-format" key="o8d">
+                                {o8dButton}
+                                <p className="field-hint">{t('Exports an OCTGN deck file. To import a downloaded .o8d deck into ArkhamDB, go to My Decks and click Import Deck, then File.')}</p>
+                                {missingIds.length > 0 ? exportNotice('ids', t('No OCTGN id in ArkhamDB yet, left out of the .o8d: {count}', { count: missingIds.length }), missingIds, t('The plain text export (Import Deck, then Text) has every card.')) : null}
+                            </div>}{<div className="export-format" key="txt">
+                                {textButton}
+                                <p className="field-hint">{t('Names only, so it has every card. In ArkhamDB: Import Deck, then Text.')}</p>
+                                {textIssues.unreadable.length > 0 ? exportNotice('unreadable', t("Names the text import can't read, left out: {count}", { count: textIssues.unreadable.length }), textIssues.unreadable, t('Add them by hand after importing.')) : null}
+                                {textIssues.ambiguous.length > 0 ? exportNotice('ambiguous', t('Weaknesses the text import may mix up: {count}', { count: textIssues.ambiguous.length }), textIssues.ambiguous, t('Check them after importing.')) : null}
+                            </div>}</>}
+                        {choices.length > 0 ? exportNotice('choices', t('Choices to set in ArkhamDB after importing: {count}', { count: choices.length }), choices.map(name => ({ name: name }))) : null}
+                    </div>
+                    : null}
             </div>
         </div>
     )

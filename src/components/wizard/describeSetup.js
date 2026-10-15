@@ -47,6 +47,7 @@ function describeSetup(settings, tabooData, collection) {
     let draftRules
     if (settings.draftType === 'chaos') draftRules = t('Standard chaos')
     else if (settings.draftType === 'phaseDraft') draftRules = t('Draft in stages')
+    else if (!isUpgradeTab && settings.deckbuilding === 'sealed') draftRules = settings.sealedCopies ? t('Sealed, pool of {count}, two copies allowed', { count: settings.sealedCount }) : t('Sealed, pool of {count}', { count: settings.sealedCount })
     else if (isUpgradeTab) draftRules = t('Simple draft, pick from {count}', { count: settings.draftCount[phaseIndex] })
     else draftRules = t('Simple draft, pick from {count}, myriad adds {myriad}', { count: settings.draftCount[phaseIndex], myriad: settings.myriadCount })
 

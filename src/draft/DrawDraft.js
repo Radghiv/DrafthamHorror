@@ -2,19 +2,29 @@ import { changeSetting } from '../features/settings/settingsSlice'
 import { rememberUndoPoint } from '../features/draftHistory'
 import { random } from '../random'
 import { addToBuildXPList, changePhase, addLevel0, draftVersatile, draftLevel0, advanceDraft, addDeckModifier,
-    addToCardList, changeProgress, addToDraftPool, clearDraftPool, replaceDraftPoolCard, selectDraftCard, setInsufficientOptions, addToRemovedList, 
+    addToCardList, removeFromCardList, removeFromBuildXPList, removeLevel0, changeProgress, addToDraftPool, clearDraftPool, setSealedPool, setDraftPool, replaceDraftPoolCard, selectDraftCard, setInsufficientOptions, addToRemovedList,
     calculateNeededExileCheckboxes, updateDeckRequirements } from '../features/draft/draftSlice'
 
 import FilterCards from '../data/CardFilter'
 import { addModifiers, updateDraftModifiers, availableUpgrades, fillCardModifiers } from './Modifiers'
+import { isSealedDraft, sealedMaxCopies, sealedCardRemovable, compareSealedCards } from './Sealed'
 import DraftPhases, { isUpgrade, isLevel0Build, isLevel0Upgrade } from '../data/DraftPhases'
 import ResearchLogs from '../data/ResearchLogs'
 
 export function fillDraft() {
     return function fillDraftThunk(dispatch, getState) {
+        let state = getState()
+
+        // the sealed pool is dealt whole, once; the picks only take cards out of it
+        if (isSealedDraft(state.settings.deckbuilding, state.draft.phase)) {
+            SealedDraft(dispatch, getState)
+
+            return
+        }
+
         dispatch(clearDraftPool())
 
-        let state = getState()
+        state = getState()
         const draftType = state.settings.draftType
 
         let draftTarget = calculateDraftTarget({
@@ -271,12 +281,122 @@ function SimpleDraft(dispatch, getState) {
     }
 }
 
+// Deals the sealed pool: a random selection of the legal cards (each at most once), shown by class. Every card is face up from the start.
+function SealedDraft(dispatch, getState) {
+    const state = getState()
+
+    const { filteredData, draftTarget, draftProgress } = draftContext(state)
+
+    const size = Math.min(state.settings.sealedCount, filteredData.length)
+
+    // a partial shuffle: the first cards of the list are a random selection without repeats
+    const cards = filteredData.slice()
+
+    for (let i = 0; i < size; i++) {
+        const j = i + Math.floor(random() * (cards.length - i))
+        const swapped = cards[i]
+
+        cards[i] = cards[j]
+        cards[j] = swapped
+    }
+
+    const pool = cards.slice(0, size).map(card => {
+        const poolCard = addModifiers(card, state.draft.phase, state.draft.deckModifiers, state.draft.mergedList, draftTarget - draftProgress, state.settings.investigator, state.settings.parallel)
+
+        poolCard.imageLoaded = false
+        poolCard.expandedModifiers = 0
+        poolCard.revealed = true
+
+        return poolCard
+    }).sort(compareSealedCards)
+
+    dispatch(setSealedPool(pool))
+    dispatch(setDraftPool(pool))
+    dispatch(setInsufficientOptions(pool.length < 1))
+}
+
+// What is left of the sealed pool for the deck as it is now: the cards of the pool as it was dealt, minus those the deck can't take another
+// copy of, or can't take at all (an investigator's limit on off-class cards, the cards still needed for a requirement...), which the filter
+// of the draft knows. Cards that left the pool come back when the deck changes back (a card taken out of the Draft List). The cards that are
+// still in the pool stay as they are, with what was done to them on screen.
+function trimSealedPool(dispatch, getState) {
+    const state = getState()
+
+    const { filteredData } = draftContext(state)
+
+    const legal = new Set(filteredData.map(card => card.code))
+    const inDeck = key => state.draft.mergedList.reduce((count, item) => item.key === key ? count + item.count : count, 0)
+
+    // (a draft saved before the pool was kept has only what was left of it)
+    const dealt = state.draft.sealedPool && state.draft.sealedPool.length > 0 ? state.draft.sealedPool : state.draft.draftPool
+    const current = new Map(state.draft.draftPool.map(card => [card.key, card]))
+
+    const pool = dealt.filter(card => legal.has(card.key) && inDeck(card.key) < sealedMaxCopies(card, state.settings.sealedCopies)).map(card => current.get(card.key) || card)
+
+    const unchanged = pool.length === state.draft.draftPool.length && pool.every((card, index) => card === state.draft.draftPool[index])
+
+    if (!unchanged) dispatch(setDraftPool(pool))
+
+    dispatch(setInsufficientOptions(pool.length < 1))
+}
+
+// Puts a copy of a card of the Draft List back in the sealed pool: the deck loses it, and what it did to the rules of the deck is undone
+export function removeSealedCard(key) {
+    return function removeSealedCardThunk(dispatch, getState) {
+        const state = getState()
+
+        if (!state.settings.drafting || !isSealedDraft(state.settings.deckbuilding, state.draft.phase)) return false
+
+        const card = state.draft.cardList.find(item => item.key === key)
+
+        if (!card || !sealedCardRemovable(card)) return false
+
+        dispatch(rememberUndoPoint)
+
+        // the opposite of what DraftCard did when the card was picked
+        if (card.name === 'Forced Learning') dispatch(changeSetting('DeckSize', state.settings.deckSize - 15))
+        else if (card.name === 'Ancestral Knowledge') {
+            dispatch(changeSetting('DeckSize', state.settings.deckSize - 5))
+            dispatch(removeLevel0('Ancestral Knowledge', 5))
+        }
+        else if (card.name === 'Versatile') {
+            dispatch(changeSetting('DeckSize', state.settings.deckSize - 5))
+            dispatch(removeLevel0('Versatile', 5))
+        }
+        else if (card.name === 'Underworld Market') {
+            dispatch(changeSetting('DeckSize', state.settings.deckSize - 10))
+            dispatch(removeLevel0('Underworld Market', 10))
+        }
+        else if (card.name === 'In the Thick of It') dispatch(removeFromBuildXPList('In the Thick of It'))
+        else if (card.name === 'Ascetic') dispatch(removeFromBuildXPList('Ascentic'))
+
+        dispatch(removeFromCardList({ key: key, count: 1 }))
+
+        const after = getState()
+
+        dispatch(changeProgress(calculateDraftProgress({
+            cardList: after.draft.cardList,
+            removedList: after.draft.removedList,
+            phase: after.draft.phase,
+            level0Swaps: after.draft.level0Swaps,
+            level0Adds: after.draft.level0Adds
+        })))
+
+        trimSealedPool(dispatch, getState)
+
+        return true
+    }
+}
+
 // Redraws one card of the pool: another legal card, not already in the pool, takes its place. With a key, only if that card
 // is still at the index. Returns whether the card was replaced.
 export function redrawDraftCard(index, key) {
     return function redrawDraftCardThunk(dispatch, getState) {
         const state = getState()
         const pool = state.draft.draftPool
+
+        // a sealed pool is what it is
+        if (isSealedDraft(state.settings.deckbuilding, state.draft.phase)) return false
 
         if (!pool[index] || (key !== undefined && pool[index].key !== key)) return false
 
@@ -392,6 +512,10 @@ function DraftCard(dispatch, getState, card, filteredData, draftTarget) {
     let addCount = 1
 
     if (phase === DraftPhases.VersatilePhase) {
+        addCount = 1
+    }
+    else if (isSealedDraft(state.settings.deckbuilding, phase)) {
+        // a card of the pool is one card, whatever its myriad
         addCount = 1
     }
     else if (!isUpgrade(phase)) {
@@ -869,7 +993,12 @@ function testForAdvance(dispatch, getState) {
         level0Adds: state.draft.level0Adds
     })
 
-    if (phase === DraftPhases.BuildUpgradePhase || phase === DraftPhases.UpgradePhase) {
+    if (isSealedDraft(state.settings.deckbuilding, phase)) {
+        // no new cards: the pool is what is left of the one that was dealt
+        if (progress >= draftTarget) draftFinished = true
+        else trimSealedPool(dispatch, getState)
+    }
+    else if (phase === DraftPhases.BuildUpgradePhase || phase === DraftPhases.UpgradePhase) {
         if (draftType === 'chaos') {
             if (progress >= draftTarget) draftFinished = true
         }      

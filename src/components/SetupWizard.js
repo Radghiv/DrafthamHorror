@@ -21,7 +21,7 @@ import { useT, msg } from '../i18n'
 
 const STEPS = [
     { key: 'investigator', title: msg('Investigator'), heading: msg('How do you want to choose the investigator?'), lead: null },
-    { key: 'rules', title: msg('Draft Rules'), heading: msg('Build or upgrade, and how the draft works'), lead: null },
+    { key: 'rules', title: msg('Deckbuilding Rules'), heading: msg('Build or upgrade, and how the deck is built'), lead: null },
     { key: 'review', title: msg('Review'), heading: msg('Ready to draft?'), lead: null }
 ]
 

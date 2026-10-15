@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useSelector, useDispatch, useStore } from 'react-redux'
 
 import { advanceDraft, updateUpgradeOption, changeIndex, hideDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, expandModifiers, minimizeModifiers, holdModifiers, selectDraftCard, changeDraftPoolProperty } from '../features/draft/draftSlice'
 
 import { draftCard, redrawDraftCard } from '../draft/DrawDraft'
+import { isSealedDraft } from '../draft/Sealed'
+import { EMPTY_FILTERS, hasFilters, matchesFilters } from '../draft/SealedFilters'
+import SealedFilterBar from './SealedFilterBar'
 import useDraftProgress from '../draft/useDraftProgress'
 import { rememberUndoPoint } from '../features/draftHistory'
 import startCardFlight from '../draft/flyCard'
@@ -57,6 +60,10 @@ function DraftPanel(props) {
 
     useEffect(() => () => Object.values(modifierTimers.current).forEach(timer => clearTimeout(timer)), [])
     const draftType = useSelector(state => state.settings.draftType)
+    const draftPhase = useSelector(state => state.draft.phase)
+    const deckbuilding = useSelector(state => state.settings.deckbuilding)
+    const mergedList = useSelector(state => state.draft.mergedList)
+    const cardData = useSelector(state => state.data.cardData)
     const insufficientOptions = useSelector(state => state.draft.insufficientDraftOptions)
     const requireConfirmation = useSelector(state => state.settings.confirmDraft)
     const selectedDraftCard = useSelector(state => state.draft.selectedDraftCard)
@@ -67,6 +74,13 @@ function DraftPanel(props) {
     const scrollToTop = useSelector(state => state.settings.scrollToTop)
 
     const phone = usePhoneLayout()
+
+    // the cards are a sealed pool: dealt whole, face up, and kept on the table (a card leaves it when the deck can't take another copy)
+    const sealed = isSealedDraft(deckbuilding, draftPhase)
+
+    // the filters over a sealed pool hide cards, they don't take them out; ArkhamDB's version of the cards has what the cards of the pool lack
+    const [filters, setFilters] = useState(EMPTY_FILTERS)
+    const cardInfo = useMemo(() => sealed && cardData ? new Map(cardData.map(card => [card.code, card])) : new Map(), [sealed, cardData])
 
     // the place in the top bar (after the breadcrumbs) where the Redraw all button of a PC is drawn
     const [headerSlot, setHeaderSlot] = useState(null)
@@ -147,7 +161,8 @@ function DraftPanel(props) {
 
         turnAtOnce.current = {}
 
-        if (speed !== 0) {
+        // (a sealed pool has no new cards to wait for: the others stay as they are)
+        if (speed !== 0 && !sealed) {
             const faces = {}
 
             draftPool.forEach((card, slot) => {
@@ -162,14 +177,18 @@ function DraftPanel(props) {
 
         dispatch(changeIndex(index))
         dispatch(draftCard())
-        setImageLoaded([])
-        setImageSource([])
+
+        // (what is left of a sealed pool keeps the state of its pictures: see the effect on the cards of the pool)
+        if (!sealed) {
+            setImageLoaded([])
+            setImageSource([])
+        }
         if (requireConfirmation) dispatch(selectDraftCard(null))
 
         finishPick(completion)
 
-        // the first cards of the next batch are at the top
-        const scrolling = scrollToTop && window.scrollY > 0
+        // the first cards of the next batch are at the top (a sealed pool has none: the page stays where it is)
+        const scrolling = scrollToTop && !sealed && window.scrollY > 0
 
         // the flight is told where the page is scrolling to: the list moves with it, and the card lands on the row's final place
         if (flight) requestAnimationFrame(() => flight.land(cardKey, scrolling ? 0 : window.scrollY))
@@ -243,6 +262,26 @@ function DraftPanel(props) {
     const allRevealed = draftPool.length > 0 && draftPool.every(card => card.revealed)
     const poolSignature = draftPool.map(card => card.key).join('|')
 
+    // The state of the pictures is kept by the place of the card in the pool. When the cards of a sealed pool leave or come back (a pick, a card
+    // taken out of the Draft List, an undo) the others change place, and their state goes with them.
+    const poolKeys = useRef(draftPool.map(card => card.key))
+
+    useLayoutEffect(() => {
+        const before = poolKeys.current
+        const after = draftPool.map(card => card.key)
+
+        poolKeys.current = after
+
+        if (!sealed || before.length === 0 || before.join('|') === after.join('|')) return
+
+        const carry = previous => after.map(key => previous[before.indexOf(key)])
+
+        setImageLoaded(carry)
+        setImageSource(carry)
+        // only when the cards change, not each time the pool object does
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [poolSignature, sealed])
+
     useEffect(() => {
         setModifierSheet(null)
     }, [poolSignature, phone])
@@ -260,7 +299,8 @@ function DraftPanel(props) {
     }, [modifierSheet])
 
     useEffect(() => {
-        if (!allRevealed) return
+        // (listing a whole sealed pool after every pick would be endless: the pick itself is announced)
+        if (!allRevealed || sealed) return
 
         setAnnouncement(t('{count} card to choose from: {names}|{count} cards to choose from: {names}', { count: draftPool.length, names: draftPool.map(card => cardLabel(card)).join(', ') }))
         // only when the cards change, not each time the pool object does
@@ -490,6 +530,25 @@ function DraftPanel(props) {
     }
 
 
+    // whether the filters of a sealed pool hide a card
+    const filtering = sealed && hasFilters(filters)
+
+    function isFilteredOut(card) {
+        return filtering && !matchesFilters(card, cardInfo.get(card.key), cardName(card), filters)
+    }
+
+    function changeFilters(next) {
+        // (a card that was selected may be hidden now)
+        if (selectedDraftCard !== null && selectedDraftCard !== undefined) dispatch(selectDraftCard(null))
+
+        setFilters(next)
+    }
+
+    // how many copies of a card of a sealed pool the deck has already (the pool keeps the cards that can take another one)
+    function copiesInDeck(card) {
+        return sealed ? mergedList.reduce((count, item) => item.key === card.key ? count + item.count : count, 0) : 0
+    }
+
     let images = []
 
     let factionCode = ''
@@ -575,8 +634,10 @@ function DraftPanel(props) {
                 </span>
         }
 
+        const filteredOut = isFilteredOut(draftPool[i])
+
         const cardWrap =
-            <div className={'draft-card-wrap' + (isSelected ? ' selected' : '') + (faceUp ? '' : ' facedown')} key={phone ? undefined : i} data-card-key={draftPool[i].key}
+            <div className={'draft-card-wrap' + (isSelected ? ' selected' : '') + (faceUp ? '' : ' facedown') + (filteredOut ? ' is-filtered-out' : '')} key={phone ? undefined : i} data-card-key={draftPool[i].key}
                 onPointerEnter={event => { if (faceUp && hasImage) doCardOverlay(draftPool[i], event) }}
                 onPointerLeave={() => doCardOverlay(null)}>
                 <div className="flip">
@@ -593,7 +654,10 @@ function DraftPanel(props) {
                 </button>
                     </div>
                 </div>
-                {draftType === 'draft' && !phone ?
+                {copiesInDeck(draftPool[i]) > 0 ?
+                    <span className="draft-card-copies" title={t('In the deck: {count}', { count: copiesInDeck(draftPool[i]) })} aria-label={t('In the deck: {count}', { count: copiesInDeck(draftPool[i]) })}>×{copiesInDeck(draftPool[i])}</span>
+                    : null}
+                {draftType === 'draft' && !sealed && !phone ?
                     <button type="button" className="btn btn-secondary draft-card-redraw" aria-label={t('Redraw {name}', { name: cardName(draftPool[i]) })} title={t('Redraw')} onClick={() => handleRedraw(i)}><RedrawIcon /></button>
                     : null}
                 {isLoaded && !phone ? <CardLinkButton card={draftPool[i]} /> : null}
@@ -605,10 +669,10 @@ function DraftPanel(props) {
         // selects it, so Zoom is how its big picture is opened
         if (phone) {
             images.push(
-                <div className="draft-tile" key={i}>
+                <div className={'draft-tile' + (filteredOut ? ' is-filtered-out' : '')} key={i}>
                     {cardWrap}
                     <div className="draft-tile-actions">
-                        {draftType === 'draft' ?
+                        {draftType === 'draft' && !sealed ?
                             <button type="button" className="tile-action" disabled={!faceUp} aria-label={t('Redraw {name}', { name: cardName(draftPool[i]) })} onClick={() => handleRedraw(i)}><RedrawIcon /><span>{t('Redraw')}</span></button>
                             : null}
                         <button type="button" className="tile-action" disabled={!faceUp || !hasImage} aria-label={t('Zoom {name}', { name: cardName(draftPool[i]) })} onClick={event => doCardOverlay(draftPool[i], event)}><ZoomIcon /><span>{t('Zoom')}</span></button>
@@ -638,7 +702,7 @@ function DraftPanel(props) {
     const optionsWarning = insufficientOptions ? <p className="notice notice-error" role="alert">{t('There are no remaining legal draft options')}</p> : null
 
     // all the cards can be redrawn at once in the draft that allows redrawing one; not while some are being redrawn or still turning over
-    const canRedrawAll = draftType === 'draft' && !insufficientOptions && draftPool.some(card => card.revealed) && Object.keys(redrawing).length === 0
+    const canRedrawAll = draftType === 'draft' && !sealed && !insufficientOptions && draftPool.some(card => card.revealed) && Object.keys(redrawing).length === 0
 
     const hasSelection = requireConfirmation && selectedDraftCard !== null && selectedDraftCard !== undefined && draftPool[selectedDraftCard]
 
@@ -709,12 +773,14 @@ function DraftPanel(props) {
     return (
         <>
             {optionsWarning}
-            {phone && draftType === 'draft' ?
+            {sealed ? <SealedFilterBar filters={filters} onChange={changeFilters} pool={draftPool} /> : null}
+            {filtering && draftPool.length > 0 && draftPool.every(isFilteredOut) ? <p className="notice">{t('No card of the pool matches the filters')}</p> : null}
+            {phone && draftType === 'draft' && !sealed ?
                 <div className="phone-pick-top is-end">
                     <button type="button" className="btn btn-secondary" disabled={!canRedrawAll} onClick={handleRedrawAll}><RedrawIcon /> {t('Redraw all')}</button>
                 </div>
                 : null}
-            {!phone && draftType === 'draft' && headerSlot ?
+            {!phone && draftType === 'draft' && !sealed && headerSlot ?
                 createPortal(<button type="button" className="btn btn-secondary header-redraw" disabled={!canRedrawAll} onClick={handleRedrawAll}><RedrawIcon /> {t('Redraw all')}</button>, headerSlot)
                 : null}
             <div className='draft-container' style={{ '--flip-duration': speed === 0 ? '0s' : (0.6 / speed) + 's', ...(cardsPerRow > 0 ? { gridTemplateColumns: 'repeat(' + cardsPerRow + ', minmax(0, 1fr))' } : {}) }}>

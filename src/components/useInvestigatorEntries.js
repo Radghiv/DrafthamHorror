@@ -1,13 +1,14 @@
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 
-import { investigatorEntries } from '../data/InvestigatorList'
+import { ownedInvestigatorEntries } from '../data/InvestigatorList'
 
-// The entries of the investigator list (built from the card data)
+// The entries of the investigator list (built from the card data) that the collection has
 function useInvestigatorEntries() {
     const cardData = useSelector(state => state.data.cardData)
+    const collection = useSelector(state => state.collection)
 
-    return useMemo(() => investigatorEntries(cardData), [cardData])
+    return useMemo(() => ownedInvestigatorEntries(cardData, collection), [cardData, collection])
 }
 
 export default useInvestigatorEntries

@@ -7,6 +7,7 @@ import { isLanguage } from '../../data/Languages'
 import { DEFAULT_ANIMATION_SPEED } from '../../data/AnimationSpeed'
 import { restoreDraftState, restoreSettings } from '../draftState'
 import { newSeed } from '../../random'
+import { SEALED_SETTINGS, SEALED_MAX_POOL } from '../../draft/Sealed'
 
 export const COLLECTION_CONFIRMED_KEY = 'draftham.collectionConfirmed'
 export const CARDS_PER_ROW_KEY = 'draftham.cardsPerRow'
@@ -35,6 +36,8 @@ const initialState = {
 
     draftTab: "Build Deck",
     draftType: "draft",
+    // how a deck is built: drafted, or from a sealed pool (see draft/Sealed.js)
+    ...SEALED_SETTINGS,
     draftWeighting: 'medium',
     draftXP: 1,
     draftCount: [5, 5, 5, 5, 5, 5, 5, 5],
@@ -187,6 +190,15 @@ const settingsSlice = createSlice({
                     case 'DraftType':
                         state.draftType = action.payload.value
                         if (state.draftType !== 'phaseDraft') state.draftUseLimited[0] = true
+                        break
+                    case 'Deckbuilding':
+                        state.deckbuilding = action.payload.value
+                        break
+                    case 'SealedCount':
+                        state.sealedCount = Math.min(SEALED_MAX_POOL, Math.max(0, parseInt(action.payload.value, 10) || 0))
+                        break
+                    case 'SealedCopies':
+                        state.sealedCopies = Boolean(action.payload.value)
                         break
                     case 'MyriadCount':
                         state.myriadCount = parseInt(action.payload.value)

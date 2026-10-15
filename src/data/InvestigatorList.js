@@ -83,3 +83,43 @@ export function investigatorEntries(cardData) {
 
     return entries
 }
+
+// Whether the collection has an investigator: the pack of the card is in it, or the pack of a reprint of the card (the investigators of the
+// Revised Core Set are the ones of the Core Set)
+export function investigatorInCollection(card, cardByCode, collection) {
+    if (collection[card.pack_code]) return true
+
+    return (card.duplicated_by || []).some(code => {
+        const reprint = cardByCode.get(code)
+
+        return Boolean(reprint) && Boolean(collection[reprint.pack_code])
+    })
+}
+
+const ownedCache = new WeakMap()
+
+// The entries of the investigator list that the collection has, by pack. An entry whose card can't be found is kept (nothing says it isn't owned).
+export function ownedInvestigatorEntries(cardData, collection) {
+    if (!cardData) return []
+
+    let byCollection = ownedCache.get(cardData)
+
+    if (!byCollection) {
+        byCollection = new WeakMap()
+        ownedCache.set(cardData, byCollection)
+    }
+
+    if (byCollection.has(collection)) return byCollection.get(collection)
+
+    const cardByCode = new Map(cardData.map(card => [card.code, card]))
+
+    const owned = investigatorEntries(cardData).filter(entry => {
+        const card = findInvestigatorCard(entry, cardData)
+
+        return !card || investigatorInCollection(card, cardByCode, collection)
+    })
+
+    byCollection.set(collection, owned)
+
+    return owned
+}

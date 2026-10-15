@@ -25,14 +25,16 @@ function takenBackCard(cardList, undoPoint) {
 // The reverse of startCardFlight, for Undo: the row of the Draft List turns back into the card and flies to its place among the cards
 // to choose from. Call it BEFORE the undo is dispatched (it copies the row, so the copy stays on screen when the row is gone), then call
 // land() once the draft has re-rendered (next frame). Returns null when there is nothing to animate: a speed of 0, a pick that added no
-// card, or a list that isn't on screen (a closed drawer or sheet).
-export function prepareCardReturn(speed) {
+// card, or a list that isn't on screen (a closed drawer or sheet). The card is the one the undo takes back, or the one with the key given
+// (a card taken out of the Draft List in a sealed draft).
+export function prepareCardReturn(speed, key) {
     return (dispatch, getState) => {
         const undoPoint = peekUndo()
 
-        if (!speed || !undoPoint || !document.body.animate) return null
+        if (!speed || (!undoPoint && key === undefined) || !document.body.animate) return null
 
-        const card = takenBackCard(getState().draft.cardList, undoPoint)
+        const cardList = getState().draft.cardList
+        const card = key !== undefined ? cardList.find(item => item.key === key) : takenBackCard(cardList, undoPoint)
         const list = document.querySelector('#draft-right-panel .settingsDiv')
         const row = card && list ? list.querySelector('[id="' + card.key + '"]') : null
 
@@ -75,6 +77,8 @@ export function prepareCardReturn(speed) {
         const duration = DURATION / speed
         let finished = false
         let wrap = null
+        // a card that is in the pool already (the deck keeps a copy of it) stays where it is while the copy lands on it
+        let wrapHidden = false
 
         function finish() {
             if (finished) return
@@ -82,8 +86,10 @@ export function prepareCardReturn(speed) {
             finished = true
             flying.remove()
 
-            if (wrap) wrap.style.opacity = ''
+            if (wrap && wrapHidden) wrap.style.opacity = ''
         }
+
+        const wasInPool = Boolean(document.querySelector('.draft-container .draft-card-wrap[data-card-key="' + card.key + '"]'))
 
         return {
             land: () => {
@@ -100,7 +106,10 @@ export function prepareCardReturn(speed) {
                 }
 
                 // the real card appears when the copy has become it
-                wrap.style.opacity = '0'
+                if (!wasInPool) {
+                    wrap.style.opacity = '0'
+                    wrapHidden = true
+                }
 
                 const easing = 'cubic-bezier(0.5, 0, 0.2, 1)'
 

@@ -70,6 +70,11 @@ export default function startCardFlight(cardElement, speed) {
 
     const duration = DURATION / speed
 
+    // a second copy of a card that is in the list already lands on its row, which stays where it is (the row only changes its count)
+    const listBefore = document.querySelector('#draft-right-panel .settingsDiv')
+    const cardKeyBefore = cardElement.getAttribute('data-card-key')
+    const rowListedBefore = Boolean(listBefore && cardKeyBefore && listBefore.querySelector('[id="' + cardKeyBefore + '"]'))
+
     const source = cardElement.querySelector('.draft-card-hit') || cardElement
     const from = source.getBoundingClientRect()
 
@@ -171,8 +176,8 @@ export default function startCardFlight(cardElement, speed) {
         })
         flying.appendChild(text)
 
-        // the real row appears when the copy has become it
-        row.style.opacity = '0'
+        // the real row appears when the copy has become it (a row that was there before stays: the copy lands over it)
+        if (!rowListedBefore) row.style.opacity = '0'
 
         let to = now
 
@@ -194,7 +199,7 @@ export default function startCardFlight(cardElement, speed) {
             text.style.opacity = String(ramp(t, 0.4, 0.85))
         }, () => {
             flying.remove()
-            row.style.opacity = ''
+            if (!rowListedBefore) row.style.opacity = ''
             highlight(row, { property: 'backgroundColor', value: primaryWithAlpha('73') }, { property: 'backgroundColor', value: primaryWithAlpha('00') }, 600 / speed)
         })
     }

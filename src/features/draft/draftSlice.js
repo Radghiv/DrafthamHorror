@@ -15,7 +15,11 @@ const initialState = {
     removedList: [],
     mergedList: [],
     draftPool: [],
+    // the sealed pool as it was dealt (draftPool is what is left of it)
+    sealedPool: [],
     deckName: '',
+    // the deck from ArkhamDB that is being upgraded, as ArkhamDB gave it (an export to arkham.build starts from it)
+    sourceDeck: null,
     phase: 1,
     progress: 0,
     upgradeProgress: 0,
@@ -57,6 +61,13 @@ const draftSlice = createSlice({
         clearDraftPool(state, action) {
             state.draftPool = []
         },
+        // the sealed pool: dealt whole, and what is left of it after a pick
+        setSealedPool(state, action) {
+            state.sealedPool = action.payload
+        },
+        setDraftPool(state, action) {
+            state.draftPool = action.payload
+        },
         // a card of the pool has been turned face up (new cards of the pool start face down)
         revealDraftPoolCard(state, action) {
             if (state.draftPool[action.payload]) state.draftPool[action.payload].revealed = true
@@ -78,6 +89,26 @@ const draftSlice = createSlice({
             let addCount = action.payload.count
 
             addCardToList(card, state.cardList, addCount)
+
+            var list = []
+            list = mergeLists(list, state.cardList)
+            mergeLists(list, state.deckList)
+            state.mergedList = removeList(list, state.removedList)
+        },
+        // takes copies of a card out of the Draft List (the sealed mode puts them back in the pool)
+        removeFromCardList(state, action) {
+            const index = state.cardList.findIndex(item => item.key === action.payload.key)
+
+            if (index >= 0) {
+                const item = state.cardList[index]
+                const count = Math.min(action.payload.count, item.count)
+
+                // the cost is the total of all the copies
+                item.xpcost -= item.xpcost / item.count * count
+                item.count -= count
+
+                if (item.count <= 0) state.cardList.splice(index, 1)
+            }
 
             var list = []
             list = mergeLists(list, state.cardList)
@@ -136,6 +167,9 @@ const draftSlice = createSlice({
         changeDeckName(state, action) {
             state.deckName = action.payload
         },
+        setSourceDeck(state, action) {
+            state.sourceDeck = action.payload
+        },
         changeProgress(state, action) {
             state.progress = action.payload
         },
@@ -147,6 +181,11 @@ const draftSlice = createSlice({
         },
         addToBuildXPList(state, action) {
             state.buildXPList.push(action.payload)
+        },
+        removeFromBuildXPList(state, action) {
+            const index = state.buildXPList.map(item => item.name).lastIndexOf(action.payload)
+
+            if (index >= 0) state.buildXPList.splice(index, 1)
         },
         clearBuildXPList(state, action) {
             state.buildXPList = []
@@ -197,6 +236,25 @@ const draftSlice = createSlice({
                     }
                     else {
                         addObjects[0].count = addObjects[0].count + action.payload.count
+                    }
+                }
+            },
+            prepare(name, count) {
+                return { payload: { name: name, count: count }}
+            }
+        },
+        // the opposite of addLevel0: a card that added cards to level 0 is taken out of the deck again
+        removeLevel0: {
+            reducer(state, action) {
+                const addObjects = state.level0Adds.filter(item => item.name === action.payload.name)
+
+                if (addObjects.length > 0) {
+                    if (action.payload.name === 'Versatile') {
+                        addObjects[0].count = Math.max(0, addObjects[0].count - (action.payload.count - 1))
+                        addObjects[0].versatileCount = Math.max(0, addObjects[0].versatileCount - 1)
+                    }
+                    else {
+                        addObjects[0].count = Math.max(0, addObjects[0].count - action.payload.count)
                     }
                 }
             },
@@ -800,9 +858,9 @@ function updateUpgradeOption(index, value) {
     }
 }
 
-export const { changePhase, addToDraftPool, clearDraftPool, replaceDraftPoolCard, hideDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, addToCardList, clearCardList, addToRemovedList,
-    removeFromRemovedList, setDeckList, changeDeckName, setInsufficientOptions, changeShowDeckOptions,
-    changeProgress, changeUpgradeProgress, changeIndex, addToBuildXPList, clearBuildXPList, changeLevel0, addLevel0,
+export const { changePhase, addToDraftPool, clearDraftPool, setSealedPool, setDraftPool, replaceDraftPoolCard, hideDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, addToCardList, removeFromCardList, clearCardList, addToRemovedList,
+    removeFromRemovedList, setDeckList, changeDeckName, setSourceDeck, setInsufficientOptions, changeShowDeckOptions,
+    changeProgress, changeUpgradeProgress, changeIndex, addToBuildXPList, removeFromBuildXPList, clearBuildXPList, changeLevel0, addLevel0, removeLevel0,
     draftVersatile, draftLevel0, setLevel0Requirements, updateCurrentLevel0Name, setDeckModifiers, changeUpgradeOption, selectDraftCard, changeLimit, expandModifiers, minimizeModifiers, holdModifiers, changeDraftPoolProperty } = draftSlice.actions
 export { startDraft, advanceDraft, initDeckModifiers, updateExileRemoval, updateUpgradeOption, addDeckModifier, calculateNeededExileCheckboxes }
 

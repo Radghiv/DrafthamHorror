@@ -88,6 +88,15 @@ export function RedrawIcon() {
     )
 }
 
+// Filter: a funnel, for the button that opens the filters of a list
+export function FilterIcon() {
+    return (
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 4.5h16l-6.2 7.3V18l-3.6 1.8v-8z" />
+        </svg>
+    )
+}
+
 // External link: an arrow leaving a box, for the links that open ArkhamDB in a new tab
 export function ExternalLinkIcon() {
     return (

@@ -53,6 +53,9 @@ export function buildShareLink(state) {
         investigator: investigator,
         seed: settings.seed,
         draftType: settings.draftType,
+        deckbuilding: settings.deckbuilding,
+        sealedCount: settings.sealedCount,
+        sealedCopies: settings.sealedCopies,
         draftWeighting: settings.draftWeighting,
         draftXP: settings.draftXP,
         draftCount: settings.draftCount,
@@ -126,6 +129,10 @@ export function applySharedSetup(payload) {
 
         dispatch(changeSetting('Tab', 'Build Deck'))
         dispatch(changeSetting('DraftType', payload.draftType))
+        // a link made before the sealed mode existed is a draft
+        dispatch(changeSetting('Deckbuilding', payload.deckbuilding === 'sealed' ? 'sealed' : 'draft'))
+        if (payload.sealedCount !== undefined) dispatch(changeSetting('SealedCount', payload.sealedCount))
+        dispatch(changeSetting('SealedCopies', payload.sealedCopies === true))
         dispatch(changeSetting('DraftWeighting', payload.draftWeighting))
         dispatch(changeSetting('DraftXP', payload.draftXP))
         dispatch(changeSetting('ExcludeNormalVersatile', payload.excludeNormalVersatile))

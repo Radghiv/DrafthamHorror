@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 import { reset, changeSetting, changeInvestigatorDeck, calculateFilteredCount, setSetupStep, setLanguage, LANGUAGE_KEY } from '../settings/settingsSlice'
-import { setDeckList, changeDeckName, changeLevel0, updateDeckRequirements, changePhase } from '../draft/draftSlice'
+import { setDeckList, changeDeckName, setSourceDeck, changeLevel0, updateDeckRequirements, changePhase } from '../draft/draftSlice'
 
 import DraftPhases from '../../data/DraftPhases'
 import { registerPackNames, displayPackName } from '../../data/PackData'
@@ -405,6 +405,7 @@ function applyDeck(dispatch, getState, res, loadCards) {
 
     dispatch(setDeckList(newDeckList))
     dispatch(changeDeckName(res.name))
+    dispatch(setSourceDeck(res))
     dispatch(changeDeckFetchError(false))
     dispatch(changeSetting('SelectedTaboo', tabooID))
 

@@ -7,6 +7,7 @@ import collectionReducer, { COLLECTION_STORAGE_KEY } from './features/collection
 import { COLLECTION_CONFIRMED_KEY, BANNED_CARDS_KEY } from './features/settings/settingsSlice'
 import { saveJSON } from './storage'
 import { saveDraft, draftSettings, getStartSnapshot } from './features/draftState'
+import { dropInvestigatorOutsideCollection } from './features/settings/investigatorActions'
 import phaseLabel from './data/PhaseLabel'
 import { t } from './i18n'
 
@@ -77,6 +78,9 @@ store.subscribe(() => {
     if (state.collection !== savedCollection) {
         savedCollection = state.collection
         saveJSON(COLLECTION_STORAGE_KEY, savedCollection)
+
+        // an investigator chosen from the list that the new collection doesn't have is no longer chosen
+        store.dispatch(dropInvestigatorOutsideCollection)
     }
     if (state.settings.bannedCards !== savedBans) {
         savedBans = state.settings.bannedCards

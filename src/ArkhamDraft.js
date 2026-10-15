@@ -29,11 +29,13 @@ import { DeckLeftColumn, DeckRightColumn, DrawerControls, PhoneDock, DeckSheet }
 import usePhoneLayout from './components/usePhoneLayout'
 import DraftPanel from './components/DraftPanel'
 import ExportPanel from './components/ExportPanel'
+import UpgradeExportPanel from './components/UpgradeExportPanel'
 import UpgradeOptionsPanel from './components/UpgradeOptionsPanel'
 import BuildUpgradePanel from './components/BuildUpgradePanel'
 import Level0UpgradePanel from './components/Level0UpgradePanel'
 import VersatilePanel from './components/VersatilePanel'
 import DraftPhases from './data/DraftPhases'
+import { isSealedDraft } from './draft/Sealed'
 import phaseLabel from './data/PhaseLabel'
 
 import useFlipLayout from './useFlipLayout'
@@ -54,6 +56,7 @@ function ArkhamDraft() {
     const investigatorMode = useSelector(state => state.settings.investigatorMode)
     const draftPhase = useSelector(state => state.draft.phase)
     const draftType = useSelector(state => state.settings.draftType)
+    const deckbuilding = useSelector(state => state.settings.deckbuilding)
     const currentLevel0Name = useSelector(state => state.draft.currentLevel0Name)
     const undoDepth = useSelector(state => state.settings.undoDepth)
     const animationSpeed = useSelector(state => state.settings.animationSpeed)
@@ -224,7 +227,7 @@ function ArkhamDraft() {
     }
     else if (drafting) {
         contents =
-        <div className={'draft-layout' + (phone ? ' has-dock' : '')} ref={layoutRef}>
+        <div className={'draft-layout' + (phone ? ' has-dock' : '') + (isSealedDraft(deckbuilding, draftPhase) ? ' is-sealed' : '')} ref={layoutRef}>
             {phone ? null : <DeckLeftColumn open={drawer === 'left'} onClose={() => setDrawer(null)} />}
             <div className="draft-main">
                 <DraftPanel />
@@ -247,7 +250,7 @@ function ArkhamDraft() {
                 <Level0UpgradePanel phase={DraftPhases.UpgradeLevel0AddPhase} />
                 <VersatilePanel />
                 {buildXPList.length > 0 ? <BuildUpgradePanel /> : null}
-                {draftTab === 'Build Deck' ? <ExportPanel /> : null}
+                {draftTab === 'Build Deck' ? <ExportPanel /> : <UpgradeExportPanel />}
             </div>
             <DeckRightColumn alwaysShowDraftList={true} split={true} />
         </div>
@@ -261,6 +264,7 @@ function ArkhamDraft() {
                 <Level0UpgradePanel phase={DraftPhases.UpgradeLevel0AddPhase} />
                 <VersatilePanel />
                 <UpgradeOptionsPanel />
+                <UpgradeExportPanel />
             </div>
             {phone ? null : <DeckRightColumn open={drawer === 'right'} onClose={() => setDrawer(null)} />}
             {phone ?

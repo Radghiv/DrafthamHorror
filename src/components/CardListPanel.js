@@ -1,7 +1,10 @@
 import React, { useState, useRef, useLayoutEffect, useEffect } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 
-import { costWithTaboo } from '../draft/DrawDraft'
+import { costWithTaboo, removeSealedCard } from '../draft/DrawDraft'
+import { prepareCardReturn } from '../draft/returnCard'
+import { motionSpeed } from '../data/AnimationSpeed'
+import { isSealedDraft, sealedCardRemovable } from '../draft/Sealed'
 import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import useCardName from './useCardName'
 import CardLinkButton from './CardLinkButton'
@@ -16,6 +19,15 @@ function CardListPanel(props) {
     const cardData = useSelector(state => state.data.cardData)
     const deckName = useSelector(state => state.draft.deckName)
     const highlightCost = useSelector(state => state.settings.highlightCost)
+    const deckbuilding = useSelector(state => state.settings.deckbuilding)
+    const draftPhase = useSelector(state => state.draft.phase)
+    const drafting = useSelector(state => state.settings.drafting)
+    const animationSpeed = useSelector(state => state.settings.animationSpeed)
+
+    const dispatch = useDispatch()
+
+    // in a sealed draft the cards of the Draft List can be put back in the pool
+    const removable = !props.deck && !props.removed && drafting && isSealedDraft(deckbuilding, draftPhase)
 
     // rows of the cost curve column being hovered stand out
     function rowClass(item) {
@@ -115,6 +127,18 @@ function CardListPanel(props) {
     useEffect(() => () => clearTimeout(freshTimer.current), [])
 
     // touch screens have no hover: tapping a row opens the preview
+    function removeCard(event, item) {
+        // (not a tap on the row: that opens the preview)
+        event.stopPropagation()
+        doCardOverlay(null)
+
+        // the card flies back to the pool, as in an undo (the copy of the row is made before the list changes)
+        const flight = dispatch(prepareCardReturn(motionSpeed(animationSpeed), item.key))
+
+        dispatch(removeSealedCard(item.key))
+        if (flight) requestAnimationFrame(flight.land)
+    }
+
     function onTapCard(event) {
         if (isTouchScreen()) previewCard(event)
     }
@@ -126,7 +150,10 @@ function CardListPanel(props) {
         const place = fresh[item.key]
         const entering = place !== undefined
 
-        return <p className={rowClass(item) + (entering ? ' row-enter' : '')} style={entering ? { '--row': Math.min(place, 14) } : undefined} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={item.key || index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" /></p>
+        return <p className={rowClass(item) + (entering ? ' row-enter' : '')} style={entering ? { '--row': Math.min(place, 14) } : undefined} id={item.key} onPointerEnter={onEnterCard} onPointerLeave={onLeaveCard} onClick={onTapCard} key={item.key || index}>{cardName(item)}{levelStr}{countStr}<CardLinkButton card={item} size="small" />{removable && sealedCardRemovable(item) ?
+            <button type="button" className="cardlist-remove" aria-label={t('Remove {name}', { name: cardName(item) })} title={t('Remove {name}', { name: cardName(item) })} onClick={event => removeCard(event, item)}>
+                <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+            </button> : null}</p>
     }
 
     const assetHeader = assetCount > 0 ? <h4>{t('Assets ({count})', { count: assetCount })}</h4> : null

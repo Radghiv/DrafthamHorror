@@ -13,7 +13,9 @@ function StartStatus(props) {
     const investigatorMode = useSelector(state => state.settings.investigatorMode)
     const filteredCount = useSelector(state => state.settings.filteredCount)
 
-    const { enoughCards, needsDeck, needsInvestigator, noInvestigators } = useStartDraft()
+    const deckSize = useSelector(state => state.settings.deckSize)
+
+    const { enoughCards, poolTooSmall, needsDeck, needsInvestigator, noInvestigators } = useStartDraft()
 
     if (needsDeck) {
         return <div className="status status-bad" key="needs-deck"><WarningIcon /> {t('Validate an ArkhamDB deck ID in the Investigator step to continue')}</div>
@@ -29,6 +31,10 @@ function StartStatus(props) {
 
     if (!enoughCards) {
         return <div className="status status-bad" role="alert" key="not-enough"><WarningIcon /> {t('There are not enough cards in the selected packs to draft a complete deck. Add packs in the collection.')}</div>
+    }
+
+    if (poolTooSmall) {
+        return <div className="status status-bad" role="alert" key="pool-too-small"><WarningIcon /> {t('The sealed pool is too small for a deck of {count} cards. Make it bigger, allow two copies or add packs in the collection.', { count: deckSize })}</div>
     }
 
     if (investigatorMode === 'draft') {

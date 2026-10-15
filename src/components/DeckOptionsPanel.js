@@ -21,7 +21,7 @@ const factionNames = {
     survivor: msg('Survivor')
 }
 
-// Options that depend on the cards of the deck being upgraded; shown in the Draft Rules step once a deck is loaded
+// Options that depend on the cards of the deck being upgraded; shown in the Deckbuilding Rules step once a deck is loaded
 function DeckOptionsPanel(props) {
     const t = useT()
 

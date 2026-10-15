@@ -1,10 +1,10 @@
-import { changeSetting, changeInvestigatorList, calculateFilteredCount, beginInvestigatorDraft, endInvestigatorDraft, replaceInvestigatorInPool, setUndoDepth } from './settingsSlice'
+import { changeSetting, changeInvestigatorList, calculateFilteredCount, clearInvestigator, beginInvestigatorDraft, endInvestigatorDraft, replaceInvestigatorInPool, setUndoDepth } from './settingsSlice'
 import { dropLeftDraft } from '../draftState'
 import { startDraft } from '../draft/draftSlice'
 import { random } from '../../random'
 
 import DraftPhases from '../../data/DraftPhases'
-import { investigatorEntries, AGATHA_ENTRIES, isParallelEntry, findInvestigatorCard } from '../../data/InvestigatorList'
+import { ownedInvestigatorEntries, investigatorInCollection, AGATHA_ENTRIES, isParallelEntry, findInvestigatorCard } from '../../data/InvestigatorList'
 
 // Selects an entry of the investigator list. Agatha's class is chosen through her entry, then the regular lookup picks the
 // matching card.
@@ -20,6 +20,21 @@ export function selectInvestigatorEntry(entry) {
 
         dispatch(calculateFilteredCount)
     }
+}
+
+// The investigator chosen from the list is no longer valid when the collection changes and no longer has it: the choice is dropped. An investigator
+// that comes with an ArkhamDB deck is the deck's, and a draft that has started is left alone.
+export function dropInvestigatorOutsideCollection(dispatch, getState) {
+    const { settings, data, collection } = getState()
+
+    if (settings.investigatorMode !== 'list' || !settings.investigatorData || settings.drafting || settings.complete || settings.investigatorDrafting || data.deckLoaded) return
+
+    const cardByCode = new Map((data.cardData || []).map(card => [card.code, card]))
+
+    if (investigatorInCollection(settings.investigatorData, cardByCode, collection)) return
+
+    dispatch(clearInvestigator())
+    dispatch(calculateFilteredCount)
 }
 
 // The list entries the investigator draft may offer: parallel versions only when allowed, only the chosen classes and none of
@@ -63,7 +78,7 @@ export function startInvestigatorDraft(dispatch, getState) {
     const state = getState()
 
     dispatch(beginInvestigatorDraft(drawInvestigatorPool(
-        investigatorEntries(state.data.cardData),
+        ownedInvestigatorEntries(state.data.cardData, state.collection),
         state.data.cardData,
         state.settings.investigatorDraftOptions
     )))
@@ -78,7 +93,7 @@ export function redrawInvestigator(index) {
         const pool = state.settings.investigatorPool
 
         const names = new Set(pool.map(baseName))
-        const candidates = eligibleInvestigators(investigatorEntries(state.data.cardData), state.data.cardData, state.settings.investigatorDraftOptions)
+        const candidates = eligibleInvestigators(ownedInvestigatorEntries(state.data.cardData, state.collection), state.data.cardData, state.settings.investigatorDraftOptions)
             .filter(entry => !names.has(baseName(entry)))
 
         if (candidates.length > 0) {
