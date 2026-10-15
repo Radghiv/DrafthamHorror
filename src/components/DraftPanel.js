@@ -509,7 +509,7 @@ function DraftPanel(props) {
         }
 
         const isSelected = requireConfirmation && selectedDraftCard === i
-        // ArkhamDB's image first, then arkham.build's
+        // arkham.build's image first, then ArkhamDB's
         const sources = cardImageUrls(draftPool[i])
         const hasImage = sources.length > 0 && imageLoaded[i] !== 'failed'
         const isLoaded = imageLoaded[i] === true

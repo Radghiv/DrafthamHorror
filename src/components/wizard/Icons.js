@@ -79,7 +79,7 @@ export function ElderSignIcon() {
 // Redraw: two arrows chasing each other around a circle
 export function RedrawIcon() {
     return (
-        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="icon-redraw" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 8.5A7.5 7.5 0 0 0 4.6 6.6" />
             <path d="M4.2 2.8v4.1h4.1" />
             <path d="M4 13.5a7.5 7.5 0 0 0 13.4 1.9" />

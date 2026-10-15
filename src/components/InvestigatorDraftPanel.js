@@ -50,7 +50,7 @@ function InvestigatorPanel(props) {
         const factionCode = investigatorData.faction_code;
         const classColor = ColorForClass(factionCode)
 
-        // ArkhamDB's image first, then arkham.build's; the placeholder is for when neither has it
+        // arkham.build's image first, then ArkhamDB's; the placeholder is for when neither has it
         const placeholder = label => <div className="investigator-div-loading" style={{backgroundColor: classColor}}><h3>{label}</h3><p>{t('Image not available')}</p><p><a href={investigatorData.url} target="_blank" rel="noreferrer noopener">{t('View on ArkhamDB')}</a></p></div>
 
         investigatorCardImage =

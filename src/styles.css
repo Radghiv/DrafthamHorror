@@ -4447,33 +4447,25 @@ main:focus {
     animation-delay: calc(0.06s * var(--motion-scale, 1));
 }
 
-/* the investigators of the draft are dealt one after the other */
+/* the investigators of the draft fade in one after the other, rising 10px; a newly chosen investigator (and one resumed from a saved draft)
+   does the same with its two sides */
 @keyframes investigator-deal {
-    from { opacity: 0; transform: translateY(26px) rotateY(-70deg) scale(0.94); }
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: none; }
 }
-.investigator-pick-grid {
-    perspective: 1600px;
+@keyframes investigator-reveal {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
 }
 .investigator-deal {
-    animation: investigator-deal calc(0.7s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-    animation-delay: calc(var(--deal-index, 0) * 0.14s * var(--motion-scale, 1));
-}
-
-/* a newly chosen investigator: the two sides of the card turn into place */
-@keyframes investigator-reveal {
-    from { opacity: 0; transform: rotateY(90deg) scale(0.92); }
-    50% { opacity: 1; }
-    to { opacity: 1; transform: none; }
-}
-.investigator-grid {
-    perspective: 1200px;
+    animation: investigator-deal calc(0.4s * var(--motion-scale, 1)) ease-out backwards;
+    animation-delay: calc(var(--deal-index, 0) * 0.06s * var(--motion-scale, 1));
 }
 .investigator-reveal .investigator-div {
-    animation: investigator-reveal calc(0.7s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation: investigator-reveal calc(0.4s * var(--motion-scale, 1)) ease-out backwards;
 }
 .investigator-reveal .investigator-div:nth-child(2) {
-    animation-delay: calc(0.12s * var(--motion-scale, 1));
+    animation-delay: calc(0.06s * var(--motion-scale, 1));
 }
 
 /* the finished draft: the Draft List glows once while the panels settle */
@@ -4923,15 +4915,12 @@ html.theme-fade *::after {
     }
 }
 
-/* Resume: no card flies, the investigator of the draft screen turns into place like a newly chosen one */
+/* Resume: no card flies, the investigator of the draft screen fades into place like a newly chosen one */
 .resume-flight .draft-left .investigator-div {
-    animation: investigator-reveal calc(0.7s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation: investigator-reveal calc(0.4s * var(--motion-scale, 1)) ease-out backwards;
 }
 .resume-flight .draft-left .investigator-div:nth-child(2) {
-    animation-delay: calc(0.12s * var(--motion-scale, 1));
-}
-.resume-flight .draft-left .investigator-grid {
-    perspective: 1200px;
+    animation-delay: calc(0.06s * var(--motion-scale, 1));
 }
 @media (prefers-reduced-motion: reduce) {
     .resume-flight .draft-left .investigator-div {
@@ -5035,17 +5024,6 @@ html.theme-fade *::after {
 .cardlist-item.row-enter {
     animation: row-in calc(0.3s * var(--motion-scale, 1)) ease-out backwards;
     animation-delay: calc(var(--row, 0) * 0.035s * var(--motion-scale, 1));
-}
-
-/* a card of the draft and an investigator tile rise a little under the pointer (only where there is a pointer to hover with) */
-@media (hover: hover) {
-    .draft-card-wrap:not(.facedown):not(.selected):hover {
-        transform: scale(1.025);
-        z-index: 2;
-    }
-    .investigator-tile:not(.selected):hover {
-        transform: scale(1.012);
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -5359,4 +5337,138 @@ html.theme-fade *::after {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+}
+
+/* hover: a soft ring of the theme's accent lights up around the element and nothing moves (only where there is a pointer to hover with);
+   a press shrinks the ring. Cards and tiles get a stronger ring and a glow, the buttons on the confirm bar a ring in the bar's color. */
+:root {
+    --halo: 0 0 0 3px color-mix(in srgb, var(--primary) 38%, transparent), 0 0 20px color-mix(in srgb, var(--primary) 35%, transparent);
+    --halo-strong: 0 0 0 3px color-mix(in srgb, var(--primary) 45%, transparent), 0 0 24px color-mix(in srgb, var(--primary) 40%, transparent);
+    --halo-press: 0 0 0 1px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+.btn,
+.icon-btn,
+.link-btn,
+.segmented button,
+.chip,
+.step-btn,
+.switch-track {
+    transition:
+        box-shadow calc(0.18s * var(--motion-scale, 1)) ease,
+        background-color calc(0.18s * var(--motion-scale, 1)) ease,
+        border-color calc(0.18s * var(--motion-scale, 1)) ease,
+        color calc(0.18s * var(--motion-scale, 1)) ease;
+}
+.link-btn {
+    border-radius: 8px;
+}
+.cycle-toggle,
+.check-row {
+    transition: text-shadow calc(0.18s * var(--motion-scale, 1)) ease;
+}
+.btn svg,
+.icon-btn svg {
+    transition: transform calc(0.3s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.3, 1), scale calc(0.2s * var(--motion-scale, 1)) ease;
+}
+.draft-card-wrap,
+.investigator-tile {
+    transition: transform calc(0.12s * var(--motion-scale, 1)), box-shadow calc(0.18s * var(--motion-scale, 1)) ease;
+}
+.draft-card-wrap {
+    border-radius: 4.5% / 3.2%;
+}
+.segmented-range input[type="range"]::-webkit-slider-thumb {
+    transition: transform calc(0.12s * var(--motion-scale, 1)), box-shadow calc(0.18s * var(--motion-scale, 1)) ease;
+}
+.segmented-range input[type="range"]::-moz-range-thumb {
+    transition: transform calc(0.12s * var(--motion-scale, 1)), box-shadow calc(0.18s * var(--motion-scale, 1)) ease;
+}
+
+/* a press (touch too) shrinks the ring */
+.btn:not(:disabled):not([aria-disabled="true"]):active,
+.icon-btn:not(:disabled):active,
+.link-btn:not(:disabled):active,
+.segmented button:not(:disabled):active,
+.chip:not(:disabled):active,
+.step-btn:active {
+    box-shadow: var(--halo-press);
+}
+
+@media (hover: hover) {
+    .btn:not(:disabled):not([aria-disabled="true"]):hover,
+    .icon-btn:not(:disabled):hover,
+    .link-btn:not(:disabled):hover,
+    .segmented button:not(:disabled):hover,
+    .chip:not(:disabled):hover,
+    .step-btn:hover {
+        box-shadow: var(--halo);
+    }
+    .btn-secondary:not(:disabled):not([aria-disabled="true"]):hover,
+    .icon-btn:not(:disabled):hover,
+    .chip:not([aria-pressed="true"]):not(:disabled):hover,
+    .step-btn:not([aria-current="step"]):hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+    .segmented button:not([aria-pressed="true"]):not([aria-checked="true"]):not(:disabled):hover {
+        color: var(--primary);
+    }
+    .switch:hover .switch-track {
+        box-shadow: var(--halo);
+    }
+    .cycle-toggle:hover,
+    .check-row:hover {
+        text-shadow: 0 0 14px color-mix(in srgb, var(--primary) 55%, transparent);
+    }
+    .cardlist-item:hover {
+        border-radius: 8px;
+        box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 38%, transparent);
+    }
+    .draft-card-wrap:not(.facedown):not(.selected):hover {
+        box-shadow: var(--halo-strong);
+        z-index: 2;
+    }
+    .investigator-tile:not(.selected):hover {
+        box-shadow: var(--halo-strong);
+    }
+    .segmented-range:hover input[type="range"]:not(:disabled)::-webkit-slider-thumb {
+        box-shadow: 0 0 0 1px var(--line-strong), 0 0 0 6px color-mix(in srgb, var(--primary) 32%, transparent), 0 0 16px color-mix(in srgb, var(--primary) 40%, transparent);
+    }
+    .segmented-range:hover input[type="range"]:not(:disabled)::-moz-range-thumb {
+        box-shadow: 0 0 0 1px var(--line-strong), 0 0 0 6px color-mix(in srgb, var(--primary) 32%, transparent), 0 0 16px color-mix(in srgb, var(--primary) 40%, transparent);
+    }
+
+    /* the buttons on the bar under a selected card are on the bar's color */
+    .confirm-bar .btn:not(:disabled):not([aria-disabled="true"]):hover {
+        border-color: currentColor;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--bar-text) 40%, transparent);
+        color: var(--bar-text);
+    }
+    .confirm-bar .btn-primary:not(:disabled):not([aria-disabled="true"]):hover {
+        color: var(--bar-btn-text);
+        border-color: var(--bar-btn-bg);
+    }
+
+    /* the icons: the one of an icon button swells a little, redraw turns half a circle */
+    .icon-btn:not(:disabled):hover svg {
+        scale: 1.12;
+    }
+    button:not(:disabled):hover .icon-redraw {
+        transform: rotate(180deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .btn,
+    .icon-btn,
+    .link-btn,
+    .segmented button,
+    .chip,
+    .step-btn,
+    .switch-track,
+    .cycle-toggle,
+    .check-row,
+    .btn svg,
+    .icon-btn svg {
+        transition: none;
+    }
 }

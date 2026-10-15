@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+import { cardImageUrls } from './data/CardImages'
 import { collectionImageUrls, savedImageUrls, deleteSavedImages, downloadImages, rememberImage, startRememberingImages, subscribeToSavedImages, IMAGE_CACHE } from './imageCache'
 
 const card = (code, extra) => ({ code, name: 'Card ' + code, type_code: 'asset', faction_code: 'guardian', pack_code: 'core', imagesrc: '/bundles/cards/' + code + '.png', ...extra })
@@ -20,11 +21,16 @@ describe('collectionImageUrls', () => {
         const urls = collectionImageUrls(cards, { core: 1, rcore: 1, dwl: 0 })
 
         expect(urls).toEqual([
-            'https://www.arkhamdb.com/bundles/cards/01.png',
-            'https://www.arkhamdb.com/bundles/cards/02.png',
-            'https://www.arkhamdb.com/bundles/cards/03.png',
-            'https://www.arkhamdb.com/bundles/cards/03b.png'
+            'https://cdn.arkham.build/optimized/01.webp',
+            'https://cdn.arkham.build/optimized/02.webp',
+            'https://cdn.arkham.build/optimized/03.webp',
+            'https://cdn.arkham.build/optimized/03b.webp'
         ])
+    })
+
+    it('tries arkham.build first and ArkhamDB after it', () => {
+        expect(cardImageUrls(card('01'), 'front')).toEqual(['https://cdn.arkham.build/optimized/01.webp', 'https://www.arkhamdb.com/bundles/cards/01.png'])
+        expect(cardImageUrls(card('01', { code: undefined, key: '01', imagesrc: undefined }), 'front')).toEqual(['https://cdn.arkham.build/optimized/01.webp'])
     })
 
     it('gives nothing without card data', () => {

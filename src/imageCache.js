@@ -7,7 +7,7 @@ import { cardImageUrls } from './data/CardImages'
 
 export const IMAGE_CACHE = 'card-images'
 
-// The addresses of the card pictures (ArkhamDB's and arkham.build's); the same pattern is the route of the service worker in vite.config.js
+// The addresses of the card pictures (arkham.build's and ArkhamDB's); the same pattern is the route of the service worker in vite.config.js
 export const IMAGE_URL_PATTERN = /^https:\/\/(www\.arkhamdb\.com\/bundles\/cards\/|cdn\.arkham\.build\/).*\.(png|jpe?g|webp)$/i
 
 const PLAYER_TYPES = ['asset', 'event', 'skill']
