@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 
 import { savedCopyRows, readSavedCopy, deleteSavedCopy, saveCopy } from '../../features/data/dataSlice'
-import { imageCacheAvailable, collectionImageUrls, savedImageUrls, deleteSavedImages, downloadImages, subscribeToSavedImages } from '../../imageCache'
+import { imageCacheAvailable, collectionImageUrls, savedImageUrls, estimateImageBytes, deleteSavedImages, downloadImages, subscribeToSavedImages } from '../../imageCache'
 import { clearCache } from '../../cache'
 import { RedrawIcon } from './Icons'
 import { useT, useFormatDate, LONG_DATE } from '../../i18n'
@@ -69,7 +69,7 @@ function CachePanel() {
         const wanted = collectionImageUrls(cardData, collection)
         const saved = await savedImageUrls()
 
-        setImages({ total: wanted.length, missing: wanted.filter(url => !saved.has(url)), savedCount: wanted.filter(url => saved.has(url)).length, available: imageCacheAvailable() })
+        setImages({ total: wanted.length, missing: wanted.filter(url => !saved.has(url)), savedCount: wanted.filter(url => saved.has(url)).length, bytes: estimateImageBytes(saved), available: imageCacheAvailable() })
 
         if (window.navigator.storage && window.navigator.storage.estimate) {
             try {
@@ -186,7 +186,10 @@ function CachePanel() {
     if (images) {
         imageDetail = !images.available ? t('Not saved') : progress ?
             t('Downloading… {done} of {total}', { done: number(progress.done + progress.failed), total: number(progress.total) }) + (progress.failed > 0 ? ' · ' + t('Not downloaded: {count}', { count: number(progress.failed) }) : '') :
-            t('{saved} of {total} saved', { saved: number(images.savedCount), total: number(images.total) })
+            t('{first} · {second}', {
+                first: t('{saved} of {total} saved', { saved: number(images.savedCount), total: number(images.total) }),
+                second: images.bytes > 0 ? t('about {size}', { size: formatBytes(images.bytes, language) }) : t('Not saved')
+            })
     }
 
     return (
@@ -225,7 +228,7 @@ function CachePanel() {
                     </ul>
 
                     {usage && usage.quota > 0 ?
-                        <p className="field-hint">{t('This site uses about {used} of the {quota} that the browser allows. The images come from other sites, so their size can\'t be measured here and the browser may count them as bigger than they are.', { used: formatBytes(usage.used, language), quota: formatBytes(usage.quota, language) })}</p>
+                        <p className="field-hint">{t('This site uses about {used} of the {quota} that the browser allows. The images come from other sites, so their size is estimated from the average picture and the browser may count them as bigger than they are.', { used: formatBytes(usage.used, language), quota: formatBytes(usage.quota, language) })}</p>
                         : null}
                     <p className="field-hint">{t('Deleting removes the saved copy; what is already loaded stays in use until you reload the page.')}</p>
                 </div>

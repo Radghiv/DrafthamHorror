@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { cardImageUrls } from './data/CardImages'
-import { collectionImageUrls, savedImageUrls, deleteSavedImages, downloadImages, rememberImage, startRememberingImages, subscribeToSavedImages, IMAGE_CACHE } from './imageCache'
+import { estimateImageBytes, collectionImageUrls, savedImageUrls, deleteSavedImages, downloadImages, rememberImage, startRememberingImages, subscribeToSavedImages, IMAGE_CACHE } from './imageCache'
 
 const card = (code, extra) => ({ code, name: 'Card ' + code, type_code: 'asset', faction_code: 'guardian', pack_code: 'core', imagesrc: '/bundles/cards/' + code + '.png', ...extra })
 
@@ -109,5 +109,13 @@ describe('the picture cache', () => {
         stop()
 
         expect(Array.from(await savedImageUrls())).toEqual(['https://cdn.arkham.build/optimized/01001.webp'])
+    })
+})
+
+describe('estimateImageBytes', () => {
+    it('adds up an average picture for each address, by site', () => {
+        expect(estimateImageBytes([])).toBe(0)
+        expect(estimateImageBytes(['https://cdn.arkham.build/optimized/01001.webp', 'https://www.arkhamdb.com/bundles/cards/01001.png'])).toBe(165000 + 160000)
+        expect(estimateImageBytes(['https://example.com/a.png', 'not an address'])).toBe(2 * 160000)
     })
 })

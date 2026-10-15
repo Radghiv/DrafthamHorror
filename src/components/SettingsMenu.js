@@ -7,6 +7,7 @@ import ScrollToTopToggle from './ScrollToTopToggle'
 import LanguageSelect from './LanguageSelect'
 import ThemeToggle from './ThemeToggle'
 import { RestartDialog } from './RestartButton'
+import ChooseInvestigatorDialog from './ChooseInvestigatorDialog'
 import { Presence } from './usePresence'
 import InstallButton from './InstallButton'
 import { SettingsIcon } from './wizard/Icons'
@@ -17,12 +18,13 @@ import { useT } from '../i18n'
 // With onCollection (the setup screens) it starts with a row that opens the collection: what you own is set once, so it lives here and not
 // in the steps.
 function SettingsMenu(props) {
-    const { onRestart, onCollection } = props
+    const { onRestart, onCollection, onInvestigator } = props
 
     const t = useT()
 
     const [open, setOpen] = useState(false)
     const [restarting, setRestarting] = useState(false)
+    const [choosing, setChoosing] = useState(false)
 
     const wrapperRef = useRef(null)
 
@@ -68,12 +70,16 @@ function SettingsMenu(props) {
                     <ScrollToTopToggle />
                     <AnimateTogetherToggle />
                     <CardsPerRowSlider />
+                    {onInvestigator ?
+                        <button type="button" className="btn btn-secondary" aria-haspopup="dialog" onClick={() => { setOpen(false); setChoosing(true) }}>{t('Choose another investigator')}</button>
+                        : null}
                     {onRestart ?
                         <button type="button" className="btn btn-secondary" aria-haspopup="dialog" onClick={() => { setOpen(false); setRestarting(true) }}>{t('Restart')}</button>
                         : null}
                 </div>
             </Presence>
             {onRestart ? <RestartDialog open={restarting} onClose={() => setRestarting(false)} onRestart={onRestart} /> : null}
+            {onInvestigator ? <ChooseInvestigatorDialog open={choosing} onClose={() => setChoosing(false)} onConfirm={onInvestigator} /> : null}
         </div>
         </>
     )

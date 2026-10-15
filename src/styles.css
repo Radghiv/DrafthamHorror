@@ -1703,6 +1703,7 @@ a {
     cursor: pointer;
 }
 .segmented button[aria-checked="true"],
+.segmented button[aria-selected="true"],
 .segmented button[aria-pressed="true"] {
     background: var(--surface);
     color: var(--text);
@@ -3573,6 +3574,21 @@ main:focus {
 .phone-top .draft-crumbs {
     flex: 1;
     min-width: 0;
+    overflow: hidden;
+}
+.phone-top .breadcrumbs {
+    min-width: 0;
+}
+/* a phone's trail is Setup and the phase: the phase takes what is left and ends in an ellipsis, so the trail never runs under the count (the
+   way back to the investigator draft is in the settings menu there) */
+.phone-top .breadcrumbs > li {
+    min-width: 0;
+}
+.phone-top .breadcrumbs > li:first-child {
+    flex: none;
+}
+.phone-top .crumb-investigator {
+    display: none;
 }
 .phone-top .crumb {
     min-height: 40px;
@@ -3983,30 +3999,24 @@ main:focus {
     background: var(--line-strong);
     opacity: 0.6;
 }
+/* the two tabs are the toggle of the investigator step (.segmented, with its sliding pill), filling the width next to the close button */
 .sheet-tabs {
     display: flex;
+    align-items: center;
     gap: 6px;
 }
-.sheet-tabs [role="tab"] {
+.sheet-tabs .segmented {
     flex: 1;
     min-width: 0;
-    min-height: 44px;
+    flex-wrap: nowrap;
+}
+.sheet-tabs .segmented button {
+    flex: 1;
+    min-width: 0;
     padding: 4px 8px;
-    overflow: hidden;
-    border: 2px solid var(--line);
-    border-radius: 12px;
-    background: var(--surface);
-    color: var(--text);
-    font-family: inherit;
     font-size: 14px;
-    font-weight: 700;
     line-height: 1.15;
     text-wrap: balance;
-    cursor: pointer;
-}
-.sheet-tabs [role="tab"][aria-selected="true"] {
-    border-color: var(--primary);
-    background: var(--primary-soft);
 }
 .sheet-close {
     flex: none;
@@ -4024,6 +4034,8 @@ main:focus {
 .sheet-body {
     flex: 1;
     min-height: 0;
+    /* scrolls up and down; the sideways movements are the swipe between the tabs */
+    touch-action: pan-y;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 4px var(--gutter) calc(24px + env(safe-area-inset-bottom, 0px));
@@ -4043,6 +4055,25 @@ main:focus {
     visibility: visible;
     transform: none;
     transition: none;
+}
+/* the tab that comes in after a tap or a swipe slides in from the side it is on */
+@keyframes sheet-tab-forward {
+    from { opacity: 0; transform: translateX(28px); }
+}
+@keyframes sheet-tab-back {
+    from { opacity: 0; transform: translateX(-28px); }
+}
+.sheet-body.slide-forward > .in-sheet:not([hidden]) {
+    animation: sheet-tab-forward calc(0.25s * var(--motion-scale, 1)) ease-out;
+}
+.sheet-body.slide-back > .in-sheet:not([hidden]) {
+    animation: sheet-tab-back calc(0.25s * var(--motion-scale, 1)) ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+    .sheet-body.slide-forward > .in-sheet,
+    .sheet-body.slide-back > .in-sheet {
+        animation: none;
+    }
 }
 .in-sheet[hidden] {
     display: none;
@@ -5209,6 +5240,7 @@ html.theme-fade *::after {
     transition: left calc(0.25s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1), top calc(0.25s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1), width calc(0.25s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1), height calc(0.25s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1), opacity calc(0.15s * var(--motion-scale, 1));
 }
 .segmented[data-pill] button[aria-checked="true"],
+.segmented[data-pill] button[aria-selected="true"],
 .segmented[data-pill] button[aria-pressed="true"] {
     background: transparent;
     box-shadow: none;

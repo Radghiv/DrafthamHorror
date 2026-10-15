@@ -12,6 +12,30 @@ export const IMAGE_URL_PATTERN = /^https:\/\/(www\.arkhamdb\.com\/bundles\/cards
 
 const PLAYER_TYPES = ['asset', 'event', 'skill']
 
+// The sites that have the pictures don't let this page read them (no CORS), so how much room the saved ones take up can't be measured: it is
+// estimated from the average size of a picture of each site (the files of the player cards and investigators, measured in October 2026)
+const AVERAGE_IMAGE_BYTES = { 'cdn.arkham.build': 165000, 'www.arkhamdb.com': 160000 }
+const DEFAULT_IMAGE_BYTES = 160000
+
+export function estimateImageBytes(urls) {
+    let total = 0
+
+    urls.forEach(url => {
+        let host = ''
+
+        try {
+            host = new URL(url).host
+        }
+        catch (e) {
+            // not an address: counted with the default
+        }
+
+        total += AVERAGE_IMAGE_BYTES[host] || DEFAULT_IMAGE_BYTES
+    })
+
+    return total
+}
+
 export function imageCacheAvailable() {
     return typeof window !== 'undefined' && 'caches' in window
 }

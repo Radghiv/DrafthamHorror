@@ -61,7 +61,7 @@ function AppHeader(props) {
                     {compact && phaseText ? <DraftBreadcrumbs phaseText={phaseText} onHome={onHome} onInvestigator={onInvestigator} /> : <span className="phone-top-fill"></span>}
                     {showCardsPerRow ? <PhoneProgressCount /> : null}
                     {onUndo && !hasDock ? <button type="button" className="icon-btn" onClick={onUndo} aria-label={t('Undo')} title={t('Undo the last pick (Ctrl+Z)')}><UndoIcon /></button> : null}
-                    <SettingsMenu onRestart={onRestart} />
+                    <SettingsMenu onRestart={onRestart} onInvestigator={onInvestigator} />
                 </div>
                 {showCardsPerRow ? <PhoneProgressLine /> : null}
             </header>

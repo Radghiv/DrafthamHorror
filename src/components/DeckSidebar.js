@@ -148,6 +148,27 @@ export function DeckSheet(props) {
     // the tab shown; it stays while the sheet slides away
     const [tab, setTab] = useState('left')
 
+    // which way the tabs were last changed while the sheet was open ('forward' to the card lists, 'back'), for the slide of the new tab in
+    const [slide, setSlide] = useState(null)
+    const tabNow = useRef(tab)
+
+    tabNow.current = tab
+
+    // goes to a tab, from a tap on it or a swipe
+    function changeTab(next) {
+        if (next !== tabNow.current) setSlide(next === 'right' ? 'forward' : 'back')
+
+        onChange(next)
+    }
+
+    const changeTabRef = useRef(changeTab)
+
+    changeTabRef.current = changeTab
+
+    useEffect(() => {
+        if (!drawer) setSlide(null)
+    }, [drawer])
+
     const sheetRef = useRef(null)
     const bodyRef = useRef(null)
     const tabRef = useRef({})
@@ -238,7 +259,8 @@ export function DeckSheet(props) {
 
             const touch = event.touches[0]
 
-            gesture = { x: touch.clientX, y: touch.clientY, mode: null }
+            // a slider or a field takes the sideways movement for itself
+            gesture = { x: touch.clientX, y: touch.clientY, mode: null, dx: 0, keep: Boolean(event.target.closest('.segmented-range, select, input, textarea')) }
         }
 
         function onTouchMove(event) {
@@ -251,12 +273,24 @@ export function DeckSheet(props) {
             if (gesture.mode === null) {
                 if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
 
-                const pull = sideways() ? dx > 0 && Math.abs(dx) > Math.abs(dy) : dy > 0 && Math.abs(dy) > Math.abs(dx) && bodyRef.current.scrollTop <= 0
+                const horizontal = Math.abs(dx) > Math.abs(dy)
+                let mode = 'scroll'
 
-                gesture.mode = pull ? 'pull' : 'scroll'
+                // A pull closes the sheet: to the right on a landscape phone (from the first tab; from the second it goes back to the first),
+                // down on a portrait one when the lists are at the top. A sideways swipe changes the tab.
+                if (sideways()) {
+                    if (horizontal && dx > 0 && tabNow.current === 'left') mode = 'pull'
+                    else if (horizontal && !gesture.keep) mode = 'swipe'
+                }
+                else if (!horizontal && dy > 0 && bodyRef.current.scrollTop <= 0) mode = 'pull'
+                else if (horizontal && !gesture.keep) mode = 'swipe'
 
-                if (pull) beginDrag(touch.clientX, touch.clientY)
+                gesture.mode = mode
+
+                if (mode === 'pull') beginDrag(touch.clientX, touch.clientY)
             }
+
+            gesture.dx = dx
 
             if (gesture.mode === 'pull') {
                 event.preventDefault()
@@ -266,6 +300,12 @@ export function DeckSheet(props) {
 
         function onTouchEnd() {
             if (gesture && gesture.mode === 'pull') onDragEnd()
+
+            // a swipe to the left goes to the card lists, one to the right back to the investigator and costs
+            if (gesture && gesture.mode === 'swipe' && Math.abs(gesture.dx) > 50) {
+                if (gesture.dx < 0 && tabNow.current === 'left') changeTabRef.current('right')
+                else if (gesture.dx > 0 && tabNow.current === 'right') changeTabRef.current('left')
+            }
 
             gesture = null
         }
@@ -291,17 +331,19 @@ export function DeckSheet(props) {
             <section className={'deck-sheet' + (drawer ? ' is-open' : '')} ref={sheetRef}>
                 <div className="sheet-head" onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}>
                     <div className="sheet-grab" aria-hidden="true"></div>
-                    <div className="sheet-tabs" role="tablist">
-                        <button type="button" role="tab" id="sheet-tab-left" ref={element => { tabRef.current.left = element }} aria-selected={tab === 'left'} aria-controls="draft-left-panel"
-                            onClick={() => onChange('left')}>{t('Investigator & costs')}</button>
-                        <button type="button" role="tab" id="sheet-tab-right" ref={element => { tabRef.current.right = element }} aria-selected={tab === 'right'} aria-controls="draft-right-panel"
-                            onClick={() => onChange('right')}>{t('Card lists')}</button>
+                    <div className="sheet-tabs">
+                        <div className="segmented" role="tablist">
+                            <button type="button" role="tab" id="sheet-tab-left" ref={element => { tabRef.current.left = element }} aria-selected={tab === 'left'} aria-controls="draft-left-panel"
+                                onClick={() => changeTab('left')}>{t('Investigator & costs')}</button>
+                            <button type="button" role="tab" id="sheet-tab-right" ref={element => { tabRef.current.right = element }} aria-selected={tab === 'right'} aria-controls="draft-right-panel"
+                                onClick={() => changeTab('right')}>{t('Card lists')}</button>
+                        </div>
                         <button type="button" className="sheet-close" onClick={() => onChange(null)} aria-label={t('Close panel')}>
                             <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4 4 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                         </button>
                     </div>
                 </div>
-                <div className="sheet-body" ref={bodyRef}>
+                <div className={'sheet-body' + (slide ? ' slide-' + slide : '')} ref={bodyRef}>
                     <DeckLeftColumn inSheet={true} hidden={tab !== 'left'} />
                     <DeckRightColumn inSheet={true} hidden={tab !== 'right'} alwaysShowDraftList={alwaysShowDraftList} />
                 </div>

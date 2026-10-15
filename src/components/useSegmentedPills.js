@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
 
 // Places the pill of every toggle (.segmented) under its chosen button: the position and size are put on the toggle as --pill-* values, and
-// the stylesheet draws the pill and slides it when they change. The chosen button is the one with aria-pressed or aria-checked. The first
+// the stylesheet draws the pill and slides it when they change. The chosen button is the one with aria-pressed, aria-checked or (a tab) aria-selected. The first
 // time a toggle is placed there is no slide (the pill is just there); after that it glides.
 function placePills() {
     document.querySelectorAll('.segmented').forEach(box => {
-        const chosen = box.querySelector('button[aria-pressed="true"], button[aria-checked="true"]')
+        const chosen = box.querySelector('button[aria-pressed="true"], button[aria-checked="true"], button[aria-selected="true"]')
 
         if (!chosen) {
             box.style.setProperty('--pill-opacity', '0')
@@ -42,7 +42,7 @@ function useSegmentedPills() {
         // a toggle appears, or another button of it is chosen
         const observer = new MutationObserver(schedule)
 
-        observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-pressed', 'aria-checked'] })
+        observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-pressed', 'aria-checked', 'aria-selected'] })
         window.addEventListener('resize', schedule)
 
         return () => {
