@@ -658,10 +658,6 @@ function DraftCard(dispatch, getState, card, filteredData, draftTarget) {
     if (phase === DraftPhases.VersatilePhase) {
         addCount = 1
     }
-    else if (isSealedDraft(state.settings.deckbuilding, phase)) {
-        // a card of the pool is one card, whatever its myriad
-        addCount = 1
-    }
     else if (!isUpgrade(phase)) {
         if (card.myriad) addCount = myriadCount
 

@@ -108,6 +108,20 @@ function DraftRulesStep() {
             </div>
         </div>
 
+    // the copies a myriad card brings when it is picked, in the draft and in the sealed pool
+    const myriadRow =
+        <div className="setting-row">
+            <span className="setting-label" id="myriad-label"><strong>{t('Drafting myriad adds')}</strong><span>{t('Copies added when a myriad card is drafted')}</span></span>
+            <div className="setting-control">
+                <div className="segmented" role="group" aria-labelledby="myriad-label">
+                    {MYRIAD_OPTIONS.map(count => (
+                        <button type="button" key={count} aria-pressed={settings.myriadCount === count}
+                            onClick={() => dispatch(changeSetting('MyriadCount', count))}>{count === 1 ? t('1 card') : count}</button>
+                    ))}
+                </div>
+            </div>
+        </div>
+
     // for a new deck, drafted or sealed: the cards of the classes the investigator can only add a few of come in proportion
     const proportionRow =
         <div className="setting-row">
@@ -154,6 +168,8 @@ function DraftRulesStep() {
                                 onChange={value => dispatch(changeSetting('SealedCopies', value))} />
                         </div>
                     </div>}
+
+                {myriadRow}
 
                 {proportionRow}
 
@@ -208,17 +224,7 @@ function DraftRulesStep() {
                     </div>
                 </>
                 :
-                <div className="setting-row">
-                    <span className="setting-label" id="myriad-label"><strong>{t('Drafting myriad adds')}</strong><span>{t('Copies added when a myriad card is drafted')}</span></span>
-                    <div className="setting-control">
-                        <div className="segmented" role="group" aria-labelledby="myriad-label">
-                            {MYRIAD_OPTIONS.map(count => (
-                                <button type="button" key={count} aria-pressed={settings.myriadCount === count}
-                                    onClick={() => dispatch(changeSetting('MyriadCount', count))}>{count === 1 ? t('1 card') : count}</button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+                myriadRow
             }
 
             {isUpgradeTab ? null : proportionRow}

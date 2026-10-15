@@ -57,6 +57,7 @@ export function buildShareLink(state) {
         sealedCount: settings.sealedCount,
         sealedCopies: settings.sealedCopies,
         sealedDuplicates: settings.sealedDuplicates,
+        myriadCount: settings.myriadCount,
         proportionalLimits: settings.proportionalLimits,
         draftWeighting: settings.draftWeighting,
         draftXP: settings.draftXP,
@@ -136,6 +137,7 @@ export function applySharedSetup(payload) {
         if (payload.sealedCount !== undefined) dispatch(changeSetting('SealedCount', payload.sealedCount))
         dispatch(changeSetting('SealedCopies', payload.sealedCopies === true))
         dispatch(changeSetting('SealedDuplicates', payload.sealedDuplicates === true))
+        if (payload.myriadCount) dispatch(changeSetting('MyriadCount', payload.myriadCount))
         // a link made before the proportions dealt the cards evenly
         dispatch(changeSetting('ProportionalLimits', payload.proportionalLimits === true))
         dispatch(changeSetting('DraftWeighting', payload.draftWeighting))
