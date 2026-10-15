@@ -1,4 +1,5 @@
 import { displayPackName } from './PackData'
+import { CORE_CODES } from './CollectionGroups'
 import { msg } from '../i18n'
 
 // Titles of cycles that gather several unrelated packs; any other cycle takes the name of its first pack
@@ -8,8 +9,15 @@ const CYCLE_TITLES = {
     60: msg('Starter Decks'),
     61: msg('Starter Decks 2026'),
     80: msg('Promos'),
-    90: msg('Standalone scenarios')
+    90: msg('Print & Play')
 }
+
+// The side stories (cycle 70, one of them has player cards) and the standalone scenarios (cycle 90) are all print and play: one group
+const MERGED_CYCLES = { 70: 90 }
+
+// What a group is when it isn't an expansion (the core sets are told by their pack codes): the recap of the collection counts expansions
+// apart from these
+const CYCLE_KINDS = { 50: 'return', 60: 'starter', 61: 'starter', 80: 'promo', 90: 'printplay' }
 
 const PLAYER_CARD_TYPES = ['asset', 'event', 'skill']
 
@@ -63,28 +71,39 @@ export function buildCollectionGroups(packs, cardData, packName = pack => displa
     const byCycle = new Map()
 
     packs.filter(pack => relevant.has(pack.code)).forEach(pack => {
-        const key = chapterOf(pack, chapterTwoStart) + ':' + pack.cycle_position
+        const key = chapterOf(pack, chapterTwoStart) + ':' + (MERGED_CYCLES[pack.cycle_position] || pack.cycle_position)
 
         if (!byCycle.has(key)) byCycle.set(key, [])
         byCycle.get(key).push(pack)
     })
 
-    // by chapter, then by cycle
+    // the core sets come first in their chapter and the starter decks right after them; then the cycles in release order
+    const rankOf = key => {
+        const codes = byCycle.get(key).map(pack => pack.code)
+
+        if (codes.every(code => CORE_CODES.includes(code))) return 0
+
+        return CYCLE_KINDS[Number(key.split(':')[1])] === 'starter' ? 1 : 2
+    }
+
+    // by chapter, then by that, then by cycle
     const keys = Array.from(byCycle.keys()).sort((a, b) => {
         const [chapterA, cycleA] = a.split(':').map(Number)
         const [chapterB, cycleB] = b.split(':').map(Number)
 
-        return chapterA - chapterB || cycleA - cycleB
+        return chapterA - chapterB || rankOf(a) - rankOf(b) || cycleA - cycleB
     })
 
     return keys.map(key => {
         const [chapter, cycle] = key.split(':').map(Number)
-        const cyclePacks = byCycle.get(key).sort((a, b) => a.position - b.position)
+        const cyclePacks = byCycle.get(key).sort((a, b) => a.cycle_position - b.cycle_position || a.position - b.position)
         const codes = cyclePacks.map(pack => pack.code)
 
         // the second copy of the core set only matters for its quantities: it travels with the core set
         if (codes.includes('core')) codes.splice(codes.indexOf('core') + 1, 0, 'core2')
 
-        return { title: CYCLE_TITLES[cycle] ? translate(CYCLE_TITLES[cycle]) : packName(cyclePacks[0]), codes: codes, chapter: chapter, art: artCard(cyclePacks, cardData) }
+        const kind = codes.every(code => CORE_CODES.includes(code)) ? 'core' : CYCLE_KINDS[cycle]
+
+        return { title: CYCLE_TITLES[cycle] ? translate(CYCLE_TITLES[cycle]) : packName(cyclePacks[0]), codes: codes, chapter: chapter, kind: kind, art: artCard(cyclePacks, cardData) }
     })
 }

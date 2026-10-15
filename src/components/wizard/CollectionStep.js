@@ -1,12 +1,11 @@
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { changeCollection } from '../../features/collection/collectionSlice'
 import { useT } from '../../i18n'
 import useCardName from '../useCardName'
+import useCollectionGroups from '../useCollectionGroups'
 
-import CollectionGroups, { CORE_CODES } from '../../data/CollectionGroups'
-import { buildCollectionGroups } from '../../data/PackCatalog'
 import { cardImageUrls } from '../../data/CardImages'
 import { boxArtFor } from '../../data/BoxArt'
 import { CheckIcon, FoldAllIcon, UnfoldAllIcon, WarningIcon } from './Icons'
@@ -14,26 +13,13 @@ import TabooField from './TabooField'
 import CachePanel from './CachePanel'
 import BanList from './BanList'
 
-export function countSelectedPacks(collection) {
-    const coreCount = CORE_CODES.filter(code => collection[code]).length
-    let total = 0
-
-    for (const code in collection) {
-        if (collection[code] === 1 || collection[code] === true) total++
-    }
-
-    return { coreCount: coreCount, packCount: total - coreCount }
-}
-
 function CollectionStep() {
     const t = useT()
     const { packName } = useCardName()
     const collection = useSelector(state => state.collection)
-    const packs = useSelector(state => state.data.packs)
-    const cardData = useSelector(state => state.data.cardData)
 
     // the groups come from the pack list of ArkhamDB (so new packs appear by themselves), or the built-in layout without it
-    const groups = useMemo(() => packs && cardData ? buildCollectionGroups(packs, cardData, pack => packName(pack.code), t) : CollectionGroups, [packs, cardData, packName, t])
+    const groups = useCollectionGroups()
     const dispatch = useDispatch()
 
     // the cycles are folded up, and the ones that were opened are kept here (only for this visit to the step)
@@ -128,8 +114,6 @@ function CollectionStep() {
         )
     })
 
-    const { coreCount, packCount } = countSelectedPacks(collection)
-
     return (
         <div className="stack">
             <CachePanel />
@@ -138,9 +122,6 @@ function CollectionStep() {
             </div>
             <BanList />
             <div className="collection-toolbar">
-                <p className="notice" style={{margin: 0, background: 'transparent', padding: 0, color: 'var(--text)', fontWeight: 700}}>
-                    {t('{cores}, {packs} selected', { cores: t('{count} core set|{count} core sets', { count: coreCount }), packs: t('{count} pack|{count} packs', { count: packCount }) })}
-                </p>
                 <div style={{display: 'flex', gap: '8px'}}>
                     <button type="button" className="icon-btn" title={foldAllLabel} aria-label={foldAllLabel}
                         onClick={() => setOpened(allFolded ? Object.fromEntries(groups.map(group => [idOf(group), true])) : {})}>

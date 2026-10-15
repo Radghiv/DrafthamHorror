@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { setSetupStep, confirmCollection } from '../features/settings/settingsSlice'
+import { setSetupStep, setCollectionOpen } from '../features/settings/settingsSlice'
 
-import CollectionStep from './wizard/CollectionStep'
+import CollectionDialog from './CollectionDialog'
 import DraftRulesStep from './wizard/DraftRulesStep'
 import ReviewStep from './wizard/ReviewStep'
 import SetupSummary from './wizard/SetupSummary'
@@ -19,7 +19,6 @@ import { CheckIcon } from './wizard/Icons'
 import { useT, msg } from '../i18n'
 
 const STEPS = [
-    { key: 'collection', title: msg('Collection'), heading: msg('Which packs do you own?'), lead: msg('Only cards from the selected packs can be drafted, under the taboo list chosen here. This is remembered, so you only need to change it when your collection does.') },
     { key: 'investigator', title: msg('Investigator'), heading: msg('How do you want to choose the investigator?'), lead: null },
     { key: 'rules', title: msg('Draft Rules'), heading: msg('Build or upgrade, and how the draft works'), lead: null },
     { key: 'review', title: msg('Review'), heading: msg('Ready to draft?'), lead: null }
@@ -51,16 +50,17 @@ function SetupWizard() {
     if (travel.current.index !== currentIndex) travel.current = { index: currentIndex, direction: currentIndex > travel.current.index ? 'forward' : 'back' }
 
     const subtitles = {
-        collection: t('{first} · {second}', { first: info.packSummary, second: info.tabooLabel }),
         investigator: info.investigatorName,
         rules: t('{first} · {second}', { first: info.isUpgradeTab ? t('Upgrade') : t('Build Deck'), second: info.draftRules }),
         review: ''
     }
 
     function goTo(key) {
-        // moving on from the collection counts as confirming it, so redrafting can skip it
-        if (settings.setupStep === 'collection') dispatch(confirmCollection())
         dispatch(setSetupStep(key))
+    }
+
+    function openCollection() {
+        dispatch(setCollectionOpen(true))
     }
 
     function goNext() {
@@ -101,8 +101,7 @@ function SetupWizard() {
 
     let content = null
 
-    if (current.key === 'collection') content = <CollectionStep />
-    else if (current.key === 'investigator') content = <InvestigatorPanel />
+    if (current.key === 'investigator') content = <InvestigatorPanel />
     else if (current.key === 'rules') content = <DraftRulesStep />
     else content = <ReviewStep />
 
@@ -116,7 +115,7 @@ function SetupWizard() {
                 const isCurrent = index === currentIndex
                 // a step that is passed is done, except the investigator step while there is still no investigator (none chosen from the list, or a deck ID
                 // from ArkhamDB that has not been validated)
-                const isDone = !isCurrent && (index < currentIndex || (step.key === 'collection' && settings.collectionConfirmed)) && !(step.key === 'investigator' && (needsInvestigator || needsDeck))
+                const isDone = !isCurrent && index < currentIndex && !(step.key === 'investigator' && (needsInvestigator || needsDeck))
 
                 return (
                     <li key={step.key}>
@@ -137,14 +136,14 @@ function SetupWizard() {
         <div className="wizard">
             {phone ?
                 <div className="wizard-top wizard-top-phone" ref={topRef}>
-                    <AppLogo onClick={() => dispatch(setSetupStep(settings.collectionConfirmed ? 'investigator' : 'collection'))} />
+                    <AppLogo onClick={() => dispatch(setSetupStep('investigator'))} />
                     <button type="button" className="phone-step-title" aria-expanded={stepsOpen} aria-controls="phone-step-menu" onClick={() => setStepsOpen(!stepsOpen)}>
                         <span className="phone-step-count">{t('Step {current} of {total}', { current: currentIndex + 1, total: STEPS.length })}</span>
                         <span className="phone-step-name">{t(current.title)}</span>
                         <svg className="phone-step-chevron" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="m3 5 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </button>
                     <div className="app-header-controls">
-                        <SettingsMenu />
+                        <SettingsMenu onCollection={openCollection} />
                     </div>
                     <div className="phone-step-line" aria-hidden="true">
                         {STEPS.map((step, index) => <span className={index <= currentIndex ? 'filled' : ''} key={step.key}></span>)}
@@ -157,12 +156,12 @@ function SetupWizard() {
                 </div>
                 :
                 <div className="wizard-top">
-                    <AppLogo onClick={() => dispatch(setSetupStep(settings.collectionConfirmed ? 'investigator' : 'collection'))} />
+                    <AppLogo onClick={() => dispatch(setSetupStep('investigator'))} />
                     <nav className="wizard-crumbs" aria-label={t('Setup steps')}>
                         {stepList}
                     </nav>
                     <div className="app-header-controls">
-                        <SettingsMenu />
+                        <SettingsMenu onCollection={openCollection} />
                     </div>
                 </div>}
 
@@ -184,11 +183,12 @@ function SetupWizard() {
                         <button type="button" className="btn btn-secondary" onClick={() => goTo(STEPS[currentIndex - 1].key)}>{t('Back')}</button>}
                     {isLast ?
                         (phone ? <button type="button" className="btn btn-primary" onClick={start} disabled={!canStart}>{t('Start draft')}</button> : null) :
-                        <button type="button" className="btn btn-primary" onClick={goNext} disabled={current.key === 'investigator' && needsInvestigator}>{current.key === 'collection' ? t('Confirm collection') : t('Continue')}</button>}
+                        <button type="button" className="btn btn-primary" onClick={goNext} disabled={current.key === 'investigator' && needsInvestigator}>{t('Continue')}</button>}
                 </div>
             </section>
 
             <SetupSummary />
+            <CollectionDialog />
         </div>
     )
 }

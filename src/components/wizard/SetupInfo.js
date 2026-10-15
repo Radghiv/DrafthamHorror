@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux'
 
 import describeSetup from './describeSetup'
 import StartStatus from './StartStatus'
+import CollectionRecap from '../CollectionRecap'
 import { useT } from '../../i18n'
 
 // The choices made so far and whether they leave enough cards to draft (right column of the setup, below the Start button)
@@ -17,13 +18,16 @@ function SetupInfo() {
     return (
         <div className="settingsDiv setup-info">
             <h2>{t('Your setup')}</h2>
+            <StartStatus />
             <dl className="summary-list">
-                <dt>{t('Collection')}</dt><dd>{info.packSummary}</dd>
                 <dt>{t('Taboo list')}</dt><dd>{info.tabooLabel}</dd>
                 <dt>{info.isUpgradeTab ? t('Experience') : t('Deck size')}</dt><dd>{info.deckSizeLabel}</dd>
-                <dt>{t('Legal cards')}</dt><dd>{settings.filteredCount}</dd>
+                <dt>{t('Legal cards')}</dt><dd>{info.hasInvestigator ? settings.filteredCount : '—'}</dd>
             </dl>
-            <StartStatus />
+            <div className="setup-collection">
+                <span className="setup-collection-label">{t('Collection')}</span>
+                <CollectionRecap />
+            </div>
         </div>
     )
 }

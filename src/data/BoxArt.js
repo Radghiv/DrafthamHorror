@@ -1,4 +1,4 @@
-// The box art behind the groups of packs of the Collection step (the pictures are in assets/boxes, see SOURCES.md there). A group takes the
+// The box art behind the groups of packs of the collection panel (the pictures are in assets/boxes, see SOURCES.md there). A group takes the
 // boxes of the first of its packs that is in the map; a group with none keeps the art of its first investigator.
 const FILES = import.meta.glob('../assets/boxes/*.webp', { eager: true, query: '?url', import: 'default' })
 
@@ -17,7 +17,6 @@ const BOXES = {
     tdcp: { files: ['the-drowned-city-campaign-expansion'] },
     rtnotz: { files: ['return-to-the-night-of-the-zealot', 'return-to-the-dunwich-legacy', 'return-to-the-path-to-carcosa', 'return-to-the-forgotten-age', 'return-to-the-circle-undone'], row: 'long' },
     nat: { files: ['nathaniel-cho-investigator-starter-deck', 'harvey-walters-investigator-starter-deck', 'winifred-habbamock-investigator-starter-deck', 'jacqueline-fine-investigator-starter-deck', 'stella-clark-investigator-starter-deck'], row: 'tall' },
-    blbe: { files: ['the-blob-that-ate-everything'] },
     core_2026: { files: ['arkham-horror-the-card-game'] },
     tom: { files: ['tommy-muldoon-investigator-deck', 'carolyn-fern-investigator-deck', 'andre-patel-investigator-deck', 'marie-lambeau-investigator-deck', 'miguel-de-la-cruz-investigator-deck'], row: 'tall' }
 }

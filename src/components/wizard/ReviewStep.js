@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
 import { useSelector, useDispatch, useStore } from 'react-redux'
 
-import { setSetupStep, changeSeed } from '../../features/settings/settingsSlice'
+import { setSetupStep, setCollectionOpen, changeSeed } from '../../features/settings/settingsSlice'
 import { newSeed } from '../../random'
 import { buildShareLink, canShare } from '../../share'
 import describeSetup from './describeSetup'
 import StartStatus from './StartStatus'
+import CollectionRecap from '../CollectionRecap'
 import { CheckIcon } from './Icons'
 import { useT } from '../../i18n'
 
@@ -37,7 +38,7 @@ function ReviewStep() {
     const info = describeSetup(settings, tabooData, collection)
 
     const rows = [
-        { label: t('Collection'), edit: t('Edit collection'), value: info.packSummary, step: 'collection' },
+        { label: t('Collection'), edit: t('Edit collection'), value: <CollectionRecap />, step: 'collection' },
         { label: t('Mode'), edit: t('Edit mode'), value: info.isUpgradeTab ? t('Upgrade') : t('Build Deck'), step: 'rules' },
         { label: t('Investigator'), edit: t('Edit investigator'), value: info.classLine ? t('{name} ({details})', { name: info.investigatorName, details: info.classLine }) : info.investigatorName, step: 'investigator' },
         { label: t('Taboo list'), edit: t('Edit taboo list'), value: info.tabooLabel, step: 'collection' },
@@ -58,7 +59,7 @@ function ReviewStep() {
                             <dt>{row.label}</dt>
                             <dd>{row.value}</dd>
                         </div>
-                        <button type="button" className="link-btn" onClick={() => dispatch(setSetupStep(row.step))}
+                        <button type="button" className="link-btn" onClick={() => dispatch(row.step === 'collection' ? setCollectionOpen(true) : setSetupStep(row.step))}
                             aria-label={row.edit}>{t('Edit')}</button>
                     </div>
                 ))}

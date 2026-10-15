@@ -79,8 +79,10 @@ const initialState = {
     draftOrder: 'upgrade',
     upgradeAfterLevel0: false,
 
-    setupStep: collectionConfirmed ? 'investigator' : 'collection',
+    // the collection is not a step: its panel opens by itself the first time and after that from the settings
+    setupStep: 'investigator',
     collectionConfirmed: collectionConfirmed,
+    collectionOpen: !collectionConfirmed,
 
     // language of the card names (the card images stay English); 'en' is the language of the card data itself
     language: isLanguage(loadJSON(LANGUAGE_KEY, 'en')) ? loadJSON(LANGUAGE_KEY, 'en') : 'en',
@@ -294,7 +296,7 @@ const settingsSlice = createSlice({
             state.imageanchor = null
             state.imagecode = null
             state.imagepinned = false
-            state.setupStep = state.collectionConfirmed ? 'investigator' : 'collection'
+            state.setupStep = 'investigator'
             state.draftOrder = 'upgrade'
             state.upgradeAfterLevel0 = false
             state.investigatorPool = []
@@ -303,6 +305,12 @@ const settingsSlice = createSlice({
         },
         setInvestigatorMode(state, action) {
             state.investigatorMode = action.payload
+        },
+        // No investigator chosen: what depends on the one that was goes back to how it is when the page opens
+        clearInvestigator(state) {
+            ;['investigatorData', 'investigator', 'parallel', 'primaryClass', 'secondaryClass', 'classChoices', 'selectedDeckSize', 'traitChoice', 'deckSize'].forEach(key => {
+                state[key] = JSON.parse(JSON.stringify(initialState[key] === undefined ? null : initialState[key]))
+            })
         },
         setInvestigatorDraftOption(state, action) {
             state.investigatorDraftOptions[action.payload.name] = action.payload.value
@@ -357,8 +365,13 @@ const settingsSlice = createSlice({
         setSetupStep(state, action) {
             state.setupStep = action.payload
         },
+        // closing the collection panel (or starting a draft, or applying a shared setup) means the collection is good enough
         confirmCollection(state) {
             state.collectionConfirmed = true
+            state.collectionOpen = false
+        },
+        setCollectionOpen(state, action) {
+            state.collectionOpen = action.payload
         },
         updateImageOverlay(state, action) {
             state.imagesrc = action.payload.imagesrc
@@ -507,8 +520,8 @@ function calculateFilteredCount(dispatch, getState) {
     dispatch(changeSetting('FilteredResearch', research))
 }
 
-export const { changeInvestigator, changeSetting, beginDraft, endDraft, reset, updateImageOverlay, setSetupStep, confirmCollection, setUpgradeAfterLevel0, setCardsPerRow, setAnimationSpeed, setAnimateTogether, setScrollToTop, addBannedCard, removeBannedCard, clearBannedCards, setHighlightCost, setUndoDepth, changeSeed, setLanguage,
-    setInvestigatorMode, setInvestigatorDraftOption, beginInvestigatorDraft, endInvestigatorDraft, replaceInvestigatorInPool } = settingsSlice.actions
+export const { changeInvestigator, changeSetting, beginDraft, endDraft, reset, updateImageOverlay, setSetupStep, confirmCollection, setCollectionOpen, setUpgradeAfterLevel0, setCardsPerRow, setAnimationSpeed, setAnimateTogether, setScrollToTop, addBannedCard, removeBannedCard, clearBannedCards, setHighlightCost, setUndoDepth, changeSeed, setLanguage,
+    setInvestigatorMode, clearInvestigator, setInvestigatorDraftOption, beginInvestigatorDraft, endInvestigatorDraft, replaceInvestigatorInPool } = settingsSlice.actions
 export { changeInvestigatorList, changeInvestigatorDeck, calculateFilteredCount }
 
 export default settingsSlice.reducer

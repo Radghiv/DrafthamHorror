@@ -1,4 +1,3 @@
-import { countSelectedPacks } from './CollectionStep'
 import { t, msg, formatDate, LONG_DATE } from '../../i18n'
 
 const CLASS_NAMES = {
@@ -42,10 +41,6 @@ function describeSetup(settings, tabooData, collection) {
         if (index >= 0) tabooLabel = index === tabooData.length - 1 ? t('Latest list') : formatDate(settings.language, tabooData[index].date_start, LONG_DATE)
     }
 
-    const { coreCount, packCount } = countSelectedPacks(collection)
-    const packTotal = coreCount + packCount
-    const packSummary = t('{count} pack|{count} packs', { count: packTotal })
-
     const deckSize = settings.selectedDeckSize ? settings.selectedDeckSize : settings.deckSize
     const phaseIndex = isUpgradeTab ? 6 : 0
 
@@ -63,8 +58,9 @@ function describeSetup(settings, tabooData, collection) {
         factionCode: factionCode,
         classLine: drafted ? t('One of {count} random investigators', { count: settings.investigatorDraftOptions.count }) : classLine,
         tabooLabel: tabooLabel,
-        packSummary: packSummary,
-        deckSizeLabel: isUpgradeTab ? t('{xp} XP to spend', { xp: settings.draftXP }) : t('{count} cards', { count: deckSize }),
+        // the size of the deck is the investigator's: until one is chosen (or drafted) there is none to tell
+        deckSizeLabel: isUpgradeTab ? t('{xp} XP to spend', { xp: settings.draftXP }) : investigatorData ? t('{count} cards', { count: deckSize }) : t('Set by the investigator'),
+        hasInvestigator: Boolean(investigatorData),
         draftRules: draftRules,
         confirmLabel: settings.confirmDraft ? t('Confirm each pick') : t('Draft on first click'),
         // the same, to follow the rules in a sentence

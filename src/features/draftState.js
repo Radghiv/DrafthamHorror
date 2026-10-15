@@ -12,7 +12,7 @@ export const restoreDraftState = createAction('draftState/restore')
 
 // Settings that are preferences or belong to the setup screens rather than to the draft: restoring a snapshot leaves them as they are
 export const PREFERENCE_KEYS = [
-    'animationSpeed', 'animateTogether', 'scrollToTop', 'cardsPerRow', 'bannedCards', 'collectionConfirmed', 'setupStep', 'highlightCost',
+    'animationSpeed', 'animateTogether', 'scrollToTop', 'cardsPerRow', 'bannedCards', 'collectionConfirmed', 'collectionOpen', 'setupStep', 'highlightCost',
     'imagesrc', 'imageanchor', 'imagecode', 'imagepinned', 'undoDepth', 'language',
     'investigatorMode', 'investigatorDraftOptions', 'investigatorPool', 'investigatorDrafting'
 ]
@@ -77,6 +77,39 @@ export function peekUndo() {
 export function clearUndo() {
     undoStack = []
     startSnapshot = null
+    leftDraft = null
+}
+
+export function undoSize() {
+    return undoStack.length
+}
+
+// The deck draft that was left to choose another investigator, with its own undo points: Undo on the investigator draft brings it back.
+// It is dropped when another investigator is picked (the new deck draft starts from nothing) or when the history is cleared.
+let leftDraft = null
+
+// Puts the draft as it is now aside, with its undo points and its start, and starts the undo points over
+export function leaveDraft(state) {
+    leftDraft = { snapshot: takeSnapshot(state), stack: undoStack, start: startSnapshot }
+    undoStack = []
+    startSnapshot = null
+}
+
+// The draft that was put aside, whose undo points are the ones in use again (null when there is none)
+export function takeLeftDraft() {
+    const left = leftDraft
+
+    if (!left) return null
+
+    leftDraft = null
+    undoStack = left.stack
+    startSnapshot = left.start
+
+    return left.snapshot
+}
+
+export function dropLeftDraft() {
+    leftDraft = null
 }
 
 export function getStartSnapshot() {

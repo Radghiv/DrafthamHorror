@@ -15,7 +15,7 @@ import { motionSpeed } from './data/AnimationSpeed'
 import useMotionScale from './components/useMotionScale'
 import useSegmentedPills from './components/useSegmentedPills'
 import { clearUndo, clearSavedDraft } from './features/draftState'
-import { restartDraft } from './features/draftRestart'
+import { restartDraft, backToInvestigatorDraft, undoBackToInvestigators } from './features/draftRestart'
 
 import AppHeader from './components/AppHeader'
 import SetupWizard from './components/SetupWizard'
@@ -51,6 +51,7 @@ function ArkhamDraft() {
     const deckLoaded = useSelector(state => state.data.deckLoaded)
     const buildXPList = useSelector(state => state.draft.buildXPList)
     const investigatorDrafting = useSelector(state => state.settings.investigatorDrafting)
+    const investigatorMode = useSelector(state => state.settings.investigatorMode)
     const draftPhase = useSelector(state => state.draft.phase)
     const draftType = useSelector(state => state.settings.draftType)
     const currentLevel0Name = useSelector(state => state.draft.currentLevel0Name)
@@ -117,6 +118,15 @@ function ArkhamDraft() {
     }, [draftComplete, dispatch])
 
     function undo() {
+        // on the investigator draft the one thing to undo is having left the deck draft: it comes back as it was
+        if (investigatorDrafting) {
+            playLeaveEffect(animationSpeed)
+            dispatch(undoBackToInvestigators)
+            setAnnouncement(t('Back in the deck draft'))
+
+            return
+        }
+
         // from the finished draft: the panels that only it has fade away
         if (draftComplete) playCompletionLeave(animationSpeed)
 
@@ -144,6 +154,13 @@ function ArkhamDraft() {
         dispatch(changeSeed(newSeed()))
     }
 
+    // From the deck draft back to the investigator draft (the breadcrumbs offer it when the setup had one): the screen fades away, the deck
+    // draft is dropped and new investigators are dealt
+    function goBackToInvestigators() {
+        playLeaveEffect(animationSpeed)
+        dispatch(backToInvestigatorDraft)
+    }
+
     // the compact top bar names the current phase
     const inDraft = drafting || draftComplete || deckLoaded || investigatorDrafting
     let headerText = ''
@@ -155,7 +172,10 @@ function ArkhamDraft() {
     // the setup wizard draws its own top row (logo, steps, controls); the header serves every other screen
     const inWizard = !fetchError && Boolean(cardData) && Boolean(tabooData) && !inDraft
 
-    const canUndo = undoDepth > 0 && (drafting || draftComplete || deckLoaded) && !investigatorDrafting
+    // the investigator draft can be gone back to from the screens after it, when the setup includes one; there, Undo brings the deck draft back
+    const canChooseInvestigatorAgain = investigatorMode === 'draft' && inDraft && !investigatorDrafting
+
+    const canUndo = undoDepth > 0 && (drafting || draftComplete || deckLoaded || investigatorDrafting)
 
     // Ctrl+Z / Cmd+Z undoes the last pick (outside of text fields, which keep their own undo)
     useEffect(() => {
@@ -176,7 +196,7 @@ function ArkhamDraft() {
 
         return () => window.removeEventListener('keydown', handleKeyDown)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [canUndo, dispatch])
+    }, [canUndo, investigatorDrafting, draftComplete, dispatch])
 
     let contents = null
 
@@ -261,7 +281,7 @@ function ArkhamDraft() {
     return (
         <div className={'App' + (phone ? ' is-phone' : '')}>
             <a className="skip-link" href="#main-content">{t('Skip to the content')}</a>
-            <AppHeader compact={inDraft} inWizard={inWizard} phaseText={headerText} showCardsPerRow={drafting} onRestart={inDraft ? () => dispatch(restartDraft) : null} onHome={inDraft ? goHome : null} onUndo={canUndo ? undo : null} hasDock={hasDock} />
+            <AppHeader compact={inDraft} inWizard={inWizard} phaseText={headerText} showCardsPerRow={drafting} onRestart={inDraft ? () => dispatch(restartDraft) : null} onHome={inDraft ? goHome : null} onInvestigator={canChooseInvestigatorAgain ? goBackToInvestigators : null} onUndo={canUndo ? undo : null} hasDock={hasDock} />
             <main id="main-content" tabIndex={-1}>
                 {contents}
             </main>

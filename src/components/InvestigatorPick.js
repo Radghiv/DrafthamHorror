@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { pickInvestigator, startInvestigatorDraft, redrawInvestigator, eligibleInvestigators } from '../features/settings/investigatorActions'
@@ -53,6 +54,21 @@ function InvestigatorPick() {
 
     const [selected, setSelected] = useState(null)
 
+    // the place in the top bar (after the breadcrumbs) where the Redraw all button of a PC is drawn
+    const [headerSlot, setHeaderSlot] = useState(null)
+
+    useEffect(() => {
+        setHeaderSlot(document.getElementById('draft-header-slot'))
+    }, [phone])
+
+    // coming to this screen (from the setup, or resuming a draft) starts at the top of the page, where the investigators are; the setting is
+    // read once, so changing it here doesn't scroll
+    const scrollOnArrival = useRef(scrollToTop)
+
+    useLayoutEffect(() => {
+        if (scrollOnArrival.current) window.scrollTo(0, 0)
+    }, [])
+
     const entries = pool.map(entry => ({ entry: entry, card: findInvestigatorCard(entry, cardData) }))
 
     // a redrawn investigator can't be the selected one any more
@@ -105,11 +121,11 @@ function InvestigatorPick() {
     return (
         <>
             {phone ?
-                <div className="phone-pick-top">
-                    <span aria-live="polite">{current ? '' : t('Select an investigator')}</span>
+                <div className="phone-pick-top is-end">
                     <button type="button" className="btn btn-secondary" onClick={handleReroll}><RedrawIcon /> {t('Redraw all')}</button>
                 </div>
                 : null}
+            {!phone && headerSlot ? createPortal(<button type="button" className="btn btn-secondary header-redraw" onClick={handleReroll}><RedrawIcon /> {t('Redraw all')}</button>, headerSlot) : null}
             <div className="investigator-pick-grid">
                 {entries.map(({ entry, card }, index) => {
                     const isSelected = current === entry
@@ -149,18 +165,8 @@ function InvestigatorPick() {
                     </div>
                 </Presence>
                 :
-            <div className="confirm-bar">
-                <div className="bar-row">
-                    <div className="confirm-bar-text" aria-live="polite">
-                        <span className="confirm-swap" key={current || ''}>{current ? t('Draft {name}?', { name: current }) : t('Select an investigator')}</span>
-                        <span className="confirm-bar-hint">{t('Click the selected investigator again to pick it. Hover the cards (or press and hold them) for a bigger preview.')}</span>
-                    </div>
-                    <div className="confirm-bar-actions">
-                        <button type="button" className="btn btn-primary" aria-disabled={!current} onClick={() => { if (current) pick(current) }}>{t('Draft this investigator')}</button>
-                        <button type="button" className="btn btn-secondary" onClick={handleReroll}><RedrawIcon /> {t('Redraw all')}</button>
-                    </div>
-                </div>
-            </div>}
+                // a click selects, a second click picks: the selection is told to screen readers
+                <span className="sr-only" aria-live="polite">{current ? t('Draft {name}?', { name: current }) : t('Select an investigator')}</span>}
         </>
     )
 }

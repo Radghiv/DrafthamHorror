@@ -70,13 +70,13 @@ describe('translateTo', () => {
     test('uses the plural rules of the language', async () => {
         await loadLocale('ru')
 
-        const forms = JSON.parse(fs.readFileSync(path.join(localesDir, 'ru.json'), 'utf-8'))['{count} pack|{count} packs'].split('|')
+        const forms = JSON.parse(fs.readFileSync(path.join(localesDir, 'ru.json'), 'utf-8'))['{count} card|{count} cards'].split('|')
 
         // Russian: one = 1, few = 2-4, many = 5-20
-        expect(translateTo('ru', '{count} pack|{count} packs', { count: 1 })).toBe(forms[0].replace('{count}', '1'))
-        expect(translateTo('ru', '{count} pack|{count} packs', { count: 3 })).toBe(forms[1].replace('{count}', '3'))
-        expect(translateTo('ru', '{count} pack|{count} packs', { count: 5 })).toBe(forms[2].replace('{count}', '5'))
-        expect(translateTo('ru', '{count} pack|{count} packs', { count: 21 })).toBe(forms[0].replace('{count}', '21'))
+        expect(translateTo('ru', '{count} card|{count} cards', { count: 1 })).toBe(forms[0].replace('{count}', '1'))
+        expect(translateTo('ru', '{count} card|{count} cards', { count: 3 })).toBe(forms[1].replace('{count}', '3'))
+        expect(translateTo('ru', '{count} card|{count} cards', { count: 5 })).toBe(forms[2].replace('{count}', '5'))
+        expect(translateTo('ru', '{count} card|{count} cards', { count: 21 })).toBe(forms[0].replace('{count}', '21'))
     })
 
     test('shows English for a text without translation', async () => {

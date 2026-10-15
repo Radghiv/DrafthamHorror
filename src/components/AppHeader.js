@@ -3,6 +3,7 @@ import React from 'react'
 import SettingsMenu from './SettingsMenu'
 import AppLogo from './AppLogo'
 import RestartButton from './RestartButton'
+import DraftBreadcrumbs from './DraftBreadcrumbs'
 import usePhoneLayout from './usePhoneLayout'
 import useDraftProgress from '../draft/useDraftProgress'
 import { UndoIcon } from './wizard/Icons'
@@ -42,7 +43,7 @@ function PhoneProgressLine() {
 function AppHeader(props) {
     // the setup wizard has its own top row with the logo, the steps and the language and theme controls (inWizard)
     // hasDock: the phone's dock is on screen, and it holds Undo
-    const { onRestart, onUndo, onHome, compact, phaseText, showCardsPerRow, inWizard, hasDock } = props
+    const { onRestart, onUndo, onHome, onInvestigator, compact, phaseText, showCardsPerRow, inWizard, hasDock } = props
 
     const t = useT()
 
@@ -57,7 +58,7 @@ function AppHeader(props) {
             <header className="app-header phone-top">
                 <div className="phone-top-row">
                     <AppLogo onClick={onHome} />
-                    {compact && phaseText ? <h1 className="app-phase" title={phaseText} key={phaseText}>{phaseText}</h1> : <span className="phone-top-fill"></span>}
+                    {compact && phaseText ? <DraftBreadcrumbs phaseText={phaseText} onHome={onHome} onInvestigator={onInvestigator} /> : <span className="phone-top-fill"></span>}
                     {showCardsPerRow ? <PhoneProgressCount /> : null}
                     {onUndo && !hasDock ? <button type="button" className="icon-btn" onClick={onUndo} aria-label={t('Undo')} title={t('Undo the last pick (Ctrl+Z)')}><UndoIcon /></button> : null}
                     <SettingsMenu onRestart={onRestart} />
@@ -70,7 +71,8 @@ function AppHeader(props) {
     return (
         <header className={'app-header' + (compact ? ' app-header-compact' : '')}>
             <AppLogo onClick={onHome} />
-            {compact && phaseText ? <h1 className="app-phase" key={phaseText}>{phaseText}</h1> : null}
+            {compact && phaseText ? <DraftBreadcrumbs phaseText={phaseText} onHome={onHome} onInvestigator={onInvestigator} /> : null}
+            {compact ? <div className="draft-header-slot" id="draft-header-slot"></div> : null}
             <div className="app-header-controls">
                 <SettingsMenu />
                 {onUndo ? <button type="button" className="btn btn-secondary" onClick={onUndo} title={t('Undo the last pick (Ctrl+Z)')}>{t('Undo')}</button> : null}

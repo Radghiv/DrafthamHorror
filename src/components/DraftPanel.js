@@ -48,6 +48,14 @@ function DraftPanel(props) {
     const [announcement, setAnnouncement] = useState('')
 
     const draftPool = useSelector(state => state.draft.draftPool)
+
+    // the pool as of the latest render (the timers that close the cost modifiers boxes look at it when they fire), and those timers
+    const poolRef = useRef(draftPool)
+    const modifierTimers = useRef({})
+
+    poolRef.current = draftPool
+
+    useEffect(() => () => Object.values(modifierTimers.current).forEach(timer => clearTimeout(timer)), [])
     const draftType = useSelector(state => state.settings.draftType)
     const insufficientOptions = useSelector(state => state.draft.insufficientDraftOptions)
     const requireConfirmation = useSelector(state => state.settings.confirmDraft)
@@ -59,6 +67,13 @@ function DraftPanel(props) {
     const scrollToTop = useSelector(state => state.settings.scrollToTop)
 
     const phone = usePhoneLayout()
+
+    // the place in the top bar (after the breadcrumbs) where the Redraw all button of a PC is drawn
+    const [headerSlot, setHeaderSlot] = useState(null)
+
+    useEffect(() => {
+        setHeaderSlot(document.getElementById('draft-header-slot'))
+    }, [phone])
     const progress = useDraftProgress()
 
     // phone: the card whose cost modifiers are open in the sheet
@@ -80,8 +95,6 @@ function DraftPanel(props) {
     function cardLabel(card) {
         return cardName(card) + (card.xp ? ' ' + t('(level {level})', { level: card.xp }) : '')
     }
-
-    var displayedBox = false
 
     // With confirmation required the first click selects a card and a second click on the same card drafts it, so the
     // pointer never has to move. Enter does the same from the keyboard (see the effect below).
@@ -279,11 +292,24 @@ function DraftPanel(props) {
     // The cost modifiers of a card (PC): the pill over the pips under its cost opens the box with the details at the bottom of the card when
     // the pointer is over it (1) and keeps it open while the pointer is anywhere on the card, or until it is clicked, which holds it open (2)
     // until it is clicked again
+    // The cost modifiers box that opens on hovering the XP pill stays while the pointer is on the pill or on the box (to reach what is in it), and
+    // closes a moment after it leaves both; the moment is for crossing the gap between them. A box held open with a click isn't closed by this.
     function expandPanelHover(index) {
+        clearTimeout(modifierTimers.current[index])
+
         if (draftPool[index] && draftPool[index].expandedModifiers === 0) dispatch(expandModifiers(index))
     }
+    function keepPanelHover(index) {
+        clearTimeout(modifierTimers.current[index])
+    }
     function minimizePanelHover(index) {
-        if (draftPool[index] && draftPool[index].expandedModifiers === 1) dispatch(minimizeModifiers(index))
+        clearTimeout(modifierTimers.current[index])
+
+        modifierTimers.current[index] = setTimeout(() => {
+            const card = poolRef.current[index]
+
+            if (card && card.expandedModifiers === 1) dispatch(minimizeModifiers(index))
+        }, 150)
     }
     function expandPanelClick(index, event) {
         const clickedElement = event.target.nodeName
@@ -340,6 +366,13 @@ function DraftPanel(props) {
         setRedrawing(previous => ({ ...previous, [card.key]: true }))
         dispatch(hideDraftPoolCard(index))
         setTimeout(replace, 600 / speed)
+    }
+
+    // Redraws every card that is face up: each one is replaced like a single redraw, by a card that is not on the table
+    function handleRedrawAll() {
+        draftPool.forEach((card, index) => {
+            if (card.revealed) handleRedraw(index)
+        })
     }
 
     // this address failed: try the next source, or give up when there is none left
@@ -480,7 +513,7 @@ function DraftPanel(props) {
         else if (hasModifierBox(i)) {
             const open = draftPool[i].expandedModifiers
 
-            modifierPill = <div className={'draft-modifiers-minimized' + (open ? ' is-open' : '')} style={{ backgroundColor: classColor }} onClick={event => expandPanelClick(i, event)} onMouseEnter={() => expandPanelHover(i)}>
+            modifierPill = <div className={'draft-modifiers-minimized' + (open ? ' is-open' : '')} style={{ backgroundColor: classColor }} onClick={event => expandPanelClick(i, event)} onMouseEnter={() => expandPanelHover(i)} onMouseLeave={() => minimizePanelHover(i)}>
                 <div className="modifier-panel-div">
                     <p className="minimized-modifier-cost" style={{padding: '0px'}}><b>{draftPool[i].xpcost}</b></p>
                     <p className="minimized-modifier-xp"><b>{t('XP')}</b></p>
@@ -492,7 +525,8 @@ function DraftPanel(props) {
                 const { modifierList, upgradeSelector, researchSelector } = modifierParts(i)
 
                 if (modifierList.length > 0 || upgradeSelector || researchSelector) {
-                    modifierBox = <div className={'draft-modifiers-expanded' + (open ? ' is-open' : '')} style={{ backgroundColor: classColor }} onClick={event => expandPanelClick(i, event)}>
+                    modifierBox = <div className={'draft-modifiers-expanded' + (open ? ' is-open' : '')} style={{ backgroundColor: classColor }} onClick={event => expandPanelClick(i, event)}
+                        onMouseEnter={() => keepPanelHover(i)} onMouseLeave={() => minimizePanelHover(i)}>
                         <div className="modifier-panel-div">
                             {modifierList.length > 0 ?
                                 <p className="upgrade-header"><b>{t('Cost Modifiers')}</b></p>
@@ -504,8 +538,6 @@ function DraftPanel(props) {
                     </div>
                 }
             }
-
-            displayedBox = true
         }
 
         const isSelected = requireConfirmation && selectedDraftCard === i
@@ -546,8 +578,7 @@ function DraftPanel(props) {
         const cardWrap =
             <div className={'draft-card-wrap' + (isSelected ? ' selected' : '') + (faceUp ? '' : ' facedown')} key={phone ? undefined : i} data-card-key={draftPool[i].key}
                 onPointerEnter={event => { if (faceUp && hasImage) doCardOverlay(draftPool[i], event) }}
-                onPointerLeave={() => doCardOverlay(null)}
-                onMouseLeave={() => minimizePanelHover(i)}>
+                onPointerLeave={() => doCardOverlay(null)}>
                 <div className="flip">
                     <div className="flip-face flip-back" aria-hidden="true">
                         <img src={PLAYER_CARD_BACK} alt="" onError={event => { event.target.style.display = 'none' }} />
@@ -606,8 +637,8 @@ function DraftPanel(props) {
 
     const optionsWarning = insufficientOptions ? <p className="notice notice-error" role="alert">{t('There are no remaining legal draft options')}</p> : null
 
-    const instructionsBox = insufficientOptions || !displayedBox ? null :
-        <p className="notice">{t('Hover over the XP cost on a card to display the cost modifiers, click to hold them open')}</p>
+    // all the cards can be redrawn at once in the draft that allows redrawing one; not while some are being redrawn or still turning over
+    const canRedrawAll = draftType === 'draft' && !insufficientOptions && draftPool.some(card => card.revealed) && Object.keys(redrawing).length === 0
 
     const hasSelection = requireConfirmation && selectedDraftCard !== null && selectedDraftCard !== undefined && draftPool[selectedDraftCard]
 
@@ -624,20 +655,14 @@ function DraftPanel(props) {
                 </div>
                 <div className="bar-count"><strong key={progressValue}>{progressValue}</strong> / {progressTarget} {progressUnit}</div>
             </div>
-            <div className="bar-row">
-                <div className="confirm-bar-text" aria-live="polite">
-                    <span className="confirm-swap" key={confirmText}>{confirmText}</span>
-                    {!insufficientOptions ?
-                        <span className="confirm-bar-hint">{requireConfirmation ? t('Click the selected card again or press Enter. Esc clears the selection.') : t('Picks are added right away.')}</span>
-                        : null}
+            {showDone ?
+                <div className="bar-row">
+                    <div className="confirm-bar-actions">
+                        <button type="button" className="btn btn-secondary" onClick={doneClick}>{t('Done')}</button>
+                    </div>
                 </div>
-                <div className="confirm-bar-actions">
-                    {requireConfirmation && !insufficientOptions ?
-                        <button type="button" className="btn btn-primary" onClick={() => { if (hasSelection) confirmSelected() }} aria-disabled={!hasSelection}>{t('Draft this card')}</button>
-                        : null}
-                    {showDone ? <button type="button" className="btn btn-secondary" onClick={doneClick}>{t('Done')}</button> : null}
-                </div>
-            </div>
+                : null}
+            {phone ? null : <span className="sr-only" aria-live="polite">{confirmText}</span>}
         </div>
 
     // On a phone the confirm bar is replaced by a strip that only exists while there is something to confirm (the progress is in the top
@@ -684,7 +709,14 @@ function DraftPanel(props) {
     return (
         <>
             {optionsWarning}
-            {phone ? null : instructionsBox}
+            {phone && draftType === 'draft' ?
+                <div className="phone-pick-top is-end">
+                    <button type="button" className="btn btn-secondary" disabled={!canRedrawAll} onClick={handleRedrawAll}><RedrawIcon /> {t('Redraw all')}</button>
+                </div>
+                : null}
+            {!phone && draftType === 'draft' && headerSlot ?
+                createPortal(<button type="button" className="btn btn-secondary header-redraw" disabled={!canRedrawAll} onClick={handleRedrawAll}><RedrawIcon /> {t('Redraw all')}</button>, headerSlot)
+                : null}
             <div className='draft-container' style={{ '--flip-duration': speed === 0 ? '0s' : (0.6 / speed) + 's', ...(cardsPerRow > 0 ? { gridTemplateColumns: 'repeat(' + cardsPerRow + ', minmax(0, 1fr))' } : {}) }}>
                 {images}
             </div>

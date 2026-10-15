@@ -1,4 +1,5 @@
-import { changeSetting, changeInvestigatorList, calculateFilteredCount, beginInvestigatorDraft, endInvestigatorDraft, replaceInvestigatorInPool } from './settingsSlice'
+import { changeSetting, changeInvestigatorList, calculateFilteredCount, beginInvestigatorDraft, endInvestigatorDraft, replaceInvestigatorInPool, setUndoDepth } from './settingsSlice'
+import { dropLeftDraft } from '../draftState'
 import { startDraft } from '../draft/draftSlice'
 import { random } from '../../random'
 
@@ -89,6 +90,10 @@ export function redrawInvestigator(index) {
 // The drafted investigator is chosen: the deck draft goes on from there
 export function pickInvestigator(entry) {
     return function pickInvestigatorThunk(dispatch, getState) {
+        // a deck draft put aside to choose again is gone now, and so is the Undo that was for it
+        dropLeftDraft()
+        dispatch(setUndoDepth(0))
+
         dispatch(selectInvestigatorEntry(entry))
         dispatch(endInvestigatorDraft())
 

@@ -1302,17 +1302,81 @@ a {
     justify-content: flex-start;
     max-width: var(--content-max);
     margin: 0 auto;
-    padding-top: 8px;
-    padding-bottom: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
 }
+/* the bar is as short as it can be, so the cards get the room: a small logo, the phase in a smaller size, and (below) smaller buttons */
 .app-header-compact .app-logo {
-    height: clamp(72px, 8vw, 112px);
+    height: 60px;
+}
+.app-header-compact .app-phase {
+    font-size: 22px;
 }
 .app-phase {
     margin: 0;
     font-family: var(--font);
     font-size: 28px;
     line-height: 1.2;
+}
+/* the breadcrumbs of the draft bar: Setup and the investigator draft are links, the phase is where you are */
+.draft-crumbs {
+    min-width: 0;
+}
+.draft-crumbs .breadcrumbs {
+    flex-wrap: nowrap;
+}
+.draft-crumbs .breadcrumbs > li:last-child {
+    min-width: 0;
+}
+.draft-crumbs .app-phase {
+    padding-left: 6px;
+}
+/* what a draft screen puts in the top bar after the breadcrumbs (the Redraw all button) */
+.draft-header-slot {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+.draft-header-slot:empty {
+    display: none;
+}
+.header-redraw {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 16px;
+    font-size: 15px;
+    white-space: nowrap;
+}
+.header-redraw svg {
+    width: 18px;
+    height: 18px;
+}
+.crumb {
+    min-height: 36px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 17px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color calc(0.18s * var(--motion-scale, 1)) ease;
+}
+@media (hover: hover) {
+    .crumb:hover {
+        color: var(--primary);
+        text-decoration: underline;
+        text-underline-offset: 4px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .crumb {
+        transition: none;
+    }
 }
 .app-header-controls {
     position: relative;
@@ -1334,6 +1398,21 @@ a {
         top: 50%;
         right: var(--gutter);
         transform: translateY(-50%);
+        gap: 8px;
+    }
+    .app-header-compact .app-header-controls .btn,
+    .app-header-compact .install-btn .icon-btn,
+    .app-header-compact .settings-menu .icon-btn {
+        min-height: 40px;
+    }
+    .app-header-compact .install-btn .icon-btn,
+    .app-header-compact .settings-menu .icon-btn {
+        width: 40px;
+        height: 40px;
+    }
+    .app-header-compact .app-header-controls .btn {
+        padding: 0 18px;
+        font-size: 15px;
     }
 }
 .theme-switch {
@@ -1942,6 +2021,13 @@ a {
     font-size: 14px;
     color: var(--muted);
 }
+/* when the investigator is drafted the card reads "Investigator", then what it will be (in the text color), then the detail */
+.investigator-subtitle.is-value {
+    margin-bottom: 2px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+}
 .wizard-summary .investigator-grid {
     margin: 0;
     gap: 10px;
@@ -1983,11 +2069,100 @@ a {
 
 /* collection step */
 
+/* the recap of the collection: a card per chapter, a row per kind of product with how much of it is selected */
+.recap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.recap-chapter {
+    flex: 1 1 260px;
+    min-width: 0;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: var(--surface-2);
+}
+.recap-title {
+    margin: 0 0 6px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.recap-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.recap-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 5px 0;
+    border-top: 1px solid var(--line);
+}
+.recap-row:first-child {
+    border-top: 0;
+}
+.recap-label {
+    font-weight: 700;
+}
+.recap-note {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    color: var(--muted);
+    font-size: 13px;
+}
+.recap-count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+.recap-row.is-none .recap-label,
+.recap-row.is-none .recap-count {
+    color: var(--muted);
+    font-weight: 500;
+}
+.recap-row.is-partial .recap-count,
+.recap-row.is-partial .recap-note {
+    color: var(--primary);
+}
+.setup-collection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+}
+.setup-collection-label {
+    color: var(--muted);
+    font-size: 15px;
+}
+.setup-collection .recap {
+    gap: 8px;
+}
+.setup-collection .recap-chapter {
+    flex-basis: 100%;
+    padding: 0;
+    background: transparent;
+}
+.setup-collection .recap-title {
+    margin-bottom: 2px;
+}
+.setup-collection .recap-row {
+    padding: 3px 0;
+    font-size: 14px;
+}
+.review-row .recap-chapter {
+    padding: 8px 14px;
+}
 .collection-toolbar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 12px 16px;
 }
 .cycle-grid {
@@ -2187,6 +2362,7 @@ a {
     opacity: 0.8;
 }
 .confirm-bar-actions {
+    margin-left: auto;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
@@ -3394,6 +3570,24 @@ main:focus {
     min-height: 44px;
     align-items: center;
 }
+.phone-top .draft-crumbs {
+    flex: 1;
+    min-width: 0;
+}
+.phone-top .crumb {
+    min-height: 40px;
+    padding: 0 3px;
+    font-size: 14px;
+}
+.phone-top .draft-crumbs .app-phase {
+    padding-left: 2px;
+    font-size: 16px;
+}
+.phone-top .breadcrumbs > li + li::before {
+    width: 6px;
+    height: 6px;
+    margin: 0 3px;
+}
 .phone-top .app-phase {
     flex: 1;
     min-width: 0;
@@ -4103,6 +4297,9 @@ main:focus {
     justify-content: space-between;
     gap: 12px;
     padding: 4px 0 12px;
+}
+.phone-pick-top.is-end {
+    justify-content: flex-end;
 }
 .phone-pick-top span {
     min-width: 0;
@@ -5323,20 +5520,56 @@ html.theme-fade *::after {
         transition: none;
     }
 }
+/* the header of the offline storage panel: the title with what is kept under it (lined up with the title, past the chevron), and a compact
+   refresh button beside them; on a narrow screen the button goes below, as wide as the panel */
 .cache-head {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 8px 12px;
+    gap: 6px 16px;
+    padding: 6px 0;
+}
+.cache-heading {
+    flex: 1 1 280px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 .cache-summary {
-    margin: 0 0 6px;
+    margin: 0 0 0 22px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
 }
-.cache-head .btn {
+.cache-refresh {
+    flex: none;
+    min-height: 40px;
+    padding: 0 16px;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+.cache-refresh svg {
+    width: 18px;
+    height: 18px;
+}
+@media only screen and (max-width: 560px) {
+    .cache-head {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .cache-heading {
+        flex: none;
+    }
+    .cache-refresh {
+        width: 100%;
+        margin-bottom: 6px;
+    }
 }
 
 /* hover: a soft ring of the theme's accent lights up around the element and nothing moves (only where there is a pointer to hover with);
@@ -5469,6 +5702,132 @@ html.theme-fade *::after {
     .check-row,
     .btn svg,
     .icon-btn svg {
+        transition: none;
+    }
+}
+
+/* the collection panel: a sheet over the setup, opened from the settings (and by itself the first time) */
+.collection-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    background: rgba(0, 0, 0, 0.55);
+    animation: fade-in calc(0.18s * var(--motion-scale, 1)) ease-out;
+}
+.collection-sheet {
+    width: min(100%, 1040px);
+    max-height: 100%;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    font-size: max(14px, min(3.6vw, 16px));
+    text-align: left;
+    animation: dialog-in calc(0.22s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.collection-backdrop.is-leaving {
+    animation: fade-out calc(0.16s * var(--motion-scale, 1)) ease-in forwards;
+}
+.collection-backdrop.is-leaving .collection-sheet {
+    animation: dialog-out calc(0.16s * var(--motion-scale, 1)) ease-in forwards;
+}
+.collection-head {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+}
+.collection-heading {
+    min-width: 0;
+}
+.collection-heading h2 {
+    margin: 0 0 6px;
+    padding: 0;
+    font-size: 22px;
+    outline: none;
+}
+.collection-heading p {
+    margin: 0;
+    max-width: 70ch;
+    color: var(--muted);
+    line-height: 1.5;
+}
+.collection-body {
+    padding: 20px 24px 28px;
+}
+@media only screen and (max-width: 700px) {
+    .collection-backdrop {
+        padding: 0;
+    }
+    .collection-sheet {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 0;
+    }
+    .collection-head {
+        padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 12px;
+    }
+    .collection-heading h2 {
+        font-size: 18px;
+    }
+    .collection-heading p {
+        display: none;
+    }
+    .collection-body {
+        padding: 16px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .collection-backdrop,
+    .collection-sheet {
+        animation: none;
+    }
+}
+
+/* the first row of the settings menu on the setup screens: it opens the collection */
+.settings-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 48px;
+    padding: 8px 14px;
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+    transition: box-shadow calc(0.18s * var(--motion-scale, 1)) ease, border-color calc(0.18s * var(--motion-scale, 1)) ease;
+}
+@media (hover: hover) {
+    .settings-link:hover {
+        border-color: var(--primary);
+        box-shadow: var(--halo);
+    }
+}
+.settings-link:active {
+    box-shadow: var(--halo-press);
+}
+@media (prefers-reduced-motion: reduce) {
+    .settings-link {
         transition: none;
     }
 }

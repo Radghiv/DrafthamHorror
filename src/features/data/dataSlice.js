@@ -219,7 +219,7 @@ export async function fetchTranslations(dispatch, getState) {
     })
 }
 
-// ---- The saved copies, for the cache panel of the Collection step: what each one is, and how to read, fill and delete it without touching the
+// ---- The saved copies, for the cache panel of the collection panel: what each one is, and how to read, fill and delete it without touching the
 // state (the app keeps using what it has loaded until the page is loaded again).
 
 // One row of the panel: a title, and the copies behind it (a language has two: the names of the cards and the names of the packs). The first

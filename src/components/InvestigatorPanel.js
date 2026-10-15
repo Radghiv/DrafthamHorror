@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { changeSetting, calculateFilteredCount, setInvestigatorMode } from '../features/settings/settingsSlice'
+import { changeSetting, calculateFilteredCount, setInvestigatorMode, clearInvestigator } from '../features/settings/settingsSlice'
 import { selectInvestigatorEntry } from '../features/settings/investigatorActions'
 import { unloadDeck } from '../features/data/dataSlice'
 import { OfficialColorForClass, darkenColor, readableTextColor } from '../data/ClassColors'
@@ -71,7 +71,8 @@ function InvestigatorPanel(props) {
         dispatch(selectInvestigatorEntry(investigatorData[Math.floor(Math.random() * investigatorData.length)]))
     }
 
-    // three ways to choose the investigator; leaving ArkhamDB drops the deck that was taken from it
+    // three ways to choose the investigator; leaving ArkhamDB drops the deck that was taken from it, and going to ArkhamDB drops the
+    // investigator chosen from the list (it comes with the deck)
     const MODES = [
         { key: 'list', label: msg('From the list') },
         { key: 'arkhamdb', label: msg('From ArkhamDB') },
@@ -83,6 +84,11 @@ function InvestigatorPanel(props) {
 
         if (deckValidation.status === 'valid') dispatch(unloadDeck)
         dispatch(setInvestigatorMode(key))
+
+        if (key === 'arkhamdb' && settings.investigatorData) {
+            dispatch(clearInvestigator())
+            dispatch(calculateFilteredCount)
+        }
     }
 
     let secondaryFactionList = null

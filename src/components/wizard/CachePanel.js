@@ -192,18 +192,20 @@ function CachePanel() {
     return (
         <section className={'cache-panel' + (open ? ' is-open' : '')}>
             <div className="cache-head">
-                <button type="button" className="cycle-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
-                    <svg className="cycle-chevron" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="m3 5 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                    <strong>{t('Offline storage')}</strong>
-                </button>
-                <button type="button" className="btn btn-secondary" onClick={refreshData}>
+                <div className="cache-heading">
+                    <button type="button" className="cycle-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+                        <svg className="cycle-chevron" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="m3 5 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                        <strong>{t('Offline storage')}</strong>
+                    </button>
+                    <p className="cache-summary">
+                        {dataDate ? t('Card data from ArkhamDB, fetched on {date}.', { date: formatDate(dataDate, LONG_DATE) }) : t('Card data from ArkhamDB.')}{' '}
+                        {t('It is kept in this browser until you refresh it.')}
+                    </p>
+                </div>
+                <button type="button" className="btn btn-secondary cache-refresh" onClick={refreshData}>
                     <RedrawIcon /> {t('Refresh card data')}
                 </button>
             </div>
-            <p className="field-hint cache-summary">
-                {dataDate ? t('Card data from ArkhamDB, fetched on {date}.', { date: formatDate(dataDate, LONG_DATE) }) : t('Card data from ArkhamDB.')}{' '}
-                {t('It is kept in this browser until you refresh it.')}
-            </p>
             {open ?
                 <div className="cache-body">
                     <p className="field-hint">{t('What the app keeps on this device so that it starts at once and works without a connection.')}</p>
