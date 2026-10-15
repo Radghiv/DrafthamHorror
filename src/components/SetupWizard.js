@@ -10,6 +10,7 @@ import SetupSummary from './wizard/SetupSummary'
 import SetupLeftColumn from './wizard/SetupLeftColumn'
 import useStartDraft from './wizard/useStartDraft'
 import usePhoneLayout from './usePhoneLayout'
+import useSwipe from './useSwipe'
 import InvestigatorPanel from './InvestigatorPanel'
 import AppLogo from './AppLogo'
 import SettingsMenu from './SettingsMenu'
@@ -38,6 +39,7 @@ function SetupWizard() {
 
     const [stepsOpen, setStepsOpen] = useState(false)
     const topRef = useRef(null)
+    const wizardRef = useRef(null)
 
     const currentIndex = Math.max(0, STEPS.findIndex(step => step.key === settings.setupStep))
     const current = STEPS[currentIndex]
@@ -62,6 +64,17 @@ function SetupWizard() {
     function openCollection() {
         dispatch(setCollectionOpen(true))
     }
+
+    // On a phone a sideways swipe on the page goes to the next step (left) or the one before (right); forward is held back like the Continue
+    // button is, while there is no investigator to go on with. The controls at the top don't count.
+    useSwipe(wizardRef, direction => {
+        const target = direction === 'left' ? currentIndex + 1 : currentIndex - 1
+
+        if (target < 0 || target >= STEPS.length) return
+        if (direction === 'left' && current.key === 'investigator' && needsInvestigator) return
+
+        goTo(STEPS[target].key)
+    }, phone, '.wizard-top')
 
     function goNext() {
         goTo(STEPS[currentIndex + 1].key)
@@ -133,7 +146,7 @@ function SetupWizard() {
         </ol>
 
     return (
-        <div className="wizard">
+        <div className="wizard" ref={wizardRef}>
             {phone ?
                 <div className="wizard-top wizard-top-phone" ref={topRef}>
                     <AppLogo onClick={() => dispatch(setSetupStep('investigator'))} />
