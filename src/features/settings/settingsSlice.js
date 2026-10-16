@@ -7,7 +7,7 @@ import { isLanguage } from '../../data/Languages'
 import { DEFAULT_ANIMATION_SPEED } from '../../data/AnimationSpeed'
 import { restoreDraftState, restoreSettings } from '../draftState'
 import { newSeed } from '../../random'
-import { SEALED_SETTINGS, SEALED_MAX_POOL } from '../../draft/Sealed'
+import { SEALED_SETTINGS, SEALED_MAX_EXTRA } from '../../draft/Sealed'
 
 export const COLLECTION_CONFIRMED_KEY = 'draftham.collectionConfirmed'
 export const CARDS_PER_ROW_KEY = 'draftham.cardsPerRow'
@@ -196,9 +196,19 @@ const settingsSlice = createSlice({
                     case 'Deckbuilding':
                         state.deckbuilding = action.payload.value
                         break
-                    case 'SealedCount':
-                        state.sealedCount = Math.min(SEALED_MAX_POOL, Math.max(0, parseInt(action.payload.value, 10) || 0))
+                    case 'SealedExtra':
+                        state.sealedExtra = Math.min(SEALED_MAX_EXTRA, Math.max(0, parseInt(action.payload.value, 10) || 0))
                         break
+                    case 'SealedPhaseExtra': {
+                        // { phase, value }: a percentage for a small phase, or null for the general one again
+                        const { phase, value } = action.payload.value
+
+                        if (!state.sealedPhaseExtra) state.sealedPhaseExtra = {}
+
+                        if (value === null) delete state.sealedPhaseExtra[phase]
+                        else state.sealedPhaseExtra[phase] = Math.min(SEALED_MAX_EXTRA, Math.max(0, parseInt(value, 10) || 0))
+                        break
+                    }
                     case 'ProportionalLimits':
                         state.proportionalLimits = Boolean(action.payload.value)
                         break

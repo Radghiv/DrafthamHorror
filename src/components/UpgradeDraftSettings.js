@@ -5,6 +5,8 @@ import { changeSetting } from '../features/settings/settingsSlice'
 import { isDraftTypeEnabled } from '../data/DraftModes'
 import { useT } from '../i18n'
 import SegmentedRange from './SegmentedRange'
+import SealedExtraSetting from './SealedExtraSetting'
+import { SEALED_SMALL_PHASES } from '../draft/Sealed'
 
 function UpgradeDraftSettings(props) {
     const t = useT()
@@ -13,6 +15,7 @@ function UpgradeDraftSettings(props) {
     const draftXP = useSelector(state => state.settings.draftXP)
     const draftCount = useSelector(state => state.settings.draftCount)
     const requireConfirmation = useSelector(state => state.settings.confirmDraft)
+    const deckbuilding = useSelector(state => state.settings.deckbuilding)
 
     const phase = parseInt(props.phase)
     const displayXP = props.displayXP
@@ -62,13 +65,15 @@ function UpgradeDraftSettings(props) {
                     </span>
                     <span className="fbdraftsettingright"></span>
             </div> : null}
-            <div className="fbsetting">
-                <label className="fbdraftsettingleft">{t('Cards to select from:')}</label>
-                <span className="fbdraftsettingslider">
-                    <SegmentedRange min="2" max="20" step="1" value={draftCount[phase-1]} name="DraftCount" onChange={handleCountChange}/>
-                </span>
-                <span className="fbdraftsettingslidervalue">{draftCount[phase-1]}</span>
-            </div>
+            {deckbuilding === 'sealed' && SEALED_SMALL_PHASES.includes(phase) ?
+                <SealedExtraSetting phase={phase} /> :
+                <div className="fbsetting">
+                    <label className="fbdraftsettingleft">{t('Cards to select from:')}</label>
+                    <span className="fbdraftsettingslider">
+                        <SegmentedRange min="2" max="20" step="1" value={draftCount[phase-1]} name="DraftCount" onChange={handleCountChange}/>
+                    </span>
+                    <span className="fbdraftsettingslidervalue">{draftCount[phase-1]}</span>
+                </div>}
             <div className="fbsetting">
                 <label className="fbdraftsettingleft">{t('Require confimation on draft:')}</label>
                 <span className="fbdraftsettingcenter">

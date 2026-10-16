@@ -8,7 +8,7 @@ import { startInvestigatorDraft, eligibleInvestigators } from '../../features/se
 import useInvestigatorEntries from '../useInvestigatorEntries'
 import { pendingLevel0Count } from '../../draft/Level0'
 import DraftPhases from '../../data/DraftPhases'
-import { sealedPoolFillsDeck } from '../../draft/Sealed'
+import { sealedPoolFillsDeck, sealedPoolSizeFor } from '../../draft/Sealed'
 import { seedRandom } from '../../random'
 import { startSetupFlight } from '../../draft/flyInvestigator'
 
@@ -31,7 +31,7 @@ function useStartDraft() {
     const level0Adds = useSelector(state => state.draft.level0Adds)
     const animationSpeed = useSelector(state => state.settings.animationSpeed)
     const deckbuilding = useSelector(state => state.settings.deckbuilding)
-    const sealedCount = useSelector(state => state.settings.sealedCount)
+    const sealedExtra = useSelector(state => state.settings.sealedExtra)
     const sealedCopies = useSelector(state => state.settings.sealedCopies)
     const sealedDuplicates = useSelector(state => state.settings.sealedDuplicates)
 
@@ -46,7 +46,7 @@ function useStartDraft() {
     // approximate: assume 2 copies of each card, want at least 2 extra. A drafted investigator isn't known yet, so it can't be checked.
     // (a sealed pool is checked on its own: it is the cards of the pool that have to fill the deck)
     const enoughCards = investigatorMode === 'draft' || isUpgradeTab || sealed || (filteredCount - 2) * 2 > deckSize
-    const poolTooSmall = sealed && investigatorMode !== 'draft' && !sealedPoolFillsDeck(sealedCount, sealedCopies, filteredCount, deckSize, sealedDuplicates)
+    const poolTooSmall = sealed && investigatorMode !== 'draft' && !sealedPoolFillsDeck(sealedPoolSizeFor(Number(deckSize), sealedExtra), sealedCopies, filteredCount, deckSize, sealedDuplicates)
 
     // an investigator draft whose options leave no investigator to choose from can't start
     const eligibleCount = useMemo(() => investigatorMode === 'draft' ? eligibleInvestigators(investigatorEntryList, cardData, investigatorDraftOptions).length : 0,

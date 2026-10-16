@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 
-import { EMPTY_FILTERS, CLASS_FILTERS, TYPE_FILTERS, SLOT_FILTERS, COST_FILTERS, ICON_FILTERS, hasFilters, traitsOf } from '../draft/SealedFilters'
+import { EMPTY_FILTERS, CLASS_FILTERS, TYPE_FILTERS, SLOT_FILTERS, COST_FILTERS, LEVEL_FILTERS, ICON_FILTERS, hasFilters, traitsOf } from '../draft/SealedFilters'
 import ICON_GLYPHS from '../data/CardIcons'
 import { OfficialColorForClass } from '../data/ClassColors'
 import { typeName } from '../data/CardTypeNames'
@@ -61,6 +61,9 @@ function SealedFilterBar(props) {
 
     const used = hasFilters(filters)
 
+    // an upgrade pool has levels to filter by (a pool for a new deck is all level 0)
+    const hasLevels = pool.some(card => card.xp > 0)
+
     // the search field tells how many cards are left in the pool
     const searchText = t('Search the pool ({count})', { count: pool.length })
 
@@ -110,6 +113,7 @@ function SealedFilterBar(props) {
                     {chipGroup('types', t('Type'), TYPE_FILTERS, value => typeName(language, value) || TYPE_ENGLISH[value])}
                     {chipGroup('slots', t('Slot'), SLOT_FILTERS, value => t(SLOT_NAMES[value]))}
                     {chipGroup('costs', t('Cost'), COST_FILTERS, value => value === 5 ? '5+' : String(value))}
+                    {hasLevels ? chipGroup('levels', t('Level'), LEVEL_FILTERS, value => String(value)) : null}
                     {chipGroup('icons', t('Skill icons'), ICON_FILTERS, value => (
                         <span className="gameIcon sealed-icon" role="img" aria-label={t(ICON_NAMES[value])} title={t(ICON_NAMES[value])}>{ICON_GLYPHS[value]}</span>
                     ))}

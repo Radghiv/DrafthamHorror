@@ -3137,6 +3137,19 @@ a {
     width: auto;
     max-width: 320px;
 }
+.sealed-pool-preview {
+    flex: none;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--muted);
+    white-space: nowrap;
+}
+.sealed-extra-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+}
 .sealed-icon {
     margin: 0;
     font-size: 1.25em;

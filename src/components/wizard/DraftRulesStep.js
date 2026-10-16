@@ -4,7 +4,8 @@ import { useSelector, useDispatch } from 'react-redux'
 import { changeSetting } from '../../features/settings/settingsSlice'
 import { enabledDraftModes, isDraftTypeEnabled } from '../../data/DraftModes'
 import DraftPhases from '../../data/DraftPhases'
-import { SEALED_MAX_POOL } from '../../draft/Sealed'
+import { SEALED_MAX_EXTRA } from '../../draft/Sealed'
+import useSealedPoolSize, { sealedPoolLabel } from '../useSealedPoolSize'
 import { useT, msg } from '../../i18n'
 
 import BuildTab from '../BuildTab'
@@ -56,6 +57,9 @@ function DraftRulesStep() {
     const deckValidation = useSelector(state => state.data.deckValidation)
     const deckInSetup = isUpgradeTab && deckValidation.status === 'valid' && deckValidation.id === settings.deckID.trim()
 
+    // how many cards the sealed pool comes to, to show next to the percentage
+    const poolSize = useSealedPoolSize(phase, settings.deckbuilding === 'sealed' && settings.draftType === 'draft')
+
     // a draft type that is no longer offered falls back to the first one that is
     useEffect(() => {
         if (!isDraftTypeEnabled(draftType) && modes.length > 0) {
@@ -86,8 +90,8 @@ function DraftRulesStep() {
         )
     }
 
-    // how a new deck is built (the upgrades are always drafted)
-    const methodPicker = !isUpgradeTab ?
+    // how the cards come: drafted a few at a time, or from a sealed pool (a new deck and the upgrades)
+    const methodPicker =
         <div className="field">
             <span className="field-label" id="deckbuilding-label">{t('Method')}</span>
             <div className="segmented" role="group" aria-labelledby="deckbuilding-label">
@@ -97,7 +101,6 @@ function DraftRulesStep() {
                 ))}
             </div>
         </div>
-        : null
 
     const confirmRow =
         <div className="setting-row">
@@ -105,6 +108,28 @@ function DraftRulesStep() {
             <div className="setting-control">
                 <Switch checked={settings.confirmDraft} label={t('Confirm each pick')}
                     onChange={value => dispatch(changeSetting('ConfirmDraft', value))} />
+            </div>
+        </div>
+
+    // what the upgrade is about: which levels show up more often, and the experience to spend
+    const weightingRow =
+        <div className="setting-row">
+            <span className="setting-label" id="weighting-label"><strong>{t('Weighting')}</strong><span>{t('Which card levels show up more often')}</span></span>
+            <div className="setting-control">
+                <div className="segmented" role="group" aria-labelledby="weighting-label">
+                    {WEIGHTING_OPTIONS.map(option => (
+                        <button type="button" key={option.value} aria-pressed={settings.draftWeighting === option.value}
+                            onClick={() => dispatch(changeSetting('DraftWeighting', option.value))}>{t(option.label)}</button>
+                    ))}
+                </div>
+            </div>
+        </div>
+
+    const experienceRow =
+        <div className="setting-row">
+            <label className="setting-label" htmlFor="draft-xp"><strong>{t('Experience to spend')}</strong></label>
+            <div className="setting-control field">
+                <input id="draft-xp" type="number" min="1" value={xpText} onChange={handleXPChange} />
             </div>
         </div>
 
@@ -132,7 +157,7 @@ function DraftRulesStep() {
             </div>
         </div>
 
-    if (!isUpgradeTab && settings.deckbuilding === 'sealed') {
+    if (settings.deckbuilding === 'sealed') {
         return (
             <div className="stack">
                 <ModeStep />
@@ -141,14 +166,17 @@ function DraftRulesStep() {
 
                 {methodPicker}
 
-                <p className="notice">{t('A pool of random cards is dealt face up, all at once. Click a card to add it to the deck: it leaves the pool, unless the deck can take another copy of it.')}</p>
+                <p className="notice">{isUpgradeTab ?
+                    t('A pool of random level 1+ cards is dealt face up, all at once. Click a card to add it to the deck: it leaves the pool, unless the deck can take another copy of it, and so does a card that costs more than the experience left.') :
+                    t('A pool of random cards is dealt face up, all at once. Click a card to add it to the deck: it leaves the pool, unless the deck can take another copy of it.')}</p>
 
                 <div className="setting-row">
-                    <label className="setting-label" htmlFor="sealed-count"><strong>{t('Cards in the pool')}</strong></label>
+                    <label className="setting-label" htmlFor="sealed-extra"><strong>{t('Extra cards in the pool')}</strong><span>{t('Cards dealt on top of the ones you have to pick: +100% is twice as many as the deck needs.')}</span></label>
                     <div className="setting-control">
-                        <SegmentedRange id="sealed-count" className="range" min="0" max={SEALED_MAX_POOL} step="1" value={settings.sealedCount}
-                            onChange={event => dispatch(changeSetting('SealedCount', event.target.value))} />
-                        <span className="value-badge">{settings.sealedCount}</span>
+                        <SegmentedRange id="sealed-extra" className="range" min="0" max={SEALED_MAX_EXTRA} step="10" value={settings.sealedExtra}
+                            onChange={event => dispatch(changeSetting('SealedExtra', event.target.value))} />
+                        <span className="value-badge">{'+' + settings.sealedExtra + '%'}</span>
+                        {poolSize ? <span className="sealed-pool-preview">{sealedPoolLabel(t, poolSize, phase)}</span> : null}
                     </div>
                 </div>
 
@@ -169,11 +197,15 @@ function DraftRulesStep() {
                         </div>
                     </div>}
 
-                {myriadRow}
-
-                {proportionRow}
+                {isUpgradeTab ? <>{weightingRow}{experienceRow}</> : <>{myriadRow}{proportionRow}</>}
 
                 {confirmRow}
+
+                {deckInSetup ? <DeckOptionsPanel /> : null}
+
+                {isUpgradeTab ?
+                    <p className="notice">{t('Customizable cards are not implemented yet and will not appear in the upgrade draft.')}</p>
+                    : null}
             </div>
         )
     }
@@ -205,23 +237,8 @@ function DraftRulesStep() {
 
             {isUpgradeTab ?
                 <>
-                    <div className="setting-row">
-                        <span className="setting-label" id="weighting-label"><strong>{t('Weighting')}</strong><span>{t('Which card levels show up more often')}</span></span>
-                        <div className="setting-control">
-                            <div className="segmented" role="group" aria-labelledby="weighting-label">
-                                {WEIGHTING_OPTIONS.map(option => (
-                                    <button type="button" key={option.value} aria-pressed={settings.draftWeighting === option.value}
-                                        onClick={() => dispatch(changeSetting('DraftWeighting', option.value))}>{t(option.label)}</button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="setting-row">
-                        <label className="setting-label" htmlFor="draft-xp"><strong>{t('Experience to spend')}</strong></label>
-                        <div className="setting-control field">
-                            <input id="draft-xp" type="number" min="1" value={xpText} onChange={handleXPChange} />
-                        </div>
-                    </div>
+                    {weightingRow}
+                    {experienceRow}
                 </>
                 :
                 myriadRow

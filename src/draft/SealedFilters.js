@@ -1,7 +1,7 @@
 // The filters of the sealed pool, like the ones of the card search of ArkhamDB: a card has to pass every group that is used, and within a group
 // (several classes, several costs...) it only has to match one. The filters hide cards of the pool, they never take them out of it.
 
-export const EMPTY_FILTERS = { text: '', classes: [], types: [], slots: [], costs: [], icons: [], trait: '' }
+export const EMPTY_FILTERS = { text: '', classes: [], types: [], slots: [], costs: [], levels: [], icons: [], trait: '' }
 
 export const CLASS_FILTERS = ['guardian', 'seeker', 'rogue', 'mystic', 'survivor', 'neutral']
 export const TYPE_FILTERS = ['asset', 'event', 'skill']
@@ -9,11 +9,13 @@ export const TYPE_FILTERS = ['asset', 'event', 'skill']
 export const SLOT_FILTERS = ['Hand', 'Arcane', 'Accessory', 'Body', 'Ally', 'Tarot', 'None']
 // 5 is "5 or more"
 export const COST_FILTERS = [0, 1, 2, 3, 4, 5]
+// (the level of a card of an upgrade pool, which has no level 0)
+export const LEVEL_FILTERS = [1, 2, 3, 4, 5]
 export const ICON_FILTERS = ['willpower', 'intellect', 'combat', 'agility', 'wild']
 
 export function hasFilters(filters) {
     return filters.text.trim() !== '' || filters.trait !== '' ||
-        filters.classes.length > 0 || filters.types.length > 0 || filters.slots.length > 0 || filters.costs.length > 0 || filters.icons.length > 0
+        filters.classes.length > 0 || filters.types.length > 0 || filters.slots.length > 0 || filters.costs.length > 0 || filters.levels.length > 0 || filters.icons.length > 0
 }
 
 // The slots a card takes ("Hand. Arcane", "Hand x2"): the names of the slots
@@ -41,6 +43,7 @@ export function matchesFilters(card, info, name, filters) {
         if (!(slots.length === 0 ? filters.slots.includes('None') : slots.some(slot => filters.slots.includes(slot)))) return false
     }
     if (filters.costs.length > 0 && !(typeof card.cost === 'number' && filters.costs.includes(Math.min(5, card.cost)))) return false
+    if (filters.levels.length > 0 && !filters.levels.includes(card.xp || 0)) return false
     if (filters.icons.length > 0 && !filters.icons.some(icon => info && info['skill_' + icon] > 0)) return false
     if (filters.trait !== '' && !traitsOf(card).includes(filters.trait)) return false
 

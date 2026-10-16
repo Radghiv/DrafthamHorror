@@ -7,7 +7,7 @@ import { addToBuildXPList, changePhase, addLevel0, draftVersatile, draftLevel0, 
 
 import FilterCards from '../data/CardFilter'
 import { addModifiers, updateDraftModifiers, availableUpgrades, fillCardModifiers } from './Modifiers'
-import { isSealedDraft, sealedMaxCopies, sealedCardRemovable, sealedEntryId, compareSealedCards } from './Sealed'
+import { isSealedDraft, isSealedBuild, isSealedXpPhase, sealedExtraFor, sealedPoolSizeFor, sealedMaxCopies, sealedCardRemovable, sealedEntryId, compareSealedCards } from './Sealed'
 import DraftPhases, { isUpgrade, isLevel0Build, isLevel0Upgrade } from '../data/DraftPhases'
 import ResearchLogs from '../data/ResearchLogs'
 
@@ -362,13 +362,25 @@ export function categoryDraw(cardData, proportion) {
 }
 
 // Draws count cards from a list of cards. Each card can be drawn as many times as its cap says (once for a pool of different cards); counts holds
-// how many times each was drawn so far, and is kept for the next draw.
-function drawCards(cards, count, caps, counts) {
+// how many times each was drawn so far, and is kept for the next draw. With weightOf, the cards are drawn by their weight.
+function drawCards(cards, count, caps, counts, weightOf) {
     const picks = []
     const candidates = cards.filter(card => (counts[card.code] || 0) < caps(card))
 
     while (picks.length < count && candidates.length > 0) {
-        const j = Math.floor(random() * candidates.length)
+        let j = Math.floor(random() * candidates.length)
+
+        if (weightOf) {
+            let roll = random() * candidates.reduce((sum, candidate) => sum + weightOf(candidate), 0)
+
+            for (let i = 0; i < candidates.length; i++) {
+                j = i
+                roll -= weightOf(candidates[i])
+
+                if (roll < 0) break
+            }
+        }
+
         const card = candidates[j]
 
         picks.push(card)
@@ -404,37 +416,99 @@ function categoryPlan(filteredData, size, proportion) {
     return plan
 }
 
+// The weight of each card for the draw (the weighting of the setup: which levels show up more often), by code; the filter gives each card its weight
+// added to the one of the card before it
+function sealedWeights(filteredData) {
+    return new Map(filteredData.map((card, index) => [card.code, Math.max(card.weightValue - (index > 0 ? filteredData[index - 1].weightValue : 0), 0.0001)]))
+}
+
+// How many cards an upgrade will pick: the experience that is left over the mean cost of the cards (by their weights), at least one
+function expectedPicks(filteredData, experienceLeft) {
+    const weights = sealedWeights(filteredData)
+    let totalWeight = 0
+    let totalCost = 0
+
+    filteredData.forEach(card => {
+        totalWeight += weights.get(card.code)
+        totalCost += weights.get(card.code) * Math.max(1, costWithTaboo(card))
+    })
+
+    return Math.max(1, Math.ceil(experienceLeft / (totalWeight > 0 ? totalCost / totalWeight : 1)))
+}
+
+// The cards to pick in the phase and the cards of its sealed pool, with the percentage that applies (its own for a small phase that has one). context is
+// what draftContext says of the state.
+function sealedSizing(state, context) {
+    const { filteredData, draftTarget, draftProgress } = context
+    const left = draftTarget - draftProgress
+    const needed = isSealedXpPhase(state.draft.phase) ? (left > 0 ? expectedPicks(filteredData, left) : 0) : left
+    const extra = sealedExtraFor(state.settings, state.draft.phase)
+
+    return { needed: Math.max(0, needed), extra: extra, size: sealedPoolSizeFor(needed, extra), legal: filteredData.length }
+}
+
+// The state as the sealed pool of a phase will see it. A phase that is waiting (the panel of the replacements, of Versatile or of the bonus
+// experience, before they are started) isn't the current one: its experience and what was spent are put in.
+function sealedView(state, phase) {
+    if (phase === undefined || phase === state.draft.phase) return state
+
+    const experience = phase === DraftPhases.BuildUpgradePhase ? state.draft.buildXPList.reduce((sum, item) => sum + item.value, 0) : state.settings.draftXP
+
+    return {
+        ...state,
+        settings: { ...state.settings, draftXP: experience },
+        draft: { ...state.draft, phase: phase, progress: phase === DraftPhases.UpgradePhase ? state.draft.upgradeProgress : 0 }
+    }
+}
+
+// What the sealed pool of a phase would have: { needed, size, extra, legal }, or null when no investigator is chosen. For the setup and the panels
+// of the small phases, which show the size next to the percentage.
+export function sealedPoolSize(state, phase) {
+    if (!state.settings.investigatorData) return null
+
+    const view = sealedView(state, phase)
+
+    return sealedSizing(view, draftContext(view))
+}
+
+// A card of the sealed pool: face up from the start, told apart from the other copies of the card by poolId
+function newSealedCard(card, poolId, state, remaining) {
+    const poolCard = addModifiers(card, state.draft.phase, state.draft.deckModifiers, state.draft.mergedList, remaining, state.settings.investigator, state.settings.parallel)
+
+    poolCard.imageLoaded = false
+    poolCard.expandedModifiers = 0
+    poolCard.revealed = true
+    poolCard.poolId = poolId
+
+    return poolCard
+}
+
 // Deals the sealed pool: a random selection of the legal cards (each at most once, or with duplicates), shown by class. Every card is face up from the start.
 function SealedDraft(dispatch, getState) {
     const state = getState()
 
-    const { filteredData, draftTarget, draftProgress } = draftContext(state)
+    const context = draftContext(state)
+    const { filteredData, draftTarget, draftProgress } = context
 
     // each card is dealt once, or up to the copies the deck can take when the pool has duplicates
     const caps = card => state.settings.sealedDuplicates ? sealedMaxCopies(card, true) : 1
     const counts = {}
-    const size = state.settings.sealedCount
+    const size = sealedSizing(state, context).size
     const proportion = proportionContext(state)
     const picks = []
 
     // with limited categories the pool has the cards of each in proportion to its limit; what a category can't give is dealt from all the cards
     const plan = proportion ? categoryPlan(filteredData, size, proportion) : [{ cards: filteredData, count: size }]
 
-    plan.forEach(part => picks.push(...drawCards(part.cards, part.count, caps, counts)))
+    // the levels of an upgrade pool come by the weighting of the setup (prefer low XP, prefer high XP)
+    const weights = sealedWeights(filteredData)
+    const weightOf = isSealedXpPhase(state.draft.phase) ? card => weights.get(card.code) : undefined
 
-    if (picks.length < size) picks.push(...drawCards(filteredData, size - picks.length, caps, counts))
+    plan.forEach(part => picks.push(...drawCards(part.cards, part.count, caps, counts, weightOf)))
 
-    const pool = picks.map((card, index) => {
-        const poolCard = addModifiers(card, state.draft.phase, state.draft.deckModifiers, state.draft.mergedList, draftTarget - draftProgress, state.settings.investigator, state.settings.parallel)
+    if (picks.length < size) picks.push(...drawCards(filteredData, size - picks.length, caps, counts, weightOf))
 
-        poolCard.imageLoaded = false
-        poolCard.expandedModifiers = 0
-        poolCard.revealed = true
-        // what tells it from another copy of the card in the pool
-        poolCard.poolId = index
-
-        return poolCard
-    }).sort(compareSealedCards)
+    const pool = picks.map((card, index) => newSealedCard(card, index, state, draftTarget - draftProgress)).sort(compareSealedCards)
 
     dispatch(setSealedTaken([]))
     dispatch(setSealedPool(pool))
@@ -442,29 +516,95 @@ function SealedDraft(dispatch, getState) {
     dispatch(setInsufficientOptions(pool.length < 1))
 }
 
+// A card of an upgrade pool with the cost modifiers of the deck as it is now. What the player did to it on screen stays: it is still face up and
+// the upgrade chosen is still chosen when it is still offered.
+function repricedPoolCard(card, source, state, remaining) {
+    const fresh = addModifiers(source, state.draft.phase, state.draft.deckModifiers, state.draft.mergedList, remaining, state.settings.investigator, state.settings.parallel)
+
+    ;['poolId', 'revealed', 'imageLoaded', 'expandedModifiers', 'shrewdAnalysis'].forEach(property => {
+        if (card[property] !== undefined) fresh[property] = card[property]
+    })
+
+    const before = (card.cardModifiers || []).find(item => item.name === 'UpgradeOptions')
+    const now = fresh.cardModifiers.find(item => item.name === 'UpgradeOptions')
+    const chosen = before && before.options[card.selectedUpgrade]
+    const index = chosen && now ? now.options.findIndex(option => option.text === chosen.text) : -1
+
+    if (index >= 0 && index !== fresh.selectedUpgrade) {
+        // the same as when the player changes the upgrade (updateUpgradeOption)
+        const isUpgradeChoice = now.options[index].text !== 'None'
+        const modifiers = fresh.cardModifiers
+            .filter(item => item.upgrade === undefined || item.upgrade === isUpgradeChoice)
+            .concat(state.draft.deckModifiers.filter(item => item.upgrade !== undefined && item.upgrade === isUpgradeChoice))
+
+        fresh.selectedUpgrade = index
+        fresh.cardModifiers = modifiers
+        fresh.xpcost = costWithModifiers(fresh, modifiers, index)
+    }
+
+    return fresh
+}
+
 // What is left of the sealed pool for the deck as it is now: the cards of the pool as it was dealt, minus those the deck can't take another
 // copy of, or can't take at all (an investigator's limit on off-class cards, the cards still needed for a requirement...), which the filter
 // of the draft knows. Cards that left the pool come back when the deck changes back (a card taken out of the Draft List). The cards that are
 // still in the pool stay as they are, with what was done to them on screen.
+// The level 0 replacements and Versatile ask for different cards as they go (a class, a skill, more cards when a Versatile is drafted): when the pool
+// has fewer cards than the percentage says for what is left to pick, new cards are dealt into it.
 function trimSealedPool(dispatch, getState) {
     const state = getState()
 
-    const { filteredData } = draftContext(state)
+    const context = draftContext(state)
+    const { filteredData, draftTarget, draftProgress } = context
+    const phase = state.draft.phase
 
     const legal = new Set(filteredData.map(card => card.code))
-    const inDeck = key => state.draft.mergedList.reduce((count, item) => item.key === key ? count + item.count : count, 0)
+
+    // the copies the deck has of a card (outside of the build: the copies picked from the pool, the deck had its own)
+    const inDeck = key => (phase === DraftPhases.BuildPhase1 ? state.draft.mergedList : state.draft.cardList).reduce((count, item) => item.key === key ? count + item.count : count, 0)
 
     // (a draft saved before the pool was kept has only what was left of it)
-    const dealt = state.draft.sealedPool && state.draft.sealedPool.length > 0 ? state.draft.sealedPool : state.draft.draftPool
+    let dealt = state.draft.sealedPool && state.draft.sealedPool.length > 0 ? state.draft.sealedPool : state.draft.draftPool
     const current = new Map(state.draft.draftPool.map(card => [sealedEntryId(card), card]))
 
     // with duplicates every card of the pool is a card of its own, gone when it is picked, and the deck takes two copies of a card
     const duplicates = state.settings.sealedDuplicates
     const taken = new Set(duplicates ? state.draft.sealedTaken || [] : [])
+    const maxCopies = card => sealedMaxCopies(card, state.settings.sealedCopies || duplicates)
 
-    const pool = dealt
-        .filter(card => !taken.has(sealedEntryId(card)) && legal.has(card.key) && inDeck(card.key) < sealedMaxCopies(card, state.settings.sealedCopies || duplicates))
+    let pool = dealt
+        .filter(card => !taken.has(sealedEntryId(card)) && legal.has(card.key) && inDeck(card.key) < maxCopies(card))
         .map(card => current.get(sealedEntryId(card)) || card)
+
+    if (phase === DraftPhases.UpgradeLevel0AddPhase || phase === DraftPhases.VersatilePhase) {
+        const wanted = sealedSizing(state, context).size
+
+        if (pool.length < wanted) {
+            const counts = {}
+
+            dealt.forEach(card => { counts[card.key] = (counts[card.key] || 0) + 1 })
+
+            const caps = card => duplicates ? sealedMaxCopies(card, true) : 1
+            const firstId = dealt.reduce((highest, card) => Math.max(highest, typeof card.poolId === 'number' ? card.poolId : -1), -1) + 1
+            const added = drawCards(filteredData.filter(card => inDeck(card.code) < maxCopies(card)), wanted - pool.length, caps, counts)
+                .map((card, index) => newSealedCard(card, firstId + index, state, draftTarget - draftProgress))
+
+            if (added.length > 0) {
+                dealt = [...dealt, ...added].sort(compareSealedCards)
+                pool = [...pool, ...added].sort(compareSealedCards)
+
+                dispatch(setSealedPool(dealt))
+            }
+        }
+    }
+
+    // the cost of an upgrade depends on the deck (the card it upgrades, the discounts) and on the experience that is left: the cards that stay are
+    // priced again
+    if (isSealedXpPhase(phase)) {
+        const sources = new Map(filteredData.map(card => [card.code, card]))
+
+        pool = pool.map(card => sources.has(card.key) ? repricedPoolCard(card, sources.get(card.key), state, draftTarget - draftProgress) : card)
+    }
 
     const unchanged = pool.length === state.draft.draftPool.length && pool.every((card, index) => card === state.draft.draftPool[index])
 
@@ -478,7 +618,7 @@ export function removeSealedCard(key) {
     return function removeSealedCardThunk(dispatch, getState) {
         const state = getState()
 
-        if (!state.settings.drafting || !isSealedDraft(state.settings.deckbuilding, state.draft.phase)) return false
+        if (!state.settings.drafting || !isSealedBuild(state.settings.deckbuilding, state.draft.phase)) return false
 
         const card = state.draft.cardList.find(item => item.key === key)
 

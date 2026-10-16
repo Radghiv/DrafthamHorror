@@ -1,15 +1,41 @@
 import { describe, test, expect } from 'vitest'
 
 import DraftPhases from '../data/DraftPhases'
-import { isSealedDraft, sealedMaxCopies, sealedPoolFillsDeck, sealedEntryId, compareSealedCards } from './Sealed'
+import { isSealedDraft, isSealedBuild, sealedExtraFor, sealedPoolSizeFor, sealedMaxCopies, sealedPoolFillsDeck, sealedEntryId, compareSealedCards } from './Sealed'
 import { restoreSettings } from '../features/draftState'
 
 describe('sealed', () => {
-    test('is the build of a deck, in the sealed mode only', () => {
-        expect(isSealedDraft('sealed', DraftPhases.BuildPhase1)).toBe(true)
-        expect(isSealedDraft('draft', DraftPhases.BuildPhase1)).toBe(false)
-        expect(isSealedDraft('sealed', DraftPhases.UpgradePhase)).toBe(false)
-        expect(isSealedDraft('sealed', DraftPhases.VersatilePhase)).toBe(false)
+    test('is every phase that picks cards from a pool, in the sealed mode only', () => {
+        ;[DraftPhases.BuildPhase1, DraftPhases.UpgradePhase, DraftPhases.BuildUpgradePhase, DraftPhases.UpgradeLevel0AddPhase, DraftPhases.VersatilePhase].forEach(phase => {
+            expect(isSealedDraft('sealed', phase)).toBe(true)
+            expect(isSealedDraft('draft', phase)).toBe(false)
+        })
+
+        expect(isSealedDraft('sealed', DraftPhases.BuildPhase2)).toBe(false)
+        expect(isSealedDraft('sealed', DraftPhases.AllCards)).toBe(false)
+    })
+
+    test('the pool is the cards to pick with a percentage over them', () => {
+        expect(sealedPoolSizeFor(30, 100)).toBe(60)
+        expect(sealedPoolSizeFor(30, 500)).toBe(180)
+        expect(sealedPoolSizeFor(30, 0)).toBe(30)
+        expect(sealedPoolSizeFor(3, 50)).toBe(5)
+        expect(sealedPoolSizeFor(0, 100)).toBe(0)
+    })
+
+    test('a small phase has its own percentage when it has one, the others the general one', () => {
+        const settings = { sealedExtra: 100, sealedPhaseExtra: { [DraftPhases.VersatilePhase]: 300, [DraftPhases.UpgradePhase]: 10 } }
+
+        expect(sealedExtraFor(settings, DraftPhases.VersatilePhase)).toBe(300)
+        expect(sealedExtraFor(settings, DraftPhases.UpgradeLevel0AddPhase)).toBe(100)
+        // (only the small phases have one of their own)
+        expect(sealedExtraFor(settings, DraftPhases.UpgradePhase)).toBe(100)
+        expect(sealedExtraFor({ sealedExtra: 50 }, DraftPhases.VersatilePhase)).toBe(50)
+    })
+
+    test('taking cards out of the Draft List is for the build only', () => {
+        expect(isSealedBuild('sealed', DraftPhases.BuildPhase1)).toBe(true)
+        expect(isSealedBuild('sealed', DraftPhases.UpgradePhase)).toBe(false)
     })
 
     test('takes one copy, or two when allowed, never more than the card does', () => {
@@ -50,15 +76,15 @@ describe('sealed', () => {
     })
 
     test('a draft saved before the mode existed comes back as a draft', () => {
-        const restored = restoreSettings({ deckbuilding: 'sealed', sealedCount: 10, sealedCopies: true, language: 'en' }, { investigator: 'Roland Banks' })
+        const restored = restoreSettings({ deckbuilding: 'sealed', sealedExtra: 10, sealedCopies: true, language: 'en' }, { investigator: 'Roland Banks' })
 
         expect(restored.deckbuilding).toBe('draft')
         expect(restored.investigator).toBe('Roland Banks')
     })
 
     test('a saved sealed draft keeps its settings', () => {
-        const restored = restoreSettings({ deckbuilding: 'draft' }, { deckbuilding: 'sealed', sealedCount: 40, sealedCopies: true })
+        const restored = restoreSettings({ deckbuilding: 'draft' }, { deckbuilding: 'sealed', sealedExtra: 40, sealedCopies: true })
 
-        expect(restored).toMatchObject({ deckbuilding: 'sealed', sealedCount: 40, sealedCopies: true })
+        expect(restored).toMatchObject({ deckbuilding: 'sealed', sealedExtra: 40, sealedCopies: true })
     })
 })

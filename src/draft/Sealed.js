@@ -1,17 +1,26 @@
 import DraftPhases from '../data/DraftPhases'
 import ResearchLogs from '../data/ResearchLogs'
 
-// Sealed is the alternative to the draft for building a deck: a pool of random cards is dealt face up, all at once, and the deck is built from
-// it. Only Build Deck has it (the pool is the level 0 cards the investigator can take); the phases after the build keep drafting as usual.
+// Sealed is the alternative to the draft: a pool of random cards is dealt face up, all at once, and the cards are picked from it. It is for a new
+// deck (the pool is the level 0 cards the investigator can take), the upgrades (level 1+ cards that cost no more than the experience to spend; a
+// card leaves the pool when it costs more than what is left) and the small drafts that come with them: the bonus experience of a new deck, the level 0
+// replacements and Versatile. The size of a pool is a percentage over the cards to pick (+100%: twice as many), so it fits every phase.
 
-export const SEALED_MAX_POOL = 100
+export const SEALED_MAX_EXTRA = 500
+
+// the small phases have their own percentage, which overrides the general one
+export const SEALED_SMALL_PHASES = [DraftPhases.BuildUpgradePhase, DraftPhases.UpgradeLevel0AddPhase, DraftPhases.VersatilePhase]
+
+const SEALED_PHASES = [DraftPhases.BuildPhase1, DraftPhases.UpgradePhase, ...SEALED_SMALL_PHASES]
 
 // The settings of the mode; a saved draft from before the mode existed gets them from here (restoreSettings)
 export const SEALED_SETTINGS = {
     // 'draft' (a few cards at a time, a new batch after each pick) or 'sealed'
     deckbuilding: 'draft',
-    // cards dealt into the pool
-    sealedCount: 60,
+    // the cards dealt over the ones to pick, in percent: +100% deals twice as many
+    sealedExtra: 100,
+    // the percentage of a small phase, by phase, when it is not the general one
+    sealedPhaseExtra: {},
     // a card that was picked stays in the pool until the deck has two copies of it
     sealedCopies: false,
     // the same card can be dealt into the pool more than once: each is a card of its own, taken out of the pool when it is picked, and the deck
@@ -19,8 +28,30 @@ export const SEALED_SETTINGS = {
     sealedDuplicates: false
 }
 
-// Whether the cards to choose from are a sealed pool: the mode is chosen and the phase is the build of the deck
+// Whether the cards to choose from are a sealed pool: the mode is chosen and the phase is one of those that have it
 export function isSealedDraft(deckbuilding, phase) {
+    return deckbuilding === 'sealed' && SEALED_PHASES.includes(phase)
+}
+
+// Whether a phase is paid in experience (the cards to pick are not known: they depend on the costs)
+export function isSealedXpPhase(phase) {
+    return phase === DraftPhases.BuildUpgradePhase || phase === DraftPhases.UpgradePhase
+}
+
+// The percentage over the cards to pick that a phase deals: its own when it is a small phase that has one, otherwise the general one
+export function sealedExtraFor(settings, phase) {
+    const own = SEALED_SMALL_PHASES.includes(phase) && settings.sealedPhaseExtra ? settings.sealedPhaseExtra[phase] : undefined
+
+    return typeof own === 'number' ? own : settings.sealedExtra
+}
+
+// The cards of a pool: the cards to pick with the percentage over them
+export function sealedPoolSizeFor(needed, extra) {
+    return needed > 0 ? Math.ceil(needed * (1 + extra / 100)) : 0
+}
+
+// The same, for the build of a new deck only (what an upgrade has no use for: taking a card out of the Draft List, the proportions of the classes)
+export function isSealedBuild(deckbuilding, phase) {
     return deckbuilding === 'sealed' && phase === DraftPhases.BuildPhase1
 }
 
@@ -31,10 +62,10 @@ export function sealedMaxCopies(card, copiesAllowed) {
 
 // Whether the pool can hold a deck: every card of the pool, once or twice, has to be enough for the cards the deck is made of. With duplicates the
 // pool can be as big as asked, but holds at most two of each card.
-export function sealedPoolFillsDeck(sealedCount, copiesAllowed, legalCount, deckSize, duplicates) {
-    if (duplicates) return Math.min(sealedCount, legalCount * 2) >= deckSize
+export function sealedPoolFillsDeck(poolSize, copiesAllowed, legalCount, deckSize, duplicates) {
+    if (duplicates) return Math.min(poolSize, legalCount * 2) >= deckSize
 
-    return Math.min(sealedCount, legalCount) * (copiesAllowed ? 2 : 1) >= deckSize
+    return Math.min(poolSize, legalCount) * (copiesAllowed ? 2 : 1) >= deckSize
 }
 
 // What tells the cards of the pool apart: the place they were dealt in (a card can be in the pool more than once), or the card for a pool

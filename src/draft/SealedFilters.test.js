@@ -38,6 +38,14 @@ describe('sealed filters', () => {
         expect(matchesFilters(card, info, 'Machete', withFilters({ slots: ['Hand', 'None'] }))).toBe(true)
     })
 
+    test('the level of the cards of an upgrade pool', () => {
+        const levelTwo = { ...card, xp: 2 }
+
+        expect(matchesFilters(levelTwo, info, 'Machete', withFilters({ levels: [2, 3] }))).toBe(true)
+        expect(matchesFilters(levelTwo, info, 'Machete', withFilters({ levels: [1] }))).toBe(false)
+        expect(matchesFilters(card, info, 'Machete', withFilters({ levels: [1] }))).toBe(false)
+    })
+
     test('a multiclass card has each of its classes', () => {
         expect(matchesFilters({ ...card, faction2_code: 'rogue' }, info, 'Machete', withFilters({ classes: ['rogue'] }))).toBe(true)
     })

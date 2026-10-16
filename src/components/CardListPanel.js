@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { costWithTaboo, removeSealedCard } from '../draft/DrawDraft'
 import { prepareCardReturn } from '../draft/returnCard'
 import { motionSpeed } from '../data/AnimationSpeed'
-import { isSealedDraft, sealedCardRemovable } from '../draft/Sealed'
+import { isSealedBuild, sealedCardRemovable } from '../draft/Sealed'
 import useCardOverlay, { isTouchScreen } from './OverlayImage'
 import useCardName from './useCardName'
 import CardLinkButton from './CardLinkButton'
@@ -26,8 +26,8 @@ function CardListPanel(props) {
 
     const dispatch = useDispatch()
 
-    // in a sealed draft the cards of the Draft List can be put back in the pool
-    const removable = !props.deck && !props.removed && drafting && isSealedDraft(deckbuilding, draftPhase)
+    // in a sealed draft of a new deck the cards of the Draft List can be put back in the pool
+    const removable = !props.deck && !props.removed && drafting && isSealedBuild(deckbuilding, draftPhase)
 
     // rows of the cost curve column being hovered stand out
     function rowClass(item) {

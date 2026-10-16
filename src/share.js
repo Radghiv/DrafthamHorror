@@ -54,7 +54,7 @@ export function buildShareLink(state) {
         seed: settings.seed,
         draftType: settings.draftType,
         deckbuilding: settings.deckbuilding,
-        sealedCount: settings.sealedCount,
+        sealedExtra: settings.sealedExtra,
         sealedCopies: settings.sealedCopies,
         sealedDuplicates: settings.sealedDuplicates,
         myriadCount: settings.myriadCount,
@@ -134,7 +134,8 @@ export function applySharedSetup(payload) {
         dispatch(changeSetting('DraftType', payload.draftType))
         // a link made before the sealed mode existed is a draft
         dispatch(changeSetting('Deckbuilding', payload.deckbuilding === 'sealed' ? 'sealed' : 'draft'))
-        if (payload.sealedCount !== undefined) dispatch(changeSetting('SealedCount', payload.sealedCount))
+        // (a link from before the size of the pool was a percentage has a number of cards, which isn't kept)
+        if (payload.sealedExtra !== undefined) dispatch(changeSetting('SealedExtra', payload.sealedExtra))
         dispatch(changeSetting('SealedCopies', payload.sealedCopies === true))
         dispatch(changeSetting('SealedDuplicates', payload.sealedDuplicates === true))
         if (payload.myriadCount) dispatch(changeSetting('MyriadCount', payload.myriadCount))
