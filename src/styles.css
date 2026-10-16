@@ -5340,8 +5340,11 @@ main:focus {
 .draft-card-wrap.selected .draft-card-hit {
     animation: select-ring calc(0.5s * var(--motion-scale, 1)) ease-out;
 }
+/* the deal animation stays in the list: replacing it would make it start again when the tile is deselected */
 .investigator-tile.selected {
-    animation: tile-pop calc(0.28s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
+    animation:
+        investigator-deal calc(0.4s * var(--motion-scale, 1)) ease-out backwards calc(var(--deal-index, 0) * 0.06s * var(--motion-scale, 1)),
+        tile-pop calc(0.28s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 /* the box of cost modifiers of a card opens and closes (it is always on the card, hidden while closed) */
