@@ -5181,6 +5181,54 @@ main:focus {
 .update-notice.is-leaving {
     animation: notice-out calc(0.2s * var(--motion-scale, 1)) ease-in forwards;
 }
+/* the screen that covers the page while a new version takes over, until the page reloads */
+.update-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 24px;
+    box-sizing: border-box;
+    background: var(--bg);
+    color: var(--text);
+    text-align: center;
+    animation: fade-in 0.2s ease-out;
+}
+.update-screen-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+}
+.update-screen-hint {
+    margin: 0;
+    color: var(--muted);
+}
+.update-spinner {
+    width: 44px;
+    height: 44px;
+    box-sizing: border-box;
+    border: 4px solid var(--line);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: update-spin 0.9s linear infinite;
+}
+@keyframes update-spin {
+    to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .update-screen {
+        animation: none;
+    }
+    .update-spinner {
+        animation: none;
+        border-top-color: var(--line);
+        border-right-color: var(--primary);
+    }
+}
 .resume-draft {
     animation: banner-in calc(0.3s * var(--motion-scale, 1)) cubic-bezier(0.2, 0.8, 0.2, 1);
 }
