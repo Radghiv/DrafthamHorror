@@ -30,8 +30,11 @@ function UpdateNotice() {
         setUpdating(true)
         setSlow(false)
 
-        // when the update fails the notice is back, to try again
-        Promise.resolve(updateServiceWorker(true)).catch(() => setUpdating(false))
+        // the update starts once the screen has been painted: it can reload the page so fast that a screen that is only in the next frame is never seen
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            // when the update fails the notice is back, to try again
+            Promise.resolve(updateServiceWorker(true)).catch(() => setUpdating(false))
+        }))
     }
 
     return (

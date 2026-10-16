@@ -5244,7 +5244,6 @@ main:focus {
     background: var(--bg);
     color: var(--text);
     text-align: center;
-    animation: fade-in 0.2s ease-out;
 }
 .update-screen-title {
     margin: 0;
@@ -5268,9 +5267,6 @@ main:focus {
     to { transform: rotate(360deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-    .update-screen {
-        animation: none;
-    }
     .update-spinner {
         animation: none;
         border-top-color: var(--line);
