@@ -23,6 +23,8 @@ const initialState = {
     // the deck from ArkhamDB that is being upgraded, as ArkhamDB gave it (an export to arkham.build starts from it)
     sourceDeck: null,
     phase: 1,
+    // experience of the upgrade that was not spent, put aside for later (a pick that was skipped, an upgrade finished early)
+    xpSetAside: 0,
     progress: 0,
     upgradeProgress: 0,
     filteredCount: 0,
@@ -171,6 +173,9 @@ const draftSlice = createSlice({
         },
         changeDeckName(state, action) {
             state.deckName = action.payload
+        },
+        addXpSetAside(state, action) {
+            state.xpSetAside = (state.xpSetAside || 0) + action.payload
         },
         setSourceDeck(state, action) {
             state.sourceDeck = action.payload
@@ -864,7 +869,7 @@ function updateUpgradeOption(index, value) {
 }
 
 export const { changePhase, addToDraftPool, clearDraftPool, setSealedPool, setSealedTaken, setDraftPool, replaceDraftPoolCard, hideDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, addToCardList, removeFromCardList, clearCardList, addToRemovedList,
-    removeFromRemovedList, setDeckList, changeDeckName, setSourceDeck, setInsufficientOptions, changeShowDeckOptions,
+    removeFromRemovedList, setDeckList, changeDeckName, setSourceDeck, addXpSetAside, setInsufficientOptions, changeShowDeckOptions,
     changeProgress, changeUpgradeProgress, changeIndex, addToBuildXPList, removeFromBuildXPList, clearBuildXPList, changeLevel0, addLevel0, removeLevel0,
     draftVersatile, draftLevel0, setLevel0Requirements, updateCurrentLevel0Name, setDeckModifiers, changeUpgradeOption, selectDraftCard, changeLimit, expandModifiers, minimizeModifiers, holdModifiers, changeDraftPoolProperty } = draftSlice.actions
 export { startDraft, advanceDraft, initDeckModifiers, updateExileRemoval, updateUpgradeOption, addDeckModifier, calculateNeededExileCheckboxes }

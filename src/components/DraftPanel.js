@@ -4,7 +4,8 @@ import { useSelector, useDispatch, useStore } from 'react-redux'
 
 import { advanceDraft, updateUpgradeOption, changeIndex, hideDraftPoolCard, revealDraftPoolCard, revealDraftPoolCards, expandModifiers, minimizeModifiers, holdModifiers, selectDraftCard, changeDraftPoolProperty } from '../features/draft/draftSlice'
 
-import { draftCard, redrawDraftCard } from '../draft/DrawDraft'
+import { draftCard, redrawDraftCard, finishUpgrade, skipUpgradeCards } from '../draft/DrawDraft'
+import DraftPhases from '../data/DraftPhases'
 import { isSealedDraft, sealedEntryId } from '../draft/Sealed'
 import { EMPTY_FILTERS, hasFilters, matchesFilters } from '../draft/SealedFilters'
 import SealedFilterBar from './SealedFilterBar'
@@ -68,6 +69,7 @@ function DraftPanel(props) {
     const requireConfirmation = useSelector(state => state.settings.confirmDraft)
     const selectedDraftCard = useSelector(state => state.draft.selectedDraftCard)
     const deckLoaded = useSelector(state => state.data.deckLoaded)
+    const xpSetAside = useSelector(state => state.draft.xpSetAside)
     const cardsPerRow = useSelector(state => state.settings.cardsPerRow)
     const animationSpeed = useSelector(state => state.settings.animationSpeed)
     const animateTogether = useSelector(state => state.settings.animateTogether)
@@ -143,6 +145,32 @@ function DraftPanel(props) {
         if (requireConfirmation) dispatch(selectDraftCard(null))
         dispatch(advanceDraft(true))
         finishPick(completion)
+    }
+
+    // an upgrade can end early, or pass on the cards: from a sealed pool it is finished with what was picked, in the draft the cards shown are skipped (the
+    // experience that is not spent is put aside for later)
+    function finishClick() {
+        const completion = prepareCompletionExit(animationSpeed, -1)
+
+        doCardOverlay(null)
+        dispatch(finishUpgrade())
+        finishPick(completion)
+    }
+
+    function skipClick() {
+        const completion = prepareCompletionExit(animationSpeed, -1)
+
+        doCardOverlay(null)
+        turnAtOnce.current = {}
+        clearTimeout(leavingTimer.current)
+        setLeaving(null)
+        setImageLoaded([])
+        setImageSource([])
+        dispatch(skipUpgradeCards())
+        finishPick(completion)
+
+        // the new cards are at the top
+        if (scrollToTop && window.scrollY > 0) window.scrollTo({ top: 0, behavior: speed === 0 ? 'auto' : 'smooth' })
     }
 
     function draftCardWithIndex(props) {
@@ -699,6 +727,18 @@ function DraftPanel(props) {
 
     const showDone = (!progress.isLevel0Build && !(progress.isUpgrade && !deckLoaded)) || insufficientOptions
 
+    // the experience the upgrade still has to spend
+    const experienceLeft = progress.target - progress.value
+    const inUpgrade = draftPhase === DraftPhases.UpgradePhase && experienceLeft >= 1
+    const canFinish = inUpgrade && sealed
+    const canSkip = inUpgrade && !sealed && draftType === 'draft' && !insufficientOptions
+
+    // the experience put aside for later, said in the bar at the bottom
+    const asideText = xpSetAside > 0 ? t('XP set aside for later: {xp}', { xp: xpSetAside }) : null
+
+    const finishLabel = t('Finish and set aside {xp} XP', { xp: experienceLeft })
+    const skipLabel = t('Skip and set aside 1 XP')
+
     const optionsWarning = insufficientOptions ? <p className="notice notice-error" role="alert">{t('There are no remaining legal draft options')}</p> : null
 
     // all the cards can be redrawn at once in the draft that allows redrawing one; not while some are being redrawn or still turning over
@@ -719,10 +759,13 @@ function DraftPanel(props) {
                 </div>
                 <div className="bar-count"><strong key={progressValue}>{progressValue}</strong> / {progressTarget} {progressUnit}</div>
             </div>
-            {showDone ?
+            {showDone || canFinish || canSkip || asideText ?
                 <div className="bar-row">
+                    {asideText ? <span className="bar-aside" role="status">{asideText}</span> : null}
                     <div className="confirm-bar-actions">
-                        <button type="button" className="btn btn-secondary" onClick={doneClick}>{t('Done')}</button>
+                        {canFinish ? <button type="button" className="btn btn-secondary" onClick={finishClick}>{finishLabel}</button> : null}
+                        {canSkip ? <button type="button" className="btn btn-secondary" onClick={skipClick}>{skipLabel}</button> : null}
+                        {showDone ? <button type="button" className="btn btn-secondary" onClick={doneClick}>{t('Done')}</button> : null}
                     </div>
                 </div>
                 : null}
@@ -742,8 +785,14 @@ function DraftPanel(props) {
                     <button type="button" className="btn btn-primary" onClick={confirmSelected}>{t('Draft this card')}</button>}
             </div>
     }
-    else if (showDone) {
-        phoneConfirm = <button type="button" className="btn btn-secondary phone-done" onClick={doneClick}>{t('Done')}</button>
+    else if (showDone || canFinish || canSkip) {
+        phoneConfirm =
+            <div className="phone-done phone-done-group">
+                {asideText ? <span className="phone-aside" role="status">{asideText}</span> : null}
+                {canFinish ? <button type="button" className="btn btn-secondary" onClick={finishClick}>{finishLabel}</button> : null}
+                {canSkip ? <button type="button" className="btn btn-secondary" onClick={skipClick}>{skipLabel}</button> : null}
+                {showDone ? <button type="button" className="btn btn-secondary" onClick={doneClick}>{t('Done')}</button> : null}
+            </div>
     }
 
     // the cost modifiers of the card tapped on its chip, in a sheet from the bottom of the screen (the document's body: it is above everything)

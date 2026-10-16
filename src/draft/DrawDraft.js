@@ -2,7 +2,7 @@ import { changeSetting } from '../features/settings/settingsSlice'
 import { rememberUndoPoint } from '../features/draftHistory'
 import { random } from '../random'
 import { addToBuildXPList, changePhase, addLevel0, draftVersatile, draftLevel0, advanceDraft, addDeckModifier,
-    addToCardList, removeFromCardList, removeFromBuildXPList, removeLevel0, changeProgress, addToDraftPool, clearDraftPool, setSealedPool, setSealedTaken, setDraftPool, replaceDraftPoolCard, selectDraftCard, setInsufficientOptions, addToRemovedList,
+    addToCardList, removeFromCardList, removeFromBuildXPList, removeLevel0, changeProgress, addToDraftPool, clearDraftPool, setSealedPool, setSealedTaken, setDraftPool, addXpSetAside, replaceDraftPoolCard, selectDraftCard, setInsufficientOptions, addToRemovedList,
     calculateNeededExileCheckboxes, updateDeckRequirements } from '../features/draft/draftSlice'
 
 import FilterCards from '../data/CardFilter'
@@ -611,6 +611,46 @@ function trimSealedPool(dispatch, getState) {
     if (!unchanged) dispatch(setDraftPool(pool))
 
     dispatch(setInsufficientOptions(pool.length < 1))
+}
+
+// The experience an upgrade still has to spend
+function experienceLeft(state) {
+    return state.settings.draftXP - state.draft.progress
+}
+
+// Ends an upgrade drafted from a sealed pool at once: the cards picked so far stay, the experience that is left is put aside for later
+export function finishUpgrade() {
+    return function finishUpgradeThunk(dispatch, getState) {
+        const state = getState()
+
+        if (state.draft.phase !== DraftPhases.UpgradePhase || !isSealedDraft(state.settings.deckbuilding, state.draft.phase) || experienceLeft(state) < 1) return false
+
+        dispatch(rememberUndoPoint)
+        dispatch(addXpSetAside(experienceLeft(state)))
+        dispatch(advanceDraft(false))
+
+        return true
+    }
+}
+
+// Takes nothing from the cards of an upgrade draft: 1 experience is put aside for later, so there is 1 less to draft, and new cards are dealt. With
+// no experience left the upgrade is over.
+export function skipUpgradeCards() {
+    return function skipUpgradeCardsThunk(dispatch, getState) {
+        const state = getState()
+
+        if (state.draft.phase !== DraftPhases.UpgradePhase || isSealedDraft(state.settings.deckbuilding, state.draft.phase) || state.settings.draftType !== 'draft' || experienceLeft(state) < 1) return false
+
+        dispatch(rememberUndoPoint)
+        dispatch(addXpSetAside(1))
+        dispatch(changeSetting('DraftXP', state.settings.draftXP - 1))
+        dispatch(selectDraftCard(null))
+
+        if (experienceLeft(state) - 1 < 1) dispatch(advanceDraft(false))
+        else dispatch(fillDraft())
+
+        return true
+    }
 }
 
 // Puts a copy of a card of the Draft List back in the sealed pool: the deck loses it, and what it did to the rules of the deck is undone

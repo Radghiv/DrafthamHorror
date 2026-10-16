@@ -175,7 +175,7 @@ function DraftRulesStep() {
                     <div className="setting-control">
                         <SegmentedRange id="sealed-extra" className="range" min="0" max={SEALED_MAX_EXTRA} step="10" value={settings.sealedExtra}
                             onChange={event => dispatch(changeSetting('SealedExtra', event.target.value))} />
-                        <span className="value-badge">{'+' + settings.sealedExtra + '%'}</span>
+                        <span className="value-badge is-percent">{'+' + settings.sealedExtra + '%'}</span>
                         {poolSize ? <span className="sealed-pool-preview">{sealedPoolLabel(t, poolSize, phase)}</span> : null}
                     </div>
                 </div>

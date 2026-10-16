@@ -29,7 +29,7 @@ function SealedExtraSetting(props) {
                     <SegmentedRange min="0" max={SEALED_MAX_EXTRA} step="10" value={extra}
                         onChange={event => dispatch(changeSetting('SealedPhaseExtra', { phase: phase, value: event.target.value }))} />
                 </span>
-                <span className="fbdraftsettingslidervalue">{'+' + extra + '%'}</span>
+                <span className="fbdraftsettingslidervalue sealed-percent-value">{'+' + extra + '%'}</span>
             </div>
             <div className="fbsetting">
                 <label className="fbdraftsettingleft"></label>

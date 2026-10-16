@@ -2347,6 +2347,10 @@ a {
 .bar-count strong {
     font-size: 22px;
 }
+.bar-aside {
+    font-size: 15px;
+    opacity: 0.85;
+}
 .bar-row {
     display: flex;
     flex-wrap: wrap;
@@ -3143,6 +3147,17 @@ a {
     font-weight: 700;
     color: var(--muted);
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+/* the percentage and the cards it comes to keep their room whatever the numbers: the slider between them must not change its size as they do */
+.value-badge.is-percent {
+    flex: none;
+    min-width: 84px;
+    font-variant-numeric: tabular-nums;
+}
+.setting-control .sealed-pool-preview {
+    min-width: 7.5em;
+    text-align: right;
 }
 .sealed-extra-note {
     display: flex;
@@ -4119,6 +4134,34 @@ main:focus {
     color: var(--bar-text);
 }
 
+/* an upgrade with more than one way to end: the buttons side by side, each on the bar's color */
+.phone-done-group {
+    left: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+}
+.phone-aside {
+    align-self: center;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: var(--bar-bg);
+    color: var(--bar-text);
+    font-size: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.phone-done-group .btn {
+    background: var(--bar-bg);
+    border-color: var(--bar-bg);
+    color: var(--bar-text);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
 /* the dock */
 .phone-dock {
     position: fixed;
@@ -4749,6 +4792,11 @@ main:focus {
     font-size: 18px;
     font-weight: 700;
     text-align: center;
+}
+.draft-main .settingsDiv .sealed-percent-value {
+    flex: none;
+    min-width: 76px;
+    font-variant-numeric: tabular-nums;
 }
 .draft-main .settingsDiv .description {
     max-width: 640px;

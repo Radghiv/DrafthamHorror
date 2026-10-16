@@ -30,6 +30,7 @@ import usePhoneLayout from './components/usePhoneLayout'
 import DraftPanel from './components/DraftPanel'
 import ExportPanel from './components/ExportPanel'
 import UpgradeExportPanel from './components/UpgradeExportPanel'
+import XpSetAsideNote from './components/XpSetAsideNote'
 import UpgradeOptionsPanel from './components/UpgradeOptionsPanel'
 import BuildUpgradePanel from './components/BuildUpgradePanel'
 import Level0UpgradePanel from './components/Level0UpgradePanel'
@@ -246,6 +247,7 @@ function ArkhamDraft() {
         <div className="draft-layout is-complete" ref={layoutRef}>
             <DeckLeftColumn />
             <div className="draft-main">
+                <XpSetAsideNote />
                 <Level0UpgradePanel phase={DraftPhases.UpgradeLevel0SwapPhase} />
                 <Level0UpgradePanel phase={DraftPhases.UpgradeLevel0AddPhase} />
                 <VersatilePanel />
@@ -260,6 +262,7 @@ function ArkhamDraft() {
         <div className={'draft-layout' + (phone ? ' has-dock' : '')} ref={layoutRef}>
             {phone ? null : <DeckLeftColumn open={drawer === 'left'} onClose={() => setDrawer(null)} />}
             <div className="draft-main">
+                <XpSetAsideNote />
                 <Level0UpgradePanel phase={DraftPhases.UpgradeLevel0SwapPhase} />
                 <Level0UpgradePanel phase={DraftPhases.UpgradeLevel0AddPhase} />
                 <VersatilePanel />
