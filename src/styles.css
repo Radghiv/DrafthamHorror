@@ -348,7 +348,7 @@ p {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 999;
+    z-index: 1149;
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -372,12 +372,12 @@ p {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 1150;
     pointer-events: none;
 }
 .floatingImageNear {
     position: fixed;
-    z-index: 1000;
+    z-index: 1150;
     pointer-events: none;
     transform: translateY(-50%);
 }
@@ -3363,7 +3363,7 @@ a {
     top: calc(100% + 8px);
     right: 0;
     z-index: 950;
-    width: min(92vw, 340px);
+    width: min(92vw, 440px);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -3388,9 +3388,22 @@ a {
 .settings-popover .cols-label {
     display: inline;
 }
-.settings-popover .cols-control .segmented-range {
-    flex: 1;
+/* a long label or value (Italian: "Velocità delle animazioni", "Disattivata") would squeeze the slider to nothing: it keeps a minimum
+   width and drops to its own line when the row is too narrow */
+.settings-popover .cols-control:has(.segmented-range) {
+    flex-wrap: wrap;
+    row-gap: 0;
+}
+/* a switch stays at the end of its row, a long label wraps beside it */
+.settings-popover .cols-control > .cols-label {
     min-width: 0;
+}
+.settings-popover .cols-control > .switch {
+    flex: none;
+}
+.settings-popover .cols-control .segmented-range {
+    flex: 1 1 110px;
+    min-width: 110px;
     width: auto;
 }
 /* on a phone it can be taller than what is left of the screen */
@@ -3780,7 +3793,7 @@ main:focus {
    Chosen in JavaScript (usePhoneLayout.js: a narrow screen, or a phone held sideways), which puts the .is-phone class on .App and renders
    the components that only exist here, so none of this reaches a PC. The elements it adds are drawn from the bottom of the screen, where
    the thumb is: a dock (the investigator, Undo, the card lists), one sheet for the two side columns, a strip to confirm a pick.
-   z-index: strip and dock 930/940 (the header 940, its settings panel above it), sheet scrim 960, sheet 970, previews 999 and up. */
+   z-index: strip and dock 930/940 (the header 940, its settings panel above it), sheet scrim 960, sheet 970, dialogs and the collection sheet 1100, previews 1149 and up (above the collection sheet). */
 .is-phone {
     --dock-h: 60px;
     --dock-total: calc(var(--dock-h) + env(safe-area-inset-bottom, 0px));
@@ -4817,7 +4830,7 @@ main:focus {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 1000;
+    z-index: 1150;
     box-sizing: border-box;
     display: flex;
     padding: calc(16px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) calc(72px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px));
@@ -4912,7 +4925,7 @@ main:focus {
 }
 .preview-hint {
     position: relative;
-    z-index: 1001;
+    z-index: 1151;
 }
 
 /* the cards an investigator always comes with, under its picture on the pick screen */
